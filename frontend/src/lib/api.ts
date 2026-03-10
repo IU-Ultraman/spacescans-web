@@ -1,0 +1,131 @@
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    public detail: string,
+  ) {
+    super(detail);
+  }
+}
+
+function getAuthHeaders(): Record<string, string> {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+      ...options.headers,
+    },
+  });
+
+  if (res.status === 401) {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+    }
+    throw new ApiError(401, "Unauthorized");
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: "Unknown error" }));
+    throw new ApiError(
+      res.status,
+      body.detail || body.error || "Request failed",
+    );
+  }
+
+  return res.json();
+}
+
+export interface Task {
+  id: string;
+  name: string;
+  status: "not_started" | "running" | "finished" | "error" | "cancelled";
+  progress?: number;
+  created_at: string;
+  error_message?: string;
+}
+
+export const api = {
+  // Auth
+  signup: (data: {
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+  }) =>
+    request<{ access_token: string }>("/api/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  login: (data: { email: string; password: string }) =>
+    request<{ access_token: string }>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // Tasks
+  listTasks: () => request<Task[]>("/api/tasks"),
+
+  createTask: (task_name: string) =>
+    request<Task>("/api/tasks", {
+      method: "POST",
+      body: JSON.stringify({ task_name }),
+    }),
+
+  getTask: (id: string) => request<Task>(`/api/tasks/${id}`),
+
+  deleteTask: (id: string) =>
+    request<{ message: string }>(`/api/tasks/${id}`, {
+      method: "DELETE",
+    }),
+
+  uploadFile: async (id: string, file: File) => {
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE}/api/tasks/${id}/upload`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    if (!res.ok) throw new ApiError(res.status, (await res.json()).detail);
+    return res.json();
+  },
+
+  saveConfig: (id: string, config: Record<string, unknown>) =>
+    request<Task>(`/api/tasks/${id}/config`, {
+      method: "PUT",
+      body: JSON.stringify(config),
+    }),
+
+  startTask: (id: string) =>
+    request<Task>(`/api/tasks/${id}/start`, {
+      method: "POST",
+    }),
+
+  stopTask: (id: string) =>
+    request<Task>(`/api/tasks/${id}/stop`, {
+      method: "POST",
+    }),
+
+  getStatus: (id: string) => request<Task>(`/api/tasks/${id}/status`),
+
+  getLogs: (id: string, since?: string) =>
+    request<unknown[]>(
+      `/api/tasks/${id}/logs${since ? `?since=${since}` : ""}`,
+    ),
+
+  downloadResults: (id: string) => `${API_BASE}/api/tasks/${id}/results`,
+};
