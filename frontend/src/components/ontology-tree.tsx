@@ -23,12 +23,14 @@ interface OntologyTreeProps {
   selectable?: boolean;
   selected?: string[];
   onSelectionChange?: (ids: string[]) => void;
+  onNodeClick?: (id: string) => void;
 }
 
 export function OntologyTree({
   selectable = false,
   selected = [],
   onSelectionChange,
+  onNodeClick,
 }: OntologyTreeProps) {
   const [roots, setRoots] = useState<TreeNodeState[]>([]);
   const [loading, setLoading] = useState(true);
@@ -169,6 +171,7 @@ export function OntologyTree({
           selected={selected}
           onToggle={handleToggle}
           onCheck={handleCheck}
+          onNodeClick={onNodeClick}
         />
       ))}
     </div>
@@ -182,6 +185,7 @@ interface TreeNodeRowProps {
   selected: string[];
   onToggle: (id: string, hasChildren: boolean) => void;
   onCheck: (id: string, checked: boolean) => void;
+  onNodeClick?: (id: string) => void;
 }
 
 function TreeNodeRow({
@@ -191,6 +195,7 @@ function TreeNodeRow({
   selected,
   onToggle,
   onCheck,
+  onNodeClick,
 }: TreeNodeRowProps) {
   const { node, children, expanded, loading } = item;
   const isSelected = selected.includes(node.id);
@@ -243,6 +248,9 @@ function TreeNodeRow({
         <button
           type="button"
           onClick={() => {
+            if (onNodeClick) {
+              onNodeClick(node.id);
+            }
             if (node.has_children) {
               onToggle(node.id, true);
             } else if (selectable) {
@@ -268,6 +276,7 @@ function TreeNodeRow({
               selected={selected}
               onToggle={onToggle}
               onCheck={onCheck}
+              onNodeClick={onNodeClick}
             />
           ))}
         </div>
