@@ -1,0 +1,38 @@
+[
+  {
+    "id": "000003_1",
+    "label": "Day",
+    "definition": "Define a particular day",
+    "has_children": true
+  },
+  {
+    "id": "000004_1",
+    "label": "Month",
+    "definition": "Define a particular Month",
+    "has_children": true
+  },
+  {
+    "id": "000007_1",
+    "label": "Periodic_Time_Interval",
+    "definition": "A prototype of the repeating interval, specifying the duration of each occurrence and anchors the PeriodicTimeInterval sequence at a certain point in time.",
+    "has_children": false
+  },
+  {
+    "id": "000005_1",
+    "label": "Relative_Time",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000080",
+    "has_children": true
+  },
+  {
+    "id": "000008_1",
+    "label": "Week",
+    "definition": "Defines a particular week, where the sequence of the weekdays can be defined using TimeSequence. For example, one can define a week from Monday to Sunday, from Sunday to Sat, or from Tue to Mon.",
+    "has_children": true
+  },
+  {
+    "id": "000006_1",
+    "label": "Year",
+    "definition": "Define a particuar year",
+    "has_children": false
+  }
+]

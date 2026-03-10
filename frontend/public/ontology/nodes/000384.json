@@ -1,0 +1,62 @@
+[
+  {
+    "id": "000388",
+    "label": "Number_of_Low_Access_Population_with_Housing_Units_Without_Vehicle_Access_at_10_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000387",
+    "label": "Number_of_Low_Access_Population_with_Housing_Units_Without_Vehicle_Access_at_1_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000385",
+    "label": "Number_of_Low_Access_Population_with_Housing_Units_Without_Vehicle_Access_at_1_Mile_for_Urban_and_10_Miles_for_Rural",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000389",
+    "label": "Number_of_Low_Access_Population_with_Housing_Units_Without_Vehicle_Access_at_20_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000386",
+    "label": "Number_of_Low_Access_Population_with_Housing_Units_Without_Vehicle_Access_at_Half_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000393",
+    "label": "Percentage_of_Low_Access_Population_with_Housing_Units_Without_Vehicle_Access_at_10_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000392",
+    "label": "Percentage_of_Low_Access_Population_with_Housing_Units_Without_Vehicle_Access_at_1_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000390",
+    "label": "Percentage_of_Low_Access_Population_with_Housing_Units_Without_Vehicle_Access_at_1_Mile_for_Urban_and_10_Miles_for_Rural",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000394",
+    "label": "Percentage_of_Low_Access_Population_with_Housing_Units_Without_Vehicle_Access_at_20_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000391",
+    "label": "Percentage_of_Low_Access_Population_with_Housing_Units_Without_Vehicle_Access_at_Half_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  }
+]

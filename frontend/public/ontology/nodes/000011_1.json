@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000031_1",
+    "label": "The_Beginning_Of_The_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000200",
+    "has_children": false
+  },
+  {
+    "id": "000030_1",
+    "label": "The_End_Of_The_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000202",
+    "has_children": false
+  },
+  {
+    "id": "000029_1",
+    "label": "The_Middle_Of_The_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000201",
+    "has_children": false
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000292",
+    "label": "Built_Environment_Exposome",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000094_2",
+    "label": "Natural_Environment_Exposome",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000295",
+    "label": "Social_Environment_Exposome",
+    "definition": "",
+    "has_children": false
+  }
+]

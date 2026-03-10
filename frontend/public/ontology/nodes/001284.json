@@ -1,0 +1,20 @@
+[
+  {
+    "id": "001280",
+    "label": "Percentage_of_All_People_5_to_18_Year_Related_Child_of_Householder_with_Income_in_Past_12_Month_Below_Poverty_Level_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001283",
+    "label": "Percentage_of_All_People_Under_18_Year_Related_Child_of_Householder_with_Income_in_Past_12_Month_Below_Poverty_Level",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001288",
+    "label": "Percentage_of_All_People_Under_5_Year_Related_Child_of_Householder_with_Income_in_Past_12_Month_Below_Poverty_Level_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

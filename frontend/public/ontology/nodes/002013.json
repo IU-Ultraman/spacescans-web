@@ -1,0 +1,38 @@
+[
+  {
+    "id": "002297",
+    "label": "Housing_Unit_Build_Year_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002381",
+    "label": "Housing_Unit_Financial_Status_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002308",
+    "label": "Housing_Unit_Interior_Characteristic_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002344",
+    "label": "Housing_Unit_Occupancy_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002016",
+    "label": "Housing_Unit_Structure_Type_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002346",
+    "label": "Number_of_Total_Housing_Unit",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0001E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

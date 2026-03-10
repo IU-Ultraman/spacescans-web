@@ -1,0 +1,32 @@
+[
+  {
+    "id": "000095_2",
+    "label": "Air_Pollutant",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000290",
+    "label": "Light_at_Night",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000291",
+    "label": "Meteorological_Factor",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000289",
+    "label": "Noise",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000288",
+    "label": "Ultraviolet_Radiation",
+    "definition": "",
+    "has_children": false
+  }
+]

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "000102_1",
+    "label": "Birthday_Of_Martin_Luther_King,_Jr.",
+    "definition": "Honors Martin Luther King, Jr., Civil Rights leader, who was actually born on January 15, 1929; combined with other holidays in several states. First occured 1986.",
+    "has_children": false
+  },
+  {
+    "id": "000096_1",
+    "label": "Christmas",
+    "definition": "December 25",
+    "has_children": false
+  },
+  {
+    "id": "000099_1",
+    "label": "Columbus_Day",
+    "definition": "Second Monday in October. Start 1937",
+    "has_children": false
+  },
+  {
+    "id": "000100_1",
+    "label": "Inauguration_Day",
+    "definition": "First January 20th following a Presidential election",
+    "has_children": false
+  },
+  {
+    "id": "000097_1",
+    "label": "Independence_Day",
+    "definition": "July 4",
+    "has_children": false
+  },
+  {
+    "id": "000101_1",
+    "label": "Labor_Day",
+    "definition": "First Monday in September. became a federal holiday in 1894",
+    "has_children": false
+  },
+  {
+    "id": "000106_1",
+    "label": "Memorial_Day",
+    "definition": "Last Monday in May",
+    "has_children": false
+  },
+  {
+    "id": "000103_1",
+    "label": "New_Year's_Day",
+    "definition": "Celebrates beginning of the Gregorian calendar year. Festivities include counting down to midnight (12:00 AM) on the preceding night, New Year's Eve. Traditional end of holiday season.",
+    "has_children": false
+  },
+  {
+    "id": "000098_1",
+    "label": "Thanksgiving_Day",
+    "definition": "Fourth Thursday in November",
+    "has_children": false
+  },
+  {
+    "id": "000105_1",
+    "label": "Veterans_Day",
+    "definition": "November 11",
+    "has_children": false
+  },
+  {
+    "id": "000104_1",
+    "label": "Washington's_Birthday",
+    "definition": "Third Monday in February",
+    "has_children": false
+  }
+]

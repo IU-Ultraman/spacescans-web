@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000602",
+    "label": "Count_of_Population_Aged_One_Year_and_Over_Living_in_the_Same_House_As_One_Year_Ago",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000603",
+    "label": "Percentage_of_Population_Aged_One_Year_and_Over_Living_in_the_Same_House_As_One_Year_Ago",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  }
+]

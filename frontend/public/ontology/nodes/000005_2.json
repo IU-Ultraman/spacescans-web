@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000006_2",
+    "label": "Hispanic",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000007_2",
+    "label": "Non-hispanic",
+    "definition": "",
+    "has_children": false
+  }
+]

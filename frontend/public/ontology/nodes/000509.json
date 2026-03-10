@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000510",
+    "label": "Count_of_Population_Aged_5_and_Over_Who_Speak_Other_Indo-European_Languages_at_Home",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000512",
+    "label": "Limited_English_Proficiency_Among_Other_Indo-European_Languages_Spoken_at_Home_for_Population_Aged_5_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000511",
+    "label": "Percentage_of_Population_Aged_5_and_Over_Who_Speak_Other_Indo-European_Languages_at_Home",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  }
+]

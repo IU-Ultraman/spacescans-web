@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002403",
+    "label": "Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_Pencentage_of_Household_Income_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002387",
+    "label": "Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000082_2",
+    "label": "Distance_Based_Low_Food_Access_Tract",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000074_2",
+    "label": "Low_Income_and_Low_Food_Access_Tract",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000090_2",
+    "label": "Vehicle_Related_Low_Food_Access_Tract",
+    "definition": "",
+    "has_children": true
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000069_2",
+    "label": "Census_Rural_Area",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000068_2",
+    "label": "Census_Urban_Area",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  }
+]

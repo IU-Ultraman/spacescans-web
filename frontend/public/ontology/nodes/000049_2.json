@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000052_2",
+    "label": "Residential_Facility",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000050_2",
+    "label": "Service_Facility",
+    "definition": "",
+    "has_children": true
+  }
+]

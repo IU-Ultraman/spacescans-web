@@ -1,0 +1,38 @@
+[
+  {
+    "id": "000062_2",
+    "label": "City",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000061_2",
+    "label": "Country",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000063_2",
+    "label": "District",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000064_2",
+    "label": "State",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000065_2",
+    "label": "Street",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000066_2",
+    "label": "Zip_Code",
+    "definition": "",
+    "has_children": false
+  }
+]

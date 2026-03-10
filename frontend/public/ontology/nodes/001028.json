@@ -1,0 +1,44 @@
+[
+  {
+    "id": "001206",
+    "label": "Count_of_Occupation_of_Civilian_Employed_Population_Age_16_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001267",
+    "label": "Occupation_of_Civilian_Employed_Population_Age_16_and_Over_in_Management_Business_Science_and_Arts_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001268",
+    "label": "Occupation_of_Civilian_Employed_Population_Age_16_and_Over_in_Natural_Resources_Construction_and_Maintenance_Occupations_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001269",
+    "label": "Occupation_of_Civilian_Employed_Population_Age_16_and_Over_in_Production_Transportation_and_Material_Moving_Occupations_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001270",
+    "label": "Occupation_of_Civilian_Employed_Population_Age_16_and_Over_in_Sales_and_Office_Occupations_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001271",
+    "label": "Occupation_of_Civilian_Employed_Population_Age_16_and_Over_in_Service_Occupations_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001350",
+    "label": "Percentage_of_Occupation_of_Civilian_Employed_Population_Age_16_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

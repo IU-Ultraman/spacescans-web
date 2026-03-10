@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000294",
+    "label": "Food_Access_Exposome",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000293",
+    "label": "Land_Vacancy_Exosome",
+    "definition": "",
+    "has_children": false
+  }
+]

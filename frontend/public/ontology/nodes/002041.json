@@ -1,0 +1,62 @@
+[
+  {
+    "id": "002294",
+    "label": "Number_of_Housing_Unit_with_Five_to_Nine_Family",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0011E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002295",
+    "label": "Number_of_Housing_Unit_with_Ten_to_Nineteen_Family",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0012E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002293",
+    "label": "Number_of_Housing_Unit_with_Three_to_Four_Family",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0010E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002296",
+    "label": "Number_of_Housing_Unit_with_Twenty_or_More_Family",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0013E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002292",
+    "label": "Number_of_Housing_Unit_with_Two_Family",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0009E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002031",
+    "label": "Percentage_of_Housing_Unit_with_Five_to_Nine_Family",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0011PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002032",
+    "label": "Percentage_of_Housing_Unit_with_Ten_to_Nineteen_Family",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0012PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002033",
+    "label": "Percentage_of_Housing_Unit_with_Three_to_Four_Family",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0010PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002034",
+    "label": "Percentage_of_Housing_Unit_with_Twenty_or_More_Family",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0013PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002035",
+    "label": "Percentage_of_Housing_Unit_with_Two_Family",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0009PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

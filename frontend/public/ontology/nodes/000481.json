@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000488",
+    "label": "Total_Broadband_Internet_Subscription_Households_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000485",
+    "label": "Total_Computer_Use_Households_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000482",
+    "label": "Total_Computer_and_Internet_Use_Households_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

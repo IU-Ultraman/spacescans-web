@@ -1,0 +1,50 @@
+[
+  {
+    "id": "002377",
+    "label": "Number_of_Occupied_Housing_Unit_with_No_Vehicle_Avaliable",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0058E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002378",
+    "label": "Number_of_Occupied_Housing_Unit_with_One_Vehicle_Avaliable",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0059E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002380",
+    "label": "Number_of_Occupied_Housing_Unit_with_Three_or_More_Vehicle_Avaliable",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0061E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002379",
+    "label": "Number_of_Occupied_Housing_Unit_with_Two_Vehicle_Avaliable",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0060E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002457",
+    "label": "Percentage_of_Occupied_Housing_Unit_with_No_Vehicle_Avaliable",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0058PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002456",
+    "label": "Percentage_of_Occupied_Housing_Unit_with_One_Vehicle_Avaliable",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0059PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002454",
+    "label": "Percentage_of_Occupied_Housing_Unit_with_Three_or_More_Vehicle_Avaliable",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0061PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002455",
+    "label": "Percentage_of_Occupied_Housing_Unit_with_Two_Vehicle_Avaliable",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0060PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

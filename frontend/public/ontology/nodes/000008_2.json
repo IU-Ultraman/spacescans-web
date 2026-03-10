@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000009_2",
+    "label": "Biological_Sex",
+    "definition": "sex\\n UMLS CUI: C1522384\\n Semantic Types\\n :\\n Organism Attribute\\n Definitions (9)\\n The totality of characteristics of reproductive structure, functions, PHENOTYPE, and GENOTYPE, differentiating the MALE from the FEMALE organism. (MSH)\\n The assemblage of physical properties or qualities by which male is distinguished from female; the physical difference between male and female; the distinguishing peculiarity of male or female. (NCI)\\n Phenotypic expression of chromosomal makeup that defines a study subject as male, female, or other. Compare to gender. (NCI)\\n The biologic character or quality that distinguishes male and female from one another as expressed by analysis of the person's gonadal, morphologic (internal and external), chromosomal, and hormonal characteristics. (NCI)\\n Conceptually broad term referring to the structural, functional, or behavioral characteristics of males and females of a given species. Use a more specific term if possible. For comparisons of the sexes use HUMAN SEX DIFFERENCES or ANIMAL SEX DIFFERENCES. (PSY)\\n Totality of characteristics of reproductive structure, functions, phenotype, and genotype, differentiating the male from the female organism; do not confuse with the act of sex, which is indexed with SEX BEHAVIOR. (CSP)\\n https://uts.nlm.nih.gov/uts/umls/concept/C1522384",
+    "has_children": true
+  },
+  {
+    "id": "000015_2",
+    "label": "Gender_Identity",
+    "definition": "UMLS CUI: C0017249\\n Semantic Types\\n :\\n Mental Process\\n Definitions (10)\\n A person's concept of self as being male and masculine or female and feminine, or ambivalent, based in part on physical characteristics, parental responses, and psychological and social pressures. It is the internal experience of gender role. (MSH)\\n A person's internally held sense of their gender, which may or may not correspond to the individual's genotypic or phenotypic sex. (NCI)\\n The state of being a specific person in regard to sexuality and/or gender (NANDA-I) Acknowledgment and acceptance of own sexual identity (NOC)\\n Inner conviction that one is male or female or inner sense of being masculine or feminine. (PSY)\\n https://uts.nlm.nih.gov/uts/umls/concept/C0017249",
+    "has_children": true
+  }
+]

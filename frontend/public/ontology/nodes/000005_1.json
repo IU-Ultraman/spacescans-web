@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000020_1",
+    "label": "Today",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000081",
+    "has_children": false
+  },
+  {
+    "id": "000018_1",
+    "label": "Tomorrow",
+    "definition": "One day after Today",
+    "has_children": false
+  },
+  {
+    "id": "000019_1",
+    "label": "Yesterday",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000083",
+    "has_children": false
+  }
+]

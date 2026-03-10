@@ -1,0 +1,26 @@
+[
+  {
+    "id": "001121",
+    "label": "Civilian_Noninstitutionalized_Population_With_Health_Insurance_Coverage_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001149",
+    "label": "Civilian_Noninstitutionalized_Population_With_No_Health_Insurance_Coverage_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001096",
+    "label": "Count_of_Civilian_Noninstitutionalized_Population",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001194",
+    "label": "Percentage_of_Civilian_Noninstitutionalized_Population",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

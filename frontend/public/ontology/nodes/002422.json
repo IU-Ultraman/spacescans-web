@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002433",
+    "label": "Occupied_Housing_Unit_Gross_Rent_As_Percentage_of_Household_Income_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002421",
+    "label": "Occupied_Housing_Unit_Gross_Rent_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

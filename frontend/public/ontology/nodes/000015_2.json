@@ -1,0 +1,26 @@
+[
+  {
+    "id": "000016_2",
+    "label": "Agender",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000017_2",
+    "label": "Cisgender",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000018_2",
+    "label": "Non-binary_Gender",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000019_2",
+    "label": "Transgender",
+    "definition": "",
+    "has_children": false
+  }
+]

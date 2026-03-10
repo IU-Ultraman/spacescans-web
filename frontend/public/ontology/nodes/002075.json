@@ -1,0 +1,38 @@
+[
+  {
+    "id": "002060",
+    "label": "Vacant_Non_Residential_Non_Business_Address_0_3_Month_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002069",
+    "label": "Vacant_Non_Residential_Non_Business_Address_12_24_Month_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002070",
+    "label": "Vacant_Non_Residential_Non_Business_Address_24_36_Month_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002071",
+    "label": "Vacant_Non_Residential_Non_Business_Address_36_Month_or_Longer_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002067",
+    "label": "Vacant_Non_Residential_Non_Business_Address_3_6_Month_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002068",
+    "label": "Vacant_Non_Residential_Non_Business_Address_6_12_Month_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  }
+]

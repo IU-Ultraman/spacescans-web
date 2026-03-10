@@ -1,0 +1,44 @@
+[
+  {
+    "id": "000332",
+    "label": "General_Distance_Based_Low_Food_Access_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000362",
+    "label": "Low_Food_Access_Kids_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000347",
+    "label": "Low_Food_Access_Low_Income_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000384",
+    "label": "Low_Food_Access_No_Vehicle_Household_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000373",
+    "label": "Low_Food_Access_Seniors_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000330",
+    "label": "Number_of_Tract_People_Residing_in_Group_Quarters",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatiall Scale:Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000331",
+    "label": "Percent_of_Tract_Population_Residing_in_Group_Quarters",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatiall Scale:Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  }
+]

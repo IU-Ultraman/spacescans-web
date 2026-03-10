@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002263",
+    "label": "Previous_Quater_No_Stat_Currently_In_Service_Address_Count_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002262",
+    "label": "Previous_Quater_Vacant_Currently_In_Service_Address_Count_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

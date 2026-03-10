@@ -1,0 +1,176 @@
+[
+  {
+    "id": "000061_1",
+    "label": "Day_10_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000107",
+    "has_children": false
+  },
+  {
+    "id": "000059_1",
+    "label": "Day_11_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000108",
+    "has_children": false
+  },
+  {
+    "id": "000074_1",
+    "label": "Day_12_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000109",
+    "has_children": false
+  },
+  {
+    "id": "000051_1",
+    "label": "Day_13_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000110",
+    "has_children": false
+  },
+  {
+    "id": "000073_1",
+    "label": "Day_14_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000111",
+    "has_children": false
+  },
+  {
+    "id": "000049_1",
+    "label": "Day_15_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000112",
+    "has_children": false
+  },
+  {
+    "id": "000058_1",
+    "label": "Day_16_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000113",
+    "has_children": false
+  },
+  {
+    "id": "000066_1",
+    "label": "Day_17_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000114",
+    "has_children": false
+  },
+  {
+    "id": "000055_1",
+    "label": "Day_18_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000115",
+    "has_children": false
+  },
+  {
+    "id": "000048_1",
+    "label": "Day_19_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000116",
+    "has_children": false
+  },
+  {
+    "id": "000068_1",
+    "label": "Day_1_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000098",
+    "has_children": false
+  },
+  {
+    "id": "000052_1",
+    "label": "Day_20_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000117",
+    "has_children": false
+  },
+  {
+    "id": "000067_1",
+    "label": "Day_21_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000118",
+    "has_children": false
+  },
+  {
+    "id": "000046_1",
+    "label": "Day_22_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000119",
+    "has_children": false
+  },
+  {
+    "id": "000056_1",
+    "label": "Day_23_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000120",
+    "has_children": false
+  },
+  {
+    "id": "000060_1",
+    "label": "Day_24_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000121",
+    "has_children": false
+  },
+  {
+    "id": "000069_1",
+    "label": "Day_25_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000122",
+    "has_children": false
+  },
+  {
+    "id": "000050_1",
+    "label": "Day_28_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000123",
+    "has_children": false
+  },
+  {
+    "id": "000054_1",
+    "label": "Day_29_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000124",
+    "has_children": false
+  },
+  {
+    "id": "000047_1",
+    "label": "Day_2_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000099",
+    "has_children": false
+  },
+  {
+    "id": "000064_1",
+    "label": "Day_30_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000125",
+    "has_children": false
+  },
+  {
+    "id": "000072_1",
+    "label": "Day_31_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000126",
+    "has_children": false
+  },
+  {
+    "id": "000057_1",
+    "label": "Day_3_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000100",
+    "has_children": false
+  },
+  {
+    "id": "000065_1",
+    "label": "Day_4_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000101",
+    "has_children": false
+  },
+  {
+    "id": "000062_1",
+    "label": "Day_5_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000102",
+    "has_children": false
+  },
+  {
+    "id": "000070_1",
+    "label": "Day_6_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000103",
+    "has_children": false
+  },
+  {
+    "id": "000063_1",
+    "label": "Day_7_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000104",
+    "has_children": false
+  },
+  {
+    "id": "000071_1",
+    "label": "Day_8_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000105",
+    "has_children": false
+  },
+  {
+    "id": "000053_1",
+    "label": "Day_9_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000106",
+    "has_children": false
+  }
+]

@@ -1,0 +1,104 @@
+[
+  {
+    "id": "000307",
+    "label": "1-hour_Dead_Fuel_Moisture",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000308",
+    "label": "10-hour_Dead_Fuel_Moisture",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000309",
+    "label": "100-hour_Dead_Fuel_Moisture",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000310",
+    "label": "1000-hour_Dead_Fuel_Moisture",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000306",
+    "label": "Daily_Reference_Evapotranspiration(Alfalfa_Reference_Crop)",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000319",
+    "label": "Maximum_Near\u2010surface_Air_Temperature",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000313",
+    "label": "Maximum_Near\u2010surface_Relative_Humidity",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000320",
+    "label": "Mean_Vapor_Pressure_Deficit",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000318",
+    "label": "Minimum_Near\u2010surface_Air_Temperature",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000314",
+    "label": "Minimum_Near\u2010surface_Relative_Humidity",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000303",
+    "label": "NFDRS_Fire_Danger_Index",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000311",
+    "label": "Potential_Evapotranspiration(reference_Grass)",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000312",
+    "label": "Precipitation_Amount(daily_Total)",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000315",
+    "label": "Specific_Humidity",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000316",
+    "label": "Surface_Downward_Shortwave_Radiation",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000317",
+    "label": "Wind_Direction_at_10_M(degrees_Clockwise_from_North)",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000321",
+    "label": "Wind_Velocity_at_10_M",
+    "definition": "",
+    "has_children": false
+  }
+]

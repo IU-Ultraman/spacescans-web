@@ -1,0 +1,62 @@
+[
+  {
+    "id": "000363",
+    "label": "Number_of_Children_with_Low_Access_at_1_Mile_for_Urban_and_10_Miles_for_Rural",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000366",
+    "label": "Number_of_Low_Access_Population_That_Are_Kids_at_10_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000365",
+    "label": "Number_of_Low_Access_Population_That_Are_Kids_at_1_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000367",
+    "label": "Number_of_Low_Access_Population_That_Are_Kids_at_20_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000364",
+    "label": "Number_of_Low_Access_Population_That_Are_Kids_at_Half_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000368",
+    "label": "Percentage_of_Children_with_Low_Access_at_1_Mile_for_Urban_and_10_Miles_for_Rural",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000371",
+    "label": "Percentage_of_Low_Access_Population_That_Are_Kids_at_10_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000370",
+    "label": "Percentage_of_Low_Access_Population_That_Are_Kids_at_1_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000372",
+    "label": "Percentage_of_Low_Access_Population_That_Are_Kids_at_20_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000369",
+    "label": "Percentage_of_Low_Access_Population_That_Are_Kids_at_Half_Mile",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  }
+]

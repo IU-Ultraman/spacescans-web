@@ -1,0 +1,8 @@
+[
+  {
+    "id": "001321",
+    "label": "Percentage_of_Family_with_Female_Householder_No_Spouse_Present_with_Related_Child_of_Householder_Under_5_Year_with_Income_in_Past_12_Month_Below_Poverty_Level_Statistic",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

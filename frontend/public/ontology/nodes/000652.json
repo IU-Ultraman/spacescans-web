@@ -1,0 +1,68 @@
+[
+  {
+    "id": "000653",
+    "label": "Count_of_Population_25_Years_and_Over_Statistic_by_Educational_Attainment",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000654",
+    "label": "Percentage_of_Population_25_Years_and_Over_Statistic_by_Educational_Attainment",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000679",
+    "label": "Population_25_Years_and_Over_Bachelor's_Degree_or_Higher_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000661",
+    "label": "Population_25_Years_and_Over_High_School_Graduate_Including_Equivalency_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000676",
+    "label": "Population_25_Years_and_Over_High_School_Graduate_or_Higher_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000658",
+    "label": "Population_25_Years_and_Over_with_9th_to_12th_Grade_Without_Diploma_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000655",
+    "label": "Population_25_Years_and_Over_with_Less_Than_9th_Grade_Education_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000664",
+    "label": "Population_25_Years_and_Over_with_Some_College_and_No_Degree_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000670",
+    "label": "Population_25_Years_and_Over_with_a_Bachelor's_Degree_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000673",
+    "label": "Population_25_Years_and_Over_with_a_Graduate_or_Professional_Degree_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000667",
+    "label": "Population_25_Years_and_Over_with_an_Associate's_Degree_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

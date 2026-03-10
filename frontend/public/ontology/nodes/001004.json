@@ -1,0 +1,14 @@
+[
+  {
+    "id": "001056",
+    "label": "Employed_Civilian_Population_Age_16_and_Over_In_Labor_Force_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001006",
+    "label": "Unemployed_Civilian_Population_Age_16_and_Over_In_Labor_Force_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

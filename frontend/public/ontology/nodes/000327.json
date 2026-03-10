@@ -1,0 +1,8 @@
+[
+  {
+    "id": "000328",
+    "label": "Relative_Walkability",
+    "definition": "Data Source: National Walkability Index (https://www.epa.gov/smartgrowth/smart-location-mapping#walkability)\n\nCensus Block Group\n\nCross-sectional\n\nYears Available: Cross-sectional\n\nModel: Rank-based approach using intersection density, proximity to transit stops, and diversity of land uses\n\nModel Specification/Citation: https://www.epa.gov/sites/default/files/2021-06/documents/national_walkability_index_methodology_and_user_guide_june2021.pdf",
+    "has_children": false
+  }
+]

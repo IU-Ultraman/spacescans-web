@@ -1,0 +1,20 @@
+[
+  {
+    "id": "001179",
+    "label": "Count_of_Employment_Status_for_Own_Children_of_the_Householder_Age_6_to_17_Years",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001018",
+    "label": "Employment_Status_for_Own_Children_of_the_Householder_Age_6_to_17_Years_With_All_Parents_in_Family_in_Labor_Force_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001312",
+    "label": "Percentage_of_Employment_Status_for_Own_Children_of_the_Householder_Age_6_to_17_Years",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

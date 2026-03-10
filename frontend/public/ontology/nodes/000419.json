@@ -1,0 +1,26 @@
+[
+  {
+    "id": "000422",
+    "label": "Count_of_French_Canadian_Ancestry_Population",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000420",
+    "label": "Count_of_French_NonBasque_Ancestry_Population",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000423",
+    "label": "Percentage_of_French_Canadian_Ancestry_Population",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000421",
+    "label": "Percentage_of_French_NonBasque_Ancestry_Population",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "002052",
+    "label": "Vacant_Address_0_3_Month_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002055",
+    "label": "Vacant_Address_12_24_Month_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002056",
+    "label": "Vacant_Address_24_36_Month_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002057",
+    "label": "Vacant_Address_36_Month_or_Longer_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002053",
+    "label": "Vacant_Address_3_6_Month_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002054",
+    "label": "Vacant_Address_6_12_Month_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  }
+]

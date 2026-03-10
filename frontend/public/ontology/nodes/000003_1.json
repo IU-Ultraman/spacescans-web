@@ -1,0 +1,38 @@
+[
+  {
+    "id": "000014_1",
+    "label": "Holiday",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000011",
+    "has_children": true
+  },
+  {
+    "id": "000015_1",
+    "label": "Month_Day",
+    "definition": "Define a paticular day that occurs on a month",
+    "has_children": true
+  },
+  {
+    "id": "000020_1",
+    "label": "Today",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000081",
+    "has_children": false
+  },
+  {
+    "id": "000018_1",
+    "label": "Tomorrow",
+    "definition": "One day after Today",
+    "has_children": false
+  },
+  {
+    "id": "000016_1",
+    "label": "Week_Day",
+    "definition": "The parent class of the 7 week days",
+    "has_children": true
+  },
+  {
+    "id": "000019_1",
+    "label": "Yesterday",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000083",
+    "has_children": false
+  }
+]

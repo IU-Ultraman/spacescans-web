@@ -1,0 +1,74 @@
+[
+  {
+    "id": "000089_1",
+    "label": "April",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000055",
+    "has_children": false
+  },
+  {
+    "id": "000092_1",
+    "label": "August",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000059",
+    "has_children": false
+  },
+  {
+    "id": "000091_1",
+    "label": "December",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000063",
+    "has_children": false
+  },
+  {
+    "id": "000084_1",
+    "label": "February",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000053",
+    "has_children": false
+  },
+  {
+    "id": "000082_1",
+    "label": "January",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000052",
+    "has_children": false
+  },
+  {
+    "id": "000087_1",
+    "label": "July",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000058",
+    "has_children": false
+  },
+  {
+    "id": "000090_1",
+    "label": "June",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000057",
+    "has_children": false
+  },
+  {
+    "id": "000083_1",
+    "label": "March",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000054",
+    "has_children": false
+  },
+  {
+    "id": "000085_1",
+    "label": "May",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000056",
+    "has_children": false
+  },
+  {
+    "id": "000086_1",
+    "label": "November",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000062",
+    "has_children": false
+  },
+  {
+    "id": "000093_1",
+    "label": "October",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000061",
+    "has_children": false
+  },
+  {
+    "id": "000088_1",
+    "label": "September",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000060",
+    "has_children": false
+  }
+]

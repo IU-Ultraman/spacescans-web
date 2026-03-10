@@ -1,0 +1,8 @@
+[
+  {
+    "id": "001010",
+    "label": "Percent_of_Unemployment_of_Civilian_Labor_Force",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

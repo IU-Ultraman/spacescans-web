@@ -1,0 +1,104 @@
+[
+  {
+    "id": "002450",
+    "label": "Median_Number_Of_Owner_Occupied_Housing_Unit_Value",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0089E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002449",
+    "label": "Number_Of_Owner_Occupied_Housing_Unit_Value_1000000_or_More",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0088E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002443",
+    "label": "Number_Of_Owner_Occupied_Housing_Unit_Value_100000_to_149999",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0083E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002445",
+    "label": "Number_Of_Owner_Occupied_Housing_Unit_Value_150000_to_199999",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0084E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002446",
+    "label": "Number_Of_Owner_Occupied_Housing_Unit_Value_200000_to_249999",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0085E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002447",
+    "label": "Number_Of_Owner_Occupied_Housing_Unit_Value_300000_to_499999",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0086E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002448",
+    "label": "Number_Of_Owner_Occupied_Housing_Unit_Value_500000_to_999999",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0087E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002444",
+    "label": "Number_Of_Owner_Occupied_Housing_Unit_Value_50000_to_99999",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0082E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002442",
+    "label": "Number_Of_Owner_Occupied_Housing_Unit_Value_Less_Than_50000",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0081E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002365",
+    "label": "Percentage_Of_Owner_Occupied_Housing_Unit_Value_1000000_or_More",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0088PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002364",
+    "label": "Percentage_Of_Owner_Occupied_Housing_Unit_Value_100000_to_149999",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0083PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002045",
+    "label": "Percentage_Of_Owner_Occupied_Housing_Unit_Value_150000_to_199999",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0084PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002044",
+    "label": "Percentage_Of_Owner_Occupied_Housing_Unit_Value_200000_to_249999",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0085PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002043",
+    "label": "Percentage_Of_Owner_Occupied_Housing_Unit_Value_300000_to_499999",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0086PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002039",
+    "label": "Percentage_Of_Owner_Occupied_Housing_Unit_Value_500000_to_999999",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0087PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002038",
+    "label": "Percentage_Of_Owner_Occupied_Housing_Unit_Value_Less_Than_50000",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0081PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002505",
+    "label": "Percentage_Of_Owner_Occupied_Housing_Unit_Value_Less_Than_50000",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0081PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

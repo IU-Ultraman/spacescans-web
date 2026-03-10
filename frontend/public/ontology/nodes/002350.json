@@ -1,0 +1,68 @@
+[
+  {
+    "id": "002354",
+    "label": "Average_Household_Size_of_Owner_Occupied_Housing_Unit",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0048E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002355",
+    "label": "Average_Household_Size_of_Renter_Occupied_Housing_Unit",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0049E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002352",
+    "label": "Number_of_Owner_Occupied_Housing_Unit",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0046E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002353",
+    "label": "Number_of_Renter_Occupied_Housing_Unit",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0047E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002345",
+    "label": "Number_of_Total_Occupied_Housing_Unit",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0002E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002360",
+    "label": "Occupied_Housing_Unit_Housholder_Moved_in_Year_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002356",
+    "label": "Occupied_Housing_Unit_Occupant_Per_Room_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002376",
+    "label": "Occupied_Housing_Unit_Vehicle_Available_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002484",
+    "label": "Percentage_of_Owner_Occupied_Housing_Unit",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0046PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002483",
+    "label": "Percentage_of_Renter_Occupied_Housing_Unit",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0047PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002485",
+    "label": "Percentage_of_Total_Occupied_Housing_Unit",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0002PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

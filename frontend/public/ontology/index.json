@@ -1,0 +1,62 @@
+[
+  {
+    "id": "000040_2",
+    "label": "Access_Distance",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000041_2",
+    "label": "Address_Attribute",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000000_2",
+    "label": "Demographic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000049_2",
+    "label": "Facility",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000035_2",
+    "label": "Person",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000045_2",
+    "label": "Population_Group",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000054_2",
+    "label": "Spatial_Concept",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000093_2",
+    "label": "Spatial_and_Contextual_Exposome",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000296",
+    "label": "Spatial_and_Contextual_Exposome_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000000_1",
+    "label": "Time",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#Time",
+    "has_children": true
+  }
+]

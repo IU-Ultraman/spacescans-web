@@ -1,0 +1,38 @@
+[
+  {
+    "id": "001051",
+    "label": "Class_of_Worker_of_Civilian_Employed_Population_Age_16_and_Over_Government_Workers_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001050",
+    "label": "Class_of_Worker_of_Civilian_Employed_Population_Age_16_and_Over_Private_Wage_and_Salary_Workers_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001052",
+    "label": "Class_of_Worker_of_Civilian_Employed_Population_Age_16_and_Over_Self_Employed_in_Own_Not_Incorporated_Business_Worker_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001053",
+    "label": "Class_of_Worker_of_Civilian_Employed_Population_Age_16_and_Over_Unpaid_Family_Workers_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001167",
+    "label": "Count_of_Class_of_Worker_of_Civilian_Employed_Population_Aged_16_Years_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001308",
+    "label": "Percentage_of_Class_of_Worker_of_Civilian_Employed_Population_Aged_16_Years_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

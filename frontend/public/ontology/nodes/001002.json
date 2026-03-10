@@ -1,0 +1,32 @@
+[
+  {
+    "id": "001071",
+    "label": "Count_of_Employment_Status_of_Population_Age_16_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001005",
+    "label": "Employment_Status_for_Population_Age_16_and_Over_In_Labor_Force_Civilian_Employed",
+    "definition": "Variable Short Name: DP03_0004PE",
+    "has_children": false
+  },
+  {
+    "id": "001003",
+    "label": "Employment_Status_of_Population_Age_16_and_Over_In_Labor_Force_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001008",
+    "label": "Employment_Status_of_Population_Age_16_and_Over_Not_in_Labor_Force_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001054",
+    "label": "Percentage_of_Employment_Status_of_Population_Age_16_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

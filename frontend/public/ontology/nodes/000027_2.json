@@ -1,0 +1,44 @@
+[
+  {
+    "id": "000028_2",
+    "label": "Asian",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000029_2",
+    "label": "Black_or_African_American",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000030_2",
+    "label": "Multi-racial",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000031_2",
+    "label": "Native_American",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000032_2",
+    "label": "Pacific_Islander",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000033_2",
+    "label": "Spanish_or_Latino_Origin",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000034_2",
+    "label": "White",
+    "definition": "",
+    "has_children": false
+  }
+]

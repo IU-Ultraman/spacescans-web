@@ -1,0 +1,44 @@
+[
+  {
+    "id": "001266",
+    "label": "001266",
+    "definition": "Nonfamily_Household_Income_and_Benefit_in_2022_Inflation_Adjusted_Statistic",
+    "has_children": true
+  },
+  {
+    "id": "001374",
+    "label": "Family_Income_and_Benefit_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001263",
+    "label": "Median_of_Earning_for_Female_Full_Time_Year_Round_Worker_in_Income_and_Benefit_in_2022_Inflation_Adjusted_Dollar_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001119",
+    "label": "Median_of_Earning_for_Male_Full_Time_Year_Round_Worker_in_Income_and_Benefit_in_2022_Inflation_Adjusted_Dollar_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001117",
+    "label": "Median_of_Earning_for_Worker_in_Income_and_Benefit_in_2022_Inflation_Adjusted_Dollar_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001116",
+    "label": "Per_Capita_Income_and_Benefit_in_2022_Inflation_Adjusted_Dollar_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001082",
+    "label": "Total_Household_Income_and_Benefit_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

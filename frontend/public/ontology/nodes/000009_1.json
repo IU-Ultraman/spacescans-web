@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000027_1",
+    "label": "The_Beginning_Of_The_Week",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000197",
+    "has_children": false
+  },
+  {
+    "id": "000026_1",
+    "label": "The_End_Of_The_Week",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000199",
+    "has_children": false
+  },
+  {
+    "id": "000028_1",
+    "label": "The_Middle_Of_The_Week",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000198",
+    "has_children": false
+  }
+]

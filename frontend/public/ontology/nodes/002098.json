@@ -1,0 +1,20 @@
+[
+  {
+    "id": "002100",
+    "label": "Vacant_Business_Address_by_Duration_Percentage_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002101",
+    "label": "Vacant_Non_Residential_Non_Business_Address_by_Duration_Percentage_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002099",
+    "label": "Vacant_Residential_Address_by_Duration_Percentage_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

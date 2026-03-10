@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000730",
+    "label": "Number_of_Women_15_to_50_Years_Old_with_a_Birth_in_the_Past_12_Months_Per_1000_Unmarried_Women_15_to_50_Years_Old_Including_Widowed_Divorced_and_Never_Married",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000731",
+    "label": "Percentage_of_Women_15_to_50_Years_Old_with_a_Birth_in_the_Past_12_Months_Per_1000_Unmarried_Women_15_to_50_Years_Old_Including_Widowed_Divorced_and_Never_Married",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  }
+]

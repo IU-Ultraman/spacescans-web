@@ -1,0 +1,74 @@
+[
+  {
+    "id": "002212",
+    "label": "No_Stat_Business_Address_0_3_Mo_to_Total_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002215",
+    "label": "No_Stat_Business_Address_12_24_Mo_to_Total_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002216",
+    "label": "No_Stat_Business_Address_24_36_Mo_to_Total_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002217",
+    "label": "No_Stat_Business_Address_36_Mo_or_Longer_to_Total_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002213",
+    "label": "No_Stat_Business_Address_3_6_Mo_to_Total_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002214",
+    "label": "No_Stat_Business_Address_6_12_Mo_to_Total_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002206",
+    "label": "Nostat_Business_Address_0_3_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002209",
+    "label": "Nostat_Business_Address_12_24_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002210",
+    "label": "Nostat_Business_Address_24_36_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002211",
+    "label": "Nostat_Business_Address_36_Mo_or_Longer_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002207",
+    "label": "Nostat_Business_Address_3_6_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002208",
+    "label": "Nostat_Business_Address_6_12_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  }
+]

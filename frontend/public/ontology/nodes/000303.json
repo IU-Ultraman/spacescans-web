@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000304",
+    "label": "Burning_Index",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000305",
+    "label": "Energy_Release_Component",
+    "definition": "",
+    "has_children": false
+  }
+]

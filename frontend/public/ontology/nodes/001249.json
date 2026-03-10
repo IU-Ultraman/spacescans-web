@@ -1,0 +1,14 @@
+[
+  {
+    "id": "001341",
+    "label": "Count_of_Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Public_Administration",
+    "definition": "Variable Short Name:DP03_0045E",
+    "has_children": false
+  },
+  {
+    "id": "001047",
+    "label": "Percentage_of_Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Public_Administration",
+    "definition": "Variable Short Name:DP03_0045PE",
+    "has_children": false
+  }
+]

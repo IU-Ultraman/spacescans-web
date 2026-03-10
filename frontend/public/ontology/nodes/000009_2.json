@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000010_2",
+    "label": "Female",
+    "definition": "Females\\n UMLS CUI: C0086287\\n Semantic Types\\n :\\n Organism Attribute\\n Definitions (5)\\n A person who belongs to the sex that normally produces ova. The term is used to indicate biological sex distinctions, or cultural gender role distinctions, or both. (NCI) (NCI)\\n A person who belongs to the sex that normally produces ova. The term is used to indicate biological sex distinctions, or cultural gender role distinctions, or both. (NCI)\\n An individual who reports belonging to the cultural gender role distinction of female. (NCI)\\n Female\\n (HL7V3.0)\\n Use in conjunction with a disease, disorder, dysfunction, body system, or function which is gender specific. (CSP)\\n https://uts.nlm.nih.gov/uts/umls/concept/C0086287",
+    "has_children": true
+  },
+  {
+    "id": "000012_2",
+    "label": "Intersex",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000013_2",
+    "label": "Male",
+    "definition": "Males\\n UMLS CUI: C0086582\\n Semantic Types\\n :\\n Organism Attribute\\n Definitions (5)\\n A person who belongs to the sex that normally produces sperm. The term is used to indicate biological sex distinctions, cultural gender role distinctions, or both. (NCI)\\n A person who belongs to the sex that normally produces sperm. The term is used to indicate biological sex distinctions, cultural gender role distinctions, or both. (NCI) (NCI)\\n Male\\n (HL7V3.0)\\n Used for all-male populations when sex is pertinent to the focus of the study. For comparison of sexes use HUMAN SEX DIFFERENCES. (PSY)\\n Use in conjunction with a disease, disorder, dysfunction, body system, or function which is gender specific. (CSP)\\n https://uts.nlm.nih.gov/uts/umls/concept/C0086582",
+    "has_children": true
+  }
+]

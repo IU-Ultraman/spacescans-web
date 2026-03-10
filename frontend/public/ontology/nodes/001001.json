@@ -1,0 +1,32 @@
+[
+  {
+    "id": "001017",
+    "label": "Employment_Status_for_Own_Children_of_the_Householder_Age_6_to_17_Years_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001015",
+    "label": "Employment_Status_for_Own_Children_of_the_Householder_Under_6_Years_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001009",
+    "label": "Employment_Status_of_Civilian_Labor_Force_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001011",
+    "label": "Employment_Status_of_Female_Population_Age_16_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001002",
+    "label": "Employment_Status_of_Population_Age_16_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

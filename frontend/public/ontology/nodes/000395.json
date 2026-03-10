@@ -1,0 +1,32 @@
+[
+  {
+    "id": "000857",
+    "label": "Crime_and_Safety_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002012",
+    "label": "Residential_Neighborhood_Exposome_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000846",
+    "label": "Social_Captial_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000396",
+    "label": "Sociodemographic_Exposome_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001000",
+    "label": "Socioecnomic_Exposome_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

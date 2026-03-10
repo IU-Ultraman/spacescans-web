@@ -1,0 +1,20 @@
+[
+  {
+    "id": "002157",
+    "label": "No_Stat_Business_Address_by_Duration_Count_Indicator",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002158",
+    "label": "No_Stat_Non_Residential_Non_Business_Address_by_Duration_Count_Indicator",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002156",
+    "label": "No_Stat_Residential_Address_by_Duration_Count_Indicator",
+    "definition": "",
+    "has_children": true
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "001150",
+    "label": "Commuting_to_Work_for_Workers_Age_16_and_Over_Worked_from_Home_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001022",
+    "label": "Commuting_to_Work_for_Workers_Age_16_and_Over_by_Car_Truck_or_Van_Carpooled_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001151",
+    "label": "Commuting_to_Work_for_Workers_Age_16_and_Over_by_Car_Truck_or_Van_Drove_Alone_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001025",
+    "label": "Commuting_to_Work_for_Workers_Age_16_and_Over_by_Other_Means",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001153",
+    "label": "Commuting_to_Work_for_Workers_Age_16_and_Over_by_Public_Transportation_Excluding_Taxicab_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001024",
+    "label": "Commuting_to_Work_for_Workers_Age_16_and_Over_by_Walking_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001168",
+    "label": "Count_of_Commuting_to_Work_for_Workers_Age_16_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001309",
+    "label": "Percentage_of_Commuting_to_Work_for_Workers_Age_16_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

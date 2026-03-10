@@ -1,0 +1,26 @@
+[
+  {
+    "id": "000832",
+    "label": "Households_with_a_Female_Householder_and_No_Spouse_or_Partner_Present_and_Living_Alone_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000829",
+    "label": "Households_with_a_Female_Householder_and_No_Spouse_or_Partner_Present_with_Children_of_the_Householder_Under_18_Years_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000827",
+    "label": "Number_of_Households_with_a_Female_Householder_and_No_Spouse_or_Partner_Present",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000828",
+    "label": "Percentage_of_Households_with_a_Female_Householder_and_No_Spouse_or_Partner_Present",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000516",
+    "label": "Count_of_Population_Aged_5_and_Over_Who_Speak_Asian_and_Pacific_Islander_Languages_at_Home",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000518",
+    "label": "Limited_English_Proficiency_Among_Asian_and_Pacific_Islander_Languages_Spoken_at_Home_for_Population_Aged_5_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000517",
+    "label": "Percentage_of_Population_Aged_5_and_Over_Who_Speak_Asian_and_Pacific_Islander_Languages_at_Home",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  }
+]

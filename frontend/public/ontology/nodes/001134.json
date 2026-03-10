@@ -1,0 +1,26 @@
+[
+  {
+    "id": "001378",
+    "label": "001378",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001376",
+    "label": "Count_of_Unemployed_Civilian_Noninstitutionalized_Population_Age_19_to_64_In_Labor_Force_With_Health_Insurance_Coverage",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001223",
+    "label": "Percentage_of_Unemployed_Civilian_Noninstitutionalized_Population_Age_19_to_64_In_Labor_Force_With_Health_Insurance_Coverage",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001135",
+    "label": "Unemployed_Civilian_Noninstitutionalized_Population_Age_19_to_64_In_Labor_Force_With_Health_Insurance_Coverage_With_Private_Health_Insurance_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

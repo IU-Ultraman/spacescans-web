@@ -1,0 +1,44 @@
+[
+  {
+    "id": "000858",
+    "label": "Aggravated_Assault_Rate(per_100_Population)",
+    "definition": "Data Source: Uniform Crime Reports (https://crime-data-explorer.app.cloud.gov/pages/explorer/crime/crime-trend\nhttps://www.fdle.state.fl.us/FSAC/CJAB-Home/Uniform-Crime-Report/Data-Archives)\n\nSpatial Scale:County\n\nTemporal Scale: 1-year\n\nYears Avaliable:1989-2021",
+    "has_children": false
+  },
+  {
+    "id": "000859",
+    "label": "Burglary_Rate(per_100_Population)",
+    "definition": "Data Source: Uniform Crime Reports (https://crime-data-explorer.app.cloud.gov/pages/explorer/crime/crime-trend\nhttps://www.fdle.state.fl.us/FSAC/CJAB-Home/Uniform-Crime-Report/Data-Archives)\n\nSpatial Scale:County\n\nTemporal Scale: 1-year\n\nYears Avaliable:1989-2021",
+    "has_children": false
+  },
+  {
+    "id": "000860",
+    "label": "Forcible_Sex_Offenses_Rate(per_100_Population)",
+    "definition": "Data Source: Uniform Crime Reports (https://crime-data-explorer.app.cloud.gov/pages/explorer/crime/crime-trend\nhttps://www.fdle.state.fl.us/FSAC/CJAB-Home/Uniform-Crime-Report/Data-Archives)\n\nSpatial Scale:County\n\nTemporal Scale: 1-year\n\nYears Avaliable:1989-2021",
+    "has_children": false
+  },
+  {
+    "id": "000861",
+    "label": "Larceny_Rate(per_100_Population)",
+    "definition": "Data Source: Uniform Crime Reports (https://crime-data-explorer.app.cloud.gov/pages/explorer/crime/crime-trend\nhttps://www.fdle.state.fl.us/FSAC/CJAB-Home/Uniform-Crime-Report/Data-Archives)\n\nSpatial Scale:County\n\nTemporal Scale: 1-year\n\nYears Avaliable:1989-2021",
+    "has_children": false
+  },
+  {
+    "id": "000863",
+    "label": "Motor_Vehicle_Theft_Rate(per_100_Population)",
+    "definition": "Data Source: Uniform Crime Reports (https://crime-data-explorer.app.cloud.gov/pages/explorer/crime/crime-trend\nhttps://www.fdle.state.fl.us/FSAC/CJAB-Home/Uniform-Crime-Report/Data-Archives)\n\nSpatial Scale:County\n\nTemporal Scale: 1-year\n\nYears Avaliable:1989-2021",
+    "has_children": false
+  },
+  {
+    "id": "000862",
+    "label": "Murder_Rate(per_100_Population)",
+    "definition": "Data Source: Uniform Crime Reports (https://crime-data-explorer.app.cloud.gov/pages/explorer/crime/crime-trend\nhttps://www.fdle.state.fl.us/FSAC/CJAB-Home/Uniform-Crime-Report/Data-Archives)\n\nSpatial Scale:County\n\nTemporal Scale: 1-year\n\nYears Avaliable:1989-2021",
+    "has_children": false
+  },
+  {
+    "id": "000864",
+    "label": "Robbery_Rate(per_100_Population)",
+    "definition": "Data Source: Uniform Crime Reports (https://crime-data-explorer.app.cloud.gov/pages/explorer/crime/crime-trend\nhttps://www.fdle.state.fl.us/FSAC/CJAB-Home/Uniform-Crime-Report/Data-Archives)\n\nSpatial Scale:County\n\nTemporal Scale: 1-year\n\nYears Avaliable:1989-2021",
+    "has_children": false
+  }
+]

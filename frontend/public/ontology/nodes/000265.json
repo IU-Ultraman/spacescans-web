@@ -1,0 +1,80 @@
+[
+  {
+    "id": "000266",
+    "label": "Antimony_Compound",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000267",
+    "label": "Arsenic_Compound(Inorganic_Including_Arsine)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000268",
+    "label": "Cadmium_Compound",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000269",
+    "label": "Chromium_VI(Hexavalent)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000270",
+    "label": "Cobalt_Compound",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000271",
+    "label": "Cyanide_Compound",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000272",
+    "label": "Diesel_PM",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000273",
+    "label": "Lead_Compound",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000274",
+    "label": "Manganese_Compound",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000275",
+    "label": "Mercury_Compound",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000276",
+    "label": "Nickel_Compound",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000277",
+    "label": "Phosphorus",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000278",
+    "label": "Selenium_Compound",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  }
+]

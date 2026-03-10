@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000329",
+    "label": "Food_Access_Exposome_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002000",
+    "label": "Land_Vacancy_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000327",
+    "label": "Walkability_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

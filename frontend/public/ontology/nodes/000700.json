@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000701",
+    "label": "Grandparents_Living_with_Own_Grandchildren_Under_18_Years_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000715",
+    "label": "Grandparents_Responsible_for_Their_Own_Grandchildren_Under_18_Years_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

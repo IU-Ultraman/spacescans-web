@@ -1,0 +1,74 @@
+[
+  {
+    "id": "002224",
+    "label": "No_Stat_Residential_Address_0_3_Mo_to_Total_Residential_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002227",
+    "label": "No_Stat_Residential_Address_12_24_Mo_to_Total_Residential_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002228",
+    "label": "No_Stat_Residential_Address_24_36_Mo_to_Total_Residential_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002229",
+    "label": "No_Stat_Residential_Address_36_Mo_or_Longer_to_Total_Residential_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002225",
+    "label": "No_Stat_Residential_Address_3_6_Mo_to_Total_Residential_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002226",
+    "label": "No_Stat_Residential_Address_6_12_Mo_to_Total_Residential_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002218",
+    "label": "Nostat_Residential_Address_0_3_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002221",
+    "label": "Nostat_Residential_Address_12_24_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002222",
+    "label": "Nostat_Residential_Address_24_36_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002223",
+    "label": "Nostat_Residential_Address_36_Mo_or_Longer_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002219",
+    "label": "Nostat_Residential_Address_3_6_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002220",
+    "label": "Nostat_Residential_Address_6_12_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "001208",
+    "label": "Count_of_Occupation_of_Civilian_Employed_Population_Age_16_and_Over_in_Natural_Resources_Construction_and_Maintenance_Occupations",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001032",
+    "label": "Percentage_of_Occupation_of_Civilian_Employed_Population_Age_16_and_Over_in_Natural_Resources_Construction_and_Maintenance_Occupations",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

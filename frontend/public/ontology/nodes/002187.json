@@ -1,0 +1,38 @@
+[
+  {
+    "id": "002193",
+    "label": "No_Stat_Business_Address_to_Total_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002194",
+    "label": "No_Stat_Non_Residential_Non_Business_Address_to_Total_Non_Residential_Non_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002192",
+    "label": "No_Stat_Residential_Address_to_Total_Residential_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002190",
+    "label": "Total_No_Stat_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002191",
+    "label": "Total_No_Stat_Non_Residential_Non_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002189",
+    "label": "Total_No_Stat_Residential_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  }
+]

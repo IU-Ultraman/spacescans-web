@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002321",
+    "label": "Housing_Unit_Bedroom_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002310",
+    "label": "Housing_Unit_Total_Room_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

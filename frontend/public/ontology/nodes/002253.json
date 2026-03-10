@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002255",
+    "label": "Previous_Quater_Vacant_Currently_In_Service_Address_by_Type_Percentage_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002250",
+    "label": "Previous_Quater_Vacant_Currently_In_Service_Address_to_Total_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  }
+]

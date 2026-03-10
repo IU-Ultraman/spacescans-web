@@ -1,0 +1,98 @@
+[
+  {
+    "id": "002405",
+    "label": "Number_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_10.0_14.9_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0119E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002406",
+    "label": "Number_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_15.0_19.9_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0120E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002407",
+    "label": "Number_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_20.0_24.9_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0121E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002408",
+    "label": "Number_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_25.0_29.9_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0122E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002409",
+    "label": "Number_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_30.0_34.9_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0123E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002410",
+    "label": "Number_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_35.0_or_More_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0124E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002404",
+    "label": "Number_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_Less_Than_10.0_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0118E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002411",
+    "label": "Number_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_Percentage_of_Household_Income_Not_Computed",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0125E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002014",
+    "label": "Percentage_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_10.0_14.9_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0119PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002015",
+    "label": "Percentage_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_15.0_19.9_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0120PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002017",
+    "label": "Percentage_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_20.0_24.9_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0121PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002018",
+    "label": "Percentage_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_25.0_29.9_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0122PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002019",
+    "label": "Percentage_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_30.0_34.9_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0123PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002020",
+    "label": "Percentage_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_35.0_or_More_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0124PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002021",
+    "label": "Percentage_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_Less_Than_10.0_Percent_of_Household_Income",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0118PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002022",
+    "label": "Percentage_of_Housing_Unit_without_a_Mortage_Owner_Monthly_Cost_As_Percentage_of_Household_Income_Not_Computed",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0125PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

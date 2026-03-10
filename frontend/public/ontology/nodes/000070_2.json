@@ -1,0 +1,32 @@
+[
+  {
+    "id": "000075_2",
+    "label": "Group_Quarter_Tract",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000077_2",
+    "label": "Low_Food_Access_Tract",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000073_2",
+    "label": "Low_Income_Tract",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000072_2",
+    "label": "Rural_Tract",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  },
+  {
+    "id": "000071_2",
+    "label": "Urban_Tract",
+    "definition": "",
+    "has_children": false
+  }
+]

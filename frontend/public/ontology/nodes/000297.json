@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000302",
+    "label": "Meteorological_Factor_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000298",
+    "label": "Ultraviolet_Radiation_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

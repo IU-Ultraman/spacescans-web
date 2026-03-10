@@ -1,0 +1,8 @@
+[
+  {
+    "id": "000076_2",
+    "label": "Group_Quarter_Tract_with_High_Share",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data) \\n\\n  Spatial Scale: Census Tract \\n\\n  Temporal Scale: 1-year\\n\\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": false
+  }
+]

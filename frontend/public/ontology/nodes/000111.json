@@ -1,0 +1,920 @@
+[
+  {
+    "id": "000114",
+    "label": "1,1,2,2-Tetrachloroethane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000113",
+    "label": "1,1,2-Trichloroethane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000112",
+    "label": "1,1-Dimethyl_Hydrazine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel: Chemical transport model and dispersion model\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000119",
+    "label": "1,2,3,4,5,6-Hexachlorocyclohexane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000120",
+    "label": "1,2,4-Trichlorobenzene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000115",
+    "label": "1,2-Dibromo-3-Chloropropane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000116",
+    "label": "1,2-Diphenylhydrazine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000117",
+    "label": "1,2-Epoxybutane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000118",
+    "label": "1,2-Propyleneimine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000121",
+    "label": "1,3-Butadiene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000122",
+    "label": "1,3-Dichloropropene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000123",
+    "label": "1,3-Propane_Sultone",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000124",
+    "label": "1,4-Dichlorobenzene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000125",
+    "label": "1,4-Dioxane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000129",
+    "label": "2,2,4-Trimethylpentane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000135",
+    "label": "2,4,5-Trichlorophenol",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000136",
+    "label": "2,4,6-Trichlorophenol",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000130",
+    "label": "2,4-D,Salts_and_Esters",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000131",
+    "label": "2,4-Dinitrophenol",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000132",
+    "label": "2,4-Dinitrotoluene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000133",
+    "label": "2,4-Toluene_Diamine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000134",
+    "label": "2,4-Toluene_Diisocyanate",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000126",
+    "label": "2-Acetylaminofluorene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000127",
+    "label": "2-Chloroacetophenone",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000128",
+    "label": "2-Nitropropane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000137",
+    "label": "3,3\u2032-Dichlorobenzidine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000138",
+    "label": "3,3\u2032-Dimethoxybenzidine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000139",
+    "label": "3,3\u2032-Dimethylbenzidine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000146",
+    "label": "4,4'-Methylenediphenyl_Diisocyanate(MDI)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000144",
+    "label": "4,4-Methylene_Bis(2-Chloroaniline)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000145",
+    "label": "4,4\u2032-Methylenedianiline",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000147",
+    "label": "4,6-Dinitro-o-cresol(Including_Salts)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000140",
+    "label": "4-Aminobiphenyl",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000141",
+    "label": "4-Dimethylaminoazobenzene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000142",
+    "label": "4-Nitrobiphenyl",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000143",
+    "label": "4-Nitrophenol",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000148",
+    "label": "Acetaldehyde",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000149",
+    "label": "Acetamide",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000150",
+    "label": "Acetonitrile",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000151",
+    "label": "Acetophenone",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000152",
+    "label": "Acrolein",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000153",
+    "label": "Acrylamide",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000154",
+    "label": "Acrylic_Acid",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000155",
+    "label": "Acrylonitrile",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000156",
+    "label": "Allyl_Chloride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000157",
+    "label": "Aniline",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000158",
+    "label": "Anisidine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000159",
+    "label": "Benzene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000160",
+    "label": "Benzidine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000161",
+    "label": "Benzotrichloride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000162",
+    "label": "Benzyl_Chloride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000163",
+    "label": "Beryllium_Compound",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000164",
+    "label": "Biphenyl",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000165",
+    "label": "Bis(2-Ethylhexyl)phthalate(DEHP)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000166",
+    "label": "Bis(Chloromethyl)Ether",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000167",
+    "label": "Bromoform",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000168",
+    "label": "Calcium_Cyanamide",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000169",
+    "label": "Captan",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000170",
+    "label": "Carbaryl",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000171",
+    "label": "Carbon_Disulfide",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000172",
+    "label": "Carbon_Tetrachloride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000173",
+    "label": "Carbonyl_Sulfide",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000174",
+    "label": "Catechol",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000175",
+    "label": "Chloramben",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000176",
+    "label": "Chlordane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000177",
+    "label": "Chloroacetic_Acid",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000178",
+    "label": "Chlorobenzene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000179",
+    "label": "Chlorobenzilate",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000180",
+    "label": "Chloroform",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000181",
+    "label": "Chloromethyl_Methyl_Ether",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000182",
+    "label": "Chloroprene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000183",
+    "label": "Coke_Oven_Emission",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000184",
+    "label": "Cresol/Cresylic_Acid(Mixed_Isomers)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000185",
+    "label": "Cumene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000186",
+    "label": "Dibenzofuran",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000187",
+    "label": "Dibutylphthalate",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000188",
+    "label": "Dichloroethyl_Ether(Bis(2-Chloroethyl)Ether)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000189",
+    "label": "Dichlorvos",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000190",
+    "label": "Diethanolamine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000191",
+    "label": "Diethyl_Sulfate",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000192",
+    "label": "Dimethyl_Formamide",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000193",
+    "label": "Dimethyl_Phthalate",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000194",
+    "label": "Dimethyl_Sulfate",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000195",
+    "label": "Dimethylcarbamoyl_Chloride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000196",
+    "label": "Epichlorohydrin",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000197",
+    "label": "Ethyl_Acrylate",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000200",
+    "label": "Ethyl_Benzene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000198",
+    "label": "Ethyl_Carbamate(Urethane)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000199",
+    "label": "Ethyl_Chloride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000201",
+    "label": "Ethylene_Dibromide(Dibromoethane)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000202",
+    "label": "Ethylene_Dichloride(1,2-Dichloroethane)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000203",
+    "label": "Ethylene_Glycol",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000204",
+    "label": "Ethylene_Oxide",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000205",
+    "label": "Ethylene_Thiourea",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000206",
+    "label": "Ethyleneimine(Aziridine)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000207",
+    "label": "Ethylidene_Dichloride(1,1-Dichloroethane)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000208",
+    "label": "Formaldehyde",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000209",
+    "label": "Glycol_Ethers",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000210",
+    "label": "Heptachlor",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000211",
+    "label": "Hexachlorobenzene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000212",
+    "label": "Hexachlorobutadiene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000213",
+    "label": "Hexachlorocyclopentadiene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000214",
+    "label": "Hexachloroethane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000215",
+    "label": "Hexamethylene_Diisocyanate",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000216",
+    "label": "Hexamethylphosphoramide",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000217",
+    "label": "Hexane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000218",
+    "label": "Hydroquinone",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000219",
+    "label": "Isophorone",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000220",
+    "label": "Maleic_Anhydride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000221",
+    "label": "Methanol",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000222",
+    "label": "Methoxychlor",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000223",
+    "label": "Methyl_Bromide(Bromomethane)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000224",
+    "label": "Methyl_Chloride(Chloromethane)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000225",
+    "label": "Methyl_Iodide(Iodomethane)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000226",
+    "label": "Methyl_Isobutyl_Ketone(Hexone)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000227",
+    "label": "Methyl_Isocyanate",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000228",
+    "label": "Methyl_Methacrylate",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000229",
+    "label": "Methyl_Tert-Butyl_Ether",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000230",
+    "label": "Methylhydrazine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000234",
+    "label": "N,N-Dimethylaniline",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000231",
+    "label": "N-Nitroso-N-Methylurea",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000232",
+    "label": "N-Nitrosodimethylamine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000233",
+    "label": "N-Nitrosomorpholine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000235",
+    "label": "Naphthalene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000236",
+    "label": "Nitrobenzene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000240",
+    "label": "Parathion",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000241",
+    "label": "Pentachloronitrobenzene(Quintobenzene)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000242",
+    "label": "Pentachlorophenol",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000243",
+    "label": "Phenol",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000244",
+    "label": "Phosgene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000245",
+    "label": "Phthalic_Anhydride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000246",
+    "label": "Polychlorinated_Biphenyls(Aroclors)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000239",
+    "label": "Polycyclic_Aromatic_Hydrocarbons_and_Polycyclic_Organic_Matter(PAH/POM)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000247",
+    "label": "Propionaldehyde",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000248",
+    "label": "Propoxur(Baygon)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000249",
+    "label": "Propylene_Dichloride(1,2-Dichloropropane)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000250",
+    "label": "Propylene_Oxide",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000251",
+    "label": "Quinoline",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000252",
+    "label": "Quinone(p-Benzoquinone)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000253",
+    "label": "Styrene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000254",
+    "label": "Styrene_Oxide",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000255",
+    "label": "Toluene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000256",
+    "label": "Toxaphene(Chlorinated_Camphene)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000257",
+    "label": "Trichloroethylene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000258",
+    "label": "Triethylamine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000259",
+    "label": "Trifluralin",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000260",
+    "label": "Vinyl_Acetate",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000261",
+    "label": "Vinyl_Bromide",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000262",
+    "label": "Vinyl_Chloride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000263",
+    "label": "Vinylidene_Chloride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000264",
+    "label": "Xylenes(Mixed_Isomers)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000237",
+    "label": "o-Toluidine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000238",
+    "label": "p-Phenylenediamine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002010",
+    "label": "In_Service_Address_Count_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002242",
+    "label": "In_Service_Address_Percentage_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

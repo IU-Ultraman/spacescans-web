@@ -1,0 +1,38 @@
+[
+  {
+    "id": "002011",
+    "label": "Previous_Quater_No_Stat_Currently_In_Service_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002248",
+    "label": "Previous_Quater_No_Stat_Currently_In_Service_Business_Address_to_Total_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002245",
+    "label": "Previous_Quater_No_Stat_Currently_In_Service_Non_Residential_Non_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002246",
+    "label": "Previous_Quater_No_Stat_Currently_In_Service_Non_Residential_Non_Business_Address_to_Non_Residential_Non_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002244",
+    "label": "Previous_Quater_No_Stat_Currently_In_Service_Residential_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002249",
+    "label": "Previous_Quater_No_Stat_Currently_In_Service_Residential_Address_to_Total_Residential_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  }
+]

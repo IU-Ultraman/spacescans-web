@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002281",
+    "label": "Address_No_Stat_Average_Duration_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002280",
+    "label": "Address_Vacant_Average_Duration_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

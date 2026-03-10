@@ -1,0 +1,26 @@
+[
+  {
+    "id": "000055_2",
+    "label": "Address",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000060_2",
+    "label": "Address_Component",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000067_2",
+    "label": "Census_Area",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000070_2",
+    "label": "Census_Tract",
+    "definition": "",
+    "has_children": true
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "000001_2",
+    "label": "Age",
+    "definition": "PHENX",
+    "has_children": false
+  },
+  {
+    "id": "000002_2",
+    "label": "Country_of_Origin",
+    "definition": "Birthplace\nPHENX",
+    "has_children": true
+  },
+  {
+    "id": "000005_2",
+    "label": "Ethnicity",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000008_2",
+    "label": "Gender",
+    "definition": "Gender\\n UMLS CUI: C0079399\\n Semantic Types\\n :\\n Organism Attribute\\n Definitions (6)\\n Socially-constructed identity of male or female. (MSH)\\n The assemblage of properties that distinguish people on the basis of the societal roles expected for the two sexes. (NCI)\\n Subject self-identification re: masculine/feminine. [IOM] See also sex. (NCI)\\n https://uts.nlm.nih.gov/uts/umls/concept/C0079399",
+    "has_children": true
+  },
+  {
+    "id": "000020_2",
+    "label": "Marital_Status",
+    "definition": "Marital Status\\n UMLS CUI: C0024819\\n Semantic Types\\n :\\n Finding\\n Definitions (8)\\n A demographic parameter indicating a person's status with respect to marriage, divorce, widowhood, singleness, etc. (MSH)\\n A demographic parameter indicating a person's current conjugal status. (NCI)\\n The domestic partnership status of a person. EXAMPLE(S): For the U.S. Census 2000: Now Married, Widowed, Separated, Divorced, Never Married OTHER NAME(S): NOTE(S): (NCI)\\n https://uts.nlm.nih.gov/uts/umls/concept/C0024819",
+    "has_children": true
+  },
+  {
+    "id": "000027_2",
+    "label": "Race",
+    "definition": "Ethnicity\\n UMLS CUI: C0015031\\n Semantic Types\\n :\\n Population Group\\n Definitions (8)\\n A group of people with a common cultural heritage that sets them apart from others in a variety of social relationships. (MSH)\\n A social group characterized by a distinctive social and cultural tradition that is maintained from generation to generation. Members share a common history and origin and a sense of identification with the group. They have similar and distinctive features in their lifestyle habits and shared experiences. They often have a common genetic heritage which may be reflected in their experience of health and disease. (NCI)\\n Denotes social groups with a shared history, sense of identity, geography, and cultural roots. (NCI)\\n https://uts.nlm.nih.gov/uts/umls/concept/C0015031",
+    "has_children": true
+  }
+]

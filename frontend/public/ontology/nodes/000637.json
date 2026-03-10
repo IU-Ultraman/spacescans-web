@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000638",
+    "label": "Count_of_Civilian_Noninstitutionalized_Population_Aged_18_to_64_Years_with_a_Disability",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000639",
+    "label": "Percentage_of_Civilian_Noninstitutionalized_Population_Aged_18_to_64_Years_with_a_Disability",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "000012_1",
+    "label": "Instant_Of_The_Day",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000190",
+    "has_children": true
+  },
+  {
+    "id": "000011_1",
+    "label": "Instant_Of_The_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000192",
+    "has_children": true
+  },
+  {
+    "id": "000009_1",
+    "label": "Instant_Of_The_Week",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000191",
+    "has_children": true
+  },
+  {
+    "id": "000013_1",
+    "label": "Instant_Of_The_Year",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000193",
+    "has_children": true
+  },
+  {
+    "id": "000010_1",
+    "label": "Time_Of_The_Age",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000211",
+    "has_children": false
+  }
+]

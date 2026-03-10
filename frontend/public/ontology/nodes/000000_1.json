@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000107_1",
+    "label": "Time_Flag",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000002_1",
+    "label": "Time_Instant",
+    "definition": "Original IRI: http://www.ifomis.org/bfo/1.1/span#TimeInstant",
+    "has_children": true
+  },
+  {
+    "id": "000001_1",
+    "label": "Time_Interval",
+    "definition": "Original IRI: http://www.ifomis.org/bfo/1.1/span#TimeInterval",
+    "has_children": true
+  }
+]

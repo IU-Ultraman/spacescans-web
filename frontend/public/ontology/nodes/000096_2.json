@@ -1,0 +1,38 @@
+[
+  {
+    "id": "000098_2",
+    "label": "Carbon_Monoxide",
+    "definition": "Variable Short Name: CO\n\nData Source:Center for Air, Climate, & Energy Solutions ( https://www.caces.us/data)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 1-year\n\nYears Available: 1979-2020\n\nModel: Land use regression\n\nModel Specification/Citation: For year-2015 and earlier: Kim S.-Y.; Bechle, M.; Hankey, S.; Sheppard, L.; Szpiro, A. A.; Marshall, J. D. 2020. \"Concentrations of criteria pollutants in the contiguous U.S., 1979 \u2013 2015: Role of prediction model parsimony in integrated empirical geographic regression.\" PLoS ONE 15(2); For years 2016 - 2020: T Lu, SY Kim, JD Marshall. \"High-resolution geospatial database: national criteria-air-pollutant concentrations in the contiguous U.S., 2016\u20132020.\" Geoscience Data Journal. 2025, 12, e70005. https://doi.org/10.1002/gdj3.70005. e0228535. https://doi.org/10.1371/journal.pone.0228535.",
+    "has_children": false
+  },
+  {
+    "id": "000100_2",
+    "label": "Nitrogen_Dioxide",
+    "definition": "Variable Short Name: NO2\n\nData Source:Center for Air, Climate, & Energy Solutions ( https://www.caces.us/data)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 1-year\n\nYears Available: 1979-2020\n\nModel: Land use regression\n\nModel Specification/Citation: For year-2015 and earlier: Kim S.-Y.; Bechle, M.; Hankey, S.; Sheppard, L.; Szpiro, A. A.; Marshall, J. D. 2020. \"Concentrations of criteria pollutants in the contiguous U.S., 1979 \u2013 2015: Role of prediction model parsimony in integrated empirical geographic regression.\" PLoS ONE 15(2); For years 2016 - 2020: T Lu, SY Kim, JD Marshall. \"High-resolution geospatial database: national criteria-air-pollutant concentrations in the contiguous U.S., 2016\u20132020.\" Geoscience Data Journal. 2025, 12, e70005. https://doi.org/10.1002/gdj3.70005. e0228535. https://doi.org/10.1371/journal.pone.0228535.",
+    "has_children": false
+  },
+  {
+    "id": "000097_2",
+    "label": "Ozone",
+    "definition": "Variable Short Name: O3\n\nData Source:Center for Air, Climate, & Energy Solutions ( https://www.caces.us/data)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 1-year\n\nYears Available: 1979-2020\n\nModel: Land use regression\n\nModel Specification/Citation: For year-2015 and earlier: Kim S.-Y.; Bechle, M.; Hankey, S.; Sheppard, L.; Szpiro, A. A.; Marshall, J. D. 2020. \"Concentrations of criteria pollutants in the contiguous U.S., 1979 \u2013 2015: Role of prediction model parsimony in integrated empirical geographic regression.\" PLoS ONE 15(2); For years 2016 - 2020: T Lu, SY Kim, JD Marshall. \"High-resolution geospatial database: national criteria-air-pollutant concentrations in the contiguous U.S., 2016\u20132020.\" Geoscience Data Journal. 2025, 12, e70005. https://doi.org/10.1002/gdj3.70005. e0228535. https://doi.org/10.1371/journal.pone.0228535.",
+    "has_children": false
+  },
+  {
+    "id": "000101_2",
+    "label": "Particulate_Matter_PM10",
+    "definition": "Variable Short Name: PM10\n\nData Source:Center for Air, Climate, & Energy Solutions ( https://www.caces.us/data)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 1-year\n\nYears Available: 1979-2020\n\nModel: Land use regression\n\nModel Specification/Citation: For year-2015 and earlier: Kim S.-Y.; Bechle, M.; Hankey, S.; Sheppard, L.; Szpiro, A. A.; Marshall, J. D. 2020. \"Concentrations of criteria pollutants in the contiguous U.S., 1979 \u2013 2015: Role of prediction model parsimony in integrated empirical geographic regression.\" PLoS ONE 15(2); For years 2016 - 2020: T Lu, SY Kim, JD Marshall. \"High-resolution geospatial database: national criteria-air-pollutant concentrations in the contiguous U.S., 2016\u20132020.\" Geoscience Data Journal. 2025, 12, e70005. https://doi.org/10.1002/gdj3.70005. e0228535. https://doi.org/10.1371/journal.pone.0228535.",
+    "has_children": false
+  },
+  {
+    "id": "000102_2",
+    "label": "Particulate_Matter_PM2.5",
+    "definition": "Variable Short Name: PM25\n\nData Source:Center for Air, Climate, & Energy Solutions ( https://www.caces.us/data)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 1-year\n\nYears Available: 1979-2020\n\nModel: Land use regression\n\nModel Specification/Citation: For year-2015 and earlier: Kim S.-Y.; Bechle, M.; Hankey, S.; Sheppard, L.; Szpiro, A. A.; Marshall, J. D. 2020. \"Concentrations of criteria pollutants in the contiguous U.S., 1979 \u2013 2015: Role of prediction model parsimony in integrated empirical geographic regression.\" PLoS ONE 15(2); For years 2016 - 2020: T Lu, SY Kim, JD Marshall. \"High-resolution geospatial database: national criteria-air-pollutant concentrations in the contiguous U.S., 2016\u20132020.\" Geoscience Data Journal. 2025, 12, e70005. https://doi.org/10.1002/gdj3.70005. e0228535. https://doi.org/10.1371/journal.pone.0228535.",
+    "has_children": true
+  },
+  {
+    "id": "000099_2",
+    "label": "Sulfur_Dioxide",
+    "definition": "Variable Short Name: SO2\n\nData Source:Center for Air, Climate, & Energy Solutions ( https://www.caces.us/data)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 1-year\n\nYears Available: 1979-2020\n\nModel: Land use regression\n\nModel Specification/Citation: For year-2015 and earlier: Kim S.-Y.; Bechle, M.; Hankey, S.; Sheppard, L.; Szpiro, A. A.; Marshall, J. D. 2020. \"Concentrations of criteria pollutants in the contiguous U.S., 1979 \u2013 2015: Role of prediction model parsimony in integrated empirical geographic regression.\" PLoS ONE 15(2); For years 2016 - 2020: T Lu, SY Kim, JD Marshall. \"High-resolution geospatial database: national criteria-air-pollutant concentrations in the contiguous U.S., 2016\u20132020.\" Geoscience Data Journal. 2025, 12, e70005. https://doi.org/10.1002/gdj3.70005. e0228535. https://doi.org/10.1371/journal.pone.0228535.",
+    "has_children": false
+  }
+]

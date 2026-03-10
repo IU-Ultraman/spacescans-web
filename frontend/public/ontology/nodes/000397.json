@@ -1,0 +1,164 @@
+[
+  {
+    "id": "000401",
+    "label": "American_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000404",
+    "label": "Arab_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000407",
+    "label": "Czech_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000410",
+    "label": "Danish_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000413",
+    "label": "Dutch_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000416",
+    "label": "English_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000419",
+    "label": "French_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000424",
+    "label": "German_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000427",
+    "label": "Greek_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000430",
+    "label": "Hungarian_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000433",
+    "label": "Irish_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000436",
+    "label": "Italian_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000439",
+    "label": "Lithuanian_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000442",
+    "label": "Norwegian_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000445",
+    "label": "Polish_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000448",
+    "label": "Portuguese_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000451",
+    "label": "Russian_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000454",
+    "label": "Scotch-Irish_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000457",
+    "label": "Scottish_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000460",
+    "label": "Slovak_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000463",
+    "label": "Subsaharan_African_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000466",
+    "label": "Swedish_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000469",
+    "label": "Swiss_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000398",
+    "label": "Total_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000472",
+    "label": "Ukrainian_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000475",
+    "label": "Welsh_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000478",
+    "label": "West_Indian_NonHispanic_Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

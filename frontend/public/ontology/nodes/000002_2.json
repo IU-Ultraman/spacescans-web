@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000003_2",
+    "label": "Location_Born",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000004_2",
+    "label": "Location_Raised",
+    "definition": "",
+    "has_children": false
+  }
+]

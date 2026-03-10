@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000689",
+    "label": "Count_of_Population_3_Years_and_Over_Enrolled_in_Kindergarten",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000690",
+    "label": "Percentage_of_Population_3_Years_and_Over_Enrolled_in_Kindergarten",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  }
+]

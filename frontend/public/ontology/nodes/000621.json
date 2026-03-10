@@ -1,0 +1,32 @@
+[
+  {
+    "id": "000634",
+    "label": "Civilian_Noninstitutionalized_Population_Aged_18_to_64_Years_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000640",
+    "label": "Civilian_Noninstitutionalized_Population_Aged_65_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000628",
+    "label": "Civilian_Noninstitutionalized_Population_Under_18_Years_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000625",
+    "label": "Civilian_Noninstitutionalized_Population_with_a_Disability_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000622",
+    "label": "Total_Civilian_Noninstitutionalized_Population_by_Disability_Status_of_the_Civilian_Noninstitutionalized_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

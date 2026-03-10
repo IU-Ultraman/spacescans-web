@@ -1,0 +1,26 @@
+[
+  {
+    "id": "000056_2",
+    "label": "Business_Address",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000058_2",
+    "label": "Home_Address",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000057_2",
+    "label": "Residential_Address",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000059_2",
+    "label": "Work_Address",
+    "definition": "",
+    "has_children": false
+  }
+]

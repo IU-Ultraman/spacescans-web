@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002001",
+    "label": "Vacant_Address_Count_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002002",
+    "label": "Vacant_Address_Percentage_Indicator",
+    "definition": "",
+    "has_children": true
+  }
+]

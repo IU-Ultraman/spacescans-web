@@ -1,0 +1,122 @@
+[
+  {
+    "id": "001083",
+    "label": "Count_of_Total_Household_Income_and_Benefit_2022_Inflation_Adjusted_Dollar",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001254",
+    "label": "Mean_of_Total_Household_Income_and_Benefit_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001093",
+    "label": "Median_of_Total_Household_Income_and_Benefit_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001084",
+    "label": "Percentage_of_Total_Household_Income_and_Benefit_2022_Inflation_Adjusted_Dollar",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001238",
+    "label": "Total_Household_Income_and_Benefit_100000_to_149999_Dollar_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001087",
+    "label": "Total_Household_Income_and_Benefit_10000_to_14999_Dollar_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001231",
+    "label": "Total_Household_Income_and_Benefit_150000_to_199999_Dollar_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001232",
+    "label": "Total_Household_Income_and_Benefit_15000_to_24999_Dollar_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001233",
+    "label": "Total_Household_Income_and_Benefit_200000_or_More_Dollar_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001234",
+    "label": "Total_Household_Income_and_Benefit_25000_to_34999_Dollar_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001235",
+    "label": "Total_Household_Income_and_Benefit_35000_to_49999_Dollar_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001236",
+    "label": "Total_Household_Income_and_Benefit_50000_to_74999_Dollar_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001237",
+    "label": "Total_Household_Income_and_Benefit_75000_to_99999_Dollar_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001085",
+    "label": "Total_Household_Income_and_Benefit_Less_than_10000_Dollar_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001110",
+    "label": "Total_Household_Income_and_Benefit_With_Cash_Public_Assistance_Income_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001097",
+    "label": "Total_Household_Income_and_Benefit_With_Earning_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001114",
+    "label": "Total_Household_Income_and_Benefit_With_Food_Stamp_or_SNAP_Benefit_in_Past_12_Month_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001102",
+    "label": "Total_Household_Income_and_Benefit_With_Retirement_Income_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001253",
+    "label": "Total_Household_Income_and_Benefit_With_Social_Security_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001105",
+    "label": "Total_Household_Income_and_Benefit_With_Supplemental_Security_Income_in_2022_Inflation_Adjusted_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

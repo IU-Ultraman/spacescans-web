@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002331",
+    "label": "Number_of_Occupied_Housing_Unit_Lack_Complete_Kitchen_Facility",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0074E\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "002490",
+    "label": "Percentage_of_Occupied_Housing_Unit_Lack_Complete_Kitchen_Facility",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nVariable Short Name: DP04_0074PE\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

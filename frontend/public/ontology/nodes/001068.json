@@ -1,0 +1,20 @@
+[
+  {
+    "id": "001128",
+    "label": "Civilian_Noninstitutionalized_Population_Age_19_to_64_Year_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001125",
+    "label": "Civilian_Noninstitutionalized_Population_Age_Under_19_Year_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001095",
+    "label": "Civilian_Noninstitutionalized_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

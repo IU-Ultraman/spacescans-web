@@ -1,0 +1,74 @@
+[
+  {
+    "id": "002230",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_0_3_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002236",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_0_3_Mo_to_Total_Non_Resident_Non_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002233",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_12_24_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002239",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_12_24_Mo_to_Total_Non_Resident_Non_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002234",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_24_36_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002240",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_24_36_Mo_to_Total_Non_Resident_Non_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002235",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_36_Mo_or_Longer_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002241",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_36_Mo_or_Longer_to_Total_Non_Resident_Non_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002231",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_3_6_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002237",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_3_6_Mo_to_Total_Non_Resident_Non_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002232",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_6_12_Mo_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002238",
+    "label": "No_Stat_Non_Resident_Non_Business_Address_6_12_Mo_to_Total_Non_Resident_Non_Business_Address_Percentage",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  }
+]

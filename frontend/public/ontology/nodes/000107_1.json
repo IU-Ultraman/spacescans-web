@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000108_1",
+    "label": "Current",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000109_1",
+    "label": "Future",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000110_1",
+    "label": "Past",
+    "definition": "",
+    "has_children": false
+  }
+]

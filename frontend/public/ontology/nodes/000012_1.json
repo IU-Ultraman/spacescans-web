@@ -1,0 +1,38 @@
+[
+  {
+    "id": "000034_1",
+    "label": "Afternoon",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#Afternoon",
+    "has_children": false
+  },
+  {
+    "id": "000036_1",
+    "label": "Am",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000213",
+    "has_children": false
+  },
+  {
+    "id": "000033_1",
+    "label": "Evening",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000196",
+    "has_children": false
+  },
+  {
+    "id": "000035_1",
+    "label": "Morning",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000194",
+    "has_children": false
+  },
+  {
+    "id": "000037_1",
+    "label": "Noon",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000195",
+    "has_children": false
+  },
+  {
+    "id": "000032_1",
+    "label": "Pm",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000214",
+    "has_children": false
+  }
+]

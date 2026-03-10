@@ -1,0 +1,44 @@
+[
+  {
+    "id": "000042_1",
+    "label": "Fall",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000208",
+    "has_children": false
+  },
+  {
+    "id": "000043_1",
+    "label": "Spring",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000207",
+    "has_children": false
+  },
+  {
+    "id": "000044_1",
+    "label": "Summer",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000209",
+    "has_children": false
+  },
+  {
+    "id": "000040_1",
+    "label": "The_Beginning_Of_The_Year",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000203",
+    "has_children": false
+  },
+  {
+    "id": "000041_1",
+    "label": "The_End_Of_The_Year",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000205",
+    "has_children": false
+  },
+  {
+    "id": "000039_1",
+    "label": "The_Middle_Of_The_Year",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000204",
+    "has_children": false
+  },
+  {
+    "id": "000038_1",
+    "label": "Winter",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000210",
+    "has_children": false
+  }
+]

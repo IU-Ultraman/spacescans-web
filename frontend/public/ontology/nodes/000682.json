@@ -1,0 +1,44 @@
+[
+  {
+    "id": "000683",
+    "label": "Count_of_Population_3_Years_and_Over_Enrolled_in_School_by_School_Enrollment",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000684",
+    "label": "Percentage_of_Population_3_Years_and_Over_Enrolled_in_School_by_School_Enrollment",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000697",
+    "label": "Population_3_Years_and_Over_Enrolled_in_College_or_Graduate_School_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000691",
+    "label": "Population_3_Years_and_Over_Enrolled_in_Elementary_School_Grades_1_to_8_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000694",
+    "label": "Population_3_Years_and_Over_Enrolled_in_High_School_Grades_9_to_12_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000688",
+    "label": "Population_3_Years_and_Over_Enrolled_in_Kindergarten_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000685",
+    "label": "Population_3_Years_and_Over_Enrolled_in_Nursery_School_or_Preschool_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "002042",
+    "label": "Total_Vacant_Address_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002046",
+    "label": "Vacant_Address_by_Duration_Count_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002005",
+    "label": "Vacant_Address_by_Type_Count_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002047",
+    "label": "Vacant_Address_by_Type_and_Duration_Count_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

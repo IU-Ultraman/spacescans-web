@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000083_2",
+    "label": "Food_Low_Access_Tract_at_1_Mile_for_Urban_Areas_and_10_Miles_for_Rural_Areas",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": true
+  },
+  {
+    "id": "000088_2",
+    "label": "Food_Low_Access_Tract_at_1_Mile_for_Urban_and_20_Miles_for_Rural",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": true
+  },
+  {
+    "id": "000086_2",
+    "label": "Food_Low_Access_Tract_at_Half_Mile_for_Urban_and_10_Miles_for_Rural",
+    "definition": "Data Source: Food Access Research Atlas  (https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2010, 2015, 2019 (2011-2014, 2016-2018 interpolated)",
+    "has_children": true
+  }
+]

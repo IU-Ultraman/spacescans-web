@@ -1,0 +1,44 @@
+[
+  {
+    "id": "000104_2",
+    "label": "Ammonium",
+    "definition": "Variable Short Name: NH4\n\nData Source:  Atmospheric Composition Analysis Group (https://sites.wustl.edu/acag/datasets/))\n\nSpatial Scale: 0.01deg\n\nTemporal Scale: 1-month/2-week\n\nYears Available: 2000-2022\n\nModel: Geographically weighted regression (satellites, chemical transport models, and monitors)\n\nModel Specification/Citation: https://pubs.acs.org/doi/10.1021/acs.est.8b06392, https://pubs.acs.org/doi/10.1021/acsestair.4c00151",
+    "has_children": false
+  },
+  {
+    "id": "000103_2",
+    "label": "Black_Carbon",
+    "definition": "Variable Short Name: BC\n\nData Source:  Atmospheric Composition Analysis Group (https://sites.wustl.edu/acag/datasets/))\n\nSpatial Scale: 0.01deg\n\nTemporal Scale: 1-month/2-week\n\nYears Available: 2000-2022\n\nModel: Geographically weighted regression (satellites, chemical transport models, and monitors)\n\nModel Specification/Citation: https://pubs.acs.org/doi/10.1021/acs.est.8b06392, https://pubs.acs.org/doi/10.1021/acsestair.4c00151",
+    "has_children": false
+  },
+  {
+    "id": "000108_2",
+    "label": "Mineral_Dust",
+    "definition": "Variable Short Name: SOIL\n\nData Source:  Atmospheric Composition Analysis Group (https://sites.wustl.edu/acag/datasets/))\n\nSpatial Scale: 0.01deg\n\nTemporal Scale: 1-month/2-week\n\nYears Available: 2000-2022\n\nModel: Geographically weighted regression (satellites, chemical transport models, and monitors)\n\nModel Specification/Citation: https://pubs.acs.org/doi/10.1021/acs.est.8b06392, https://pubs.acs.org/doi/10.1021/acsestair.4c00151",
+    "has_children": false
+  },
+  {
+    "id": "000105_2",
+    "label": "Nitrate",
+    "definition": "Variable Short Name: NIT\n\nData Source:  Atmospheric Composition Analysis Group (https://sites.wustl.edu/acag/datasets/))\n\nSpatial Scale: 0.01deg\n\nTemporal Scale: 1-month/2-week\n\nYears Available: 2000-2022\n\nModel: Geographically weighted regression (satellites, chemical transport models, and monitors)\n\nModel Specification/Citation: https://pubs.acs.org/doi/10.1021/acs.est.8b06392, https://pubs.acs.org/doi/10.1021/acsestair.4c00151",
+    "has_children": false
+  },
+  {
+    "id": "000106_2",
+    "label": "Organic_Mass",
+    "definition": "Variable Short Name: OM\n\nData Source:  Atmospheric Composition Analysis Group (https://sites.wustl.edu/acag/datasets/))\n\nSpatial Scale: 0.01deg\n\nTemporal Scale: 1-month/2-week\n\nYears Available: 2000-2022\n\nModel: Geographically weighted regression (satellites, chemical transport models, and monitors)\n\nModel Specification/Citation: https://pubs.acs.org/doi/10.1021/acs.est.8b06392, https://pubs.acs.org/doi/10.1021/acsestair.4c00151",
+    "has_children": false
+  },
+  {
+    "id": "000109_2",
+    "label": "Sea_Salt",
+    "definition": "Variable Short Name: SS\n\nData Source:  Atmospheric Composition Analysis Group (https://sites.wustl.edu/acag/datasets/))\n\nSpatial Scale: 0.01deg\n\nTemporal Scale: 1-month/2-week\n\nYears Available: 2000-2022\n\nModel: Geographically weighted regression (satellites, chemical transport models, and monitors)\n\nModel Specification/Citation: https://pubs.acs.org/doi/10.1021/acs.est.8b06392, https://pubs.acs.org/doi/10.1021/acsestair.4c00151",
+    "has_children": false
+  },
+  {
+    "id": "000107_2",
+    "label": "Sulfate",
+    "definition": "Variable Short Name: SO4\n\nData Source:  Atmospheric Composition Analysis Group (https://sites.wustl.edu/acag/datasets/))\n\nSpatial Scale: 0.01deg\n\nTemporal Scale: 1-month/2-week\n\nYears Available: 2000-2022\n\nModel: Geographically weighted regression (satellites, chemical transport models, and monitors)\n\nModel Specification/Citation: https://pubs.acs.org/doi/10.1021/acs.est.8b06392, https://pubs.acs.org/doi/10.1021/acsestair.4c00151",
+    "has_children": false
+  }
+]

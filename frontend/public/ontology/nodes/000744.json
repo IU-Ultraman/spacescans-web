@@ -1,0 +1,74 @@
+[
+  {
+    "id": "000769",
+    "label": "Currently_Married_and_Not_Separated_Females_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000751",
+    "label": "Currently_Married_and_Not_Separated_Males_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000776",
+    "label": "Divorced_Females_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000760",
+    "label": "Divorced_Males_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000763",
+    "label": "Females_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000745",
+    "label": "Males_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000766",
+    "label": "Never_Married_Females_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000748",
+    "label": "Never_Married_Males_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000772",
+    "label": "Separated_Females_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000754",
+    "label": "Separated_Males_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000775",
+    "label": "Widowed_Females_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000757",
+    "label": "Widowed_Males_Aged_15_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

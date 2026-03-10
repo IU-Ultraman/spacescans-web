@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002243",
+    "label": "Previous_Quater_No_Stat_Currently_In_Service_Address_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002264",
+    "label": "Previous_Quater_No_Stat_Currently_In_Service_Address_by_Type_Count_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

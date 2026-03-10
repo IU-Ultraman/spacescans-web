@@ -1,0 +1,104 @@
+[
+  {
+    "id": "000397",
+    "label": "Ancestry_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000481",
+    "label": "Computer_and_Internet_Use_Households_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000621",
+    "label": "Disability_Status_of_the_Civilian_Noninstitutionalized_Population_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000652",
+    "label": "Educational_Attainment_for_Population_25_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000722",
+    "label": "Fertility_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000700",
+    "label": "Grandparents_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000798",
+    "label": "Households_by_Type_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000491",
+    "label": "Language_Spoken_at_Home_for_Population_Aged_5_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000744",
+    "label": "Marital_Status_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000578",
+    "label": "Place_of_Birth_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000777",
+    "label": "Relationship_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000597",
+    "label": "Residence_One_Year_Ago_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000682",
+    "label": "School_Enrollment_for_Population_3_Years_and_Over_Enrolled_in_School_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000569",
+    "label": "United_States_Citizenship_Status_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000646",
+    "label": "Veteran_Status_for_Civilian_Population_18_Years_and_Over_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000527",
+    "label": "World_Region_of_Birth_of_Foreign_Born_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000548",
+    "label": "Year_of_Entry_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

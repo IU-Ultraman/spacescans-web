@@ -1,0 +1,14 @@
+[
+  {
+    "id": "001333",
+    "label": "Count_of_Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Arts_Entertainment_Recreation_Accommodation_Food_Services",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001045",
+    "label": "Percentage_of_Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Arts_Entertainment_Recreation_Accommodation_Food_Services",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

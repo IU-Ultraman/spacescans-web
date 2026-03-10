@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000836",
+    "label": "Number_of_Households_with_a_Female_Householder_and_No_Spouse_or_Partner_Present_and_Living_Alone_Aged_65_Years_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000837",
+    "label": "Percentage_of_Households_with_a_Female_Householder_and_No_Spouse_or_Partner_Present_and_Living_Alone_Aged_65_Years_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000042_2",
+    "label": "Address_Group",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000043_2",
+    "label": "Address_Status",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000044_2",
+    "label": "Address_Type",
+    "definition": "",
+    "has_children": false
+  }
+]

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "000079_1",
+    "label": "Friday",
+    "definition": "The fifth day of a calendar week starting from Monday. Friday is after Thursday and before Saturday.",
+    "has_children": false
+  },
+  {
+    "id": "000077_1",
+    "label": "Monday",
+    "definition": "The first day of a calendar week starting from Monday. Monday is after Sunday and before Tuesday.",
+    "has_children": false
+  },
+  {
+    "id": "000080_1",
+    "label": "Saturday",
+    "definition": "The sixth day of a calendar week starting from Monday. Saturday is after Friday and before Sunday.",
+    "has_children": false
+  },
+  {
+    "id": "000081_1",
+    "label": "Sunday",
+    "definition": "The last day of a calendar week starting from Monday. Sunday is after Saturday and before the Monday next week.",
+    "has_children": false
+  },
+  {
+    "id": "000076_1",
+    "label": "Thursday",
+    "definition": "The fourth day of a calendar week starting from Monday. Thursday is after Wednesday and before Friday.",
+    "has_children": false
+  },
+  {
+    "id": "000078_1",
+    "label": "Tuesday",
+    "definition": "The second day of a calendar week starting from Monday. Tuesday is after Monday and before Wednesday.",
+    "has_children": false
+  },
+  {
+    "id": "000075_1",
+    "label": "Wednesday",
+    "definition": "The thrid day of a calendar week starting from Monday.  Wednesday is after Tuesday and before Thursday.",
+    "has_children": false
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "002350",
+    "label": "Occupied_Housing_Unit_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002351",
+    "label": "Vacant_Housing_Unit_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

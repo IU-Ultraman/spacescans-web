@@ -1,0 +1,68 @@
+[
+  {
+    "id": "000279",
+    "label": "1,1,1-Trichloroethane",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000283",
+    "label": "Chlorine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000280",
+    "label": "Hydrazine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000281",
+    "label": "Hydrochloric_Acid(Hydrogen_Chloride_[Gas_Only])",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000282",
+    "label": "Hydrogen_Fluoride(Hydrofluoric_Acid)",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000284",
+    "label": "Methylene_Chloride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000265",
+    "label": "Particulate_Matter_Associated_Hazardous_Air_Pollutant",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000285",
+    "label": "Phosphine",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000286",
+    "label": "Tetrachloroethylene",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000287",
+    "label": "Titanium_Tetrachloride",
+    "definition": "Data Source: National Air Toxics Assessment (https://www.epa.gov/national-air-toxics-assessment)\n\nSpatial Scale: Census Tract\n\nTemporal Scale: 1-year\n\nYears Available: 2011, 2014, 2018-2020 (2012-2013, 2015-2017 interpolated)\n\nModel Specification/Citation: https://www.epa.gov/AirToxScreen/airtoxscreen-assessment-methods#ambient",
+    "has_children": false
+  },
+  {
+    "id": "000111",
+    "label": "Volatile_Organic_Compound_Associated_Hazardous_Air_Pollutant",
+    "definition": "",
+    "has_children": true
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "000021_2",
+    "label": "Divorced",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000022_2",
+    "label": "Domestic_Partnership",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000023_2",
+    "label": "Married",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000024_2",
+    "label": "Never_Married",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000025_2",
+    "label": "Separated",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000026_2",
+    "label": "Widowed",
+    "definition": "",
+    "has_children": false
+  }
+]

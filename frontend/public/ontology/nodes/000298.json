@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000301",
+    "label": "Cloud-free_DNA-damage_UV_Dose",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000299",
+    "label": "Cloud-free_Erythemal_UV_Dose",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000300",
+    "label": "Cloud-free_Vitamin-D_UV_Dose",
+    "definition": "",
+    "has_children": false
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "002141",
+    "label": "No_Stat_Address_by_Duration_Count_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002143",
+    "label": "No_Stat_Address_by_Type_Count_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002142",
+    "label": "No_Stat_Address_by_Type_and_Duration_Count_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "002185",
+    "label": "Previous_Quater_Vacant_Currently_No_Stat_Address_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  },
+  {
+    "id": "002140",
+    "label": "Total_No_Stat_Address_Count",
+    "definition": "Data_Source_1: US_HUD\n\nSpatial_Temporal_Scale_1: CT/3-Month",
+    "has_children": false
+  }
+]

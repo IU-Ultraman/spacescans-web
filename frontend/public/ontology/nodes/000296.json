@@ -1,0 +1,20 @@
+[
+  {
+    "id": "000322",
+    "label": "Built_Enviroment_Exposome_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000297",
+    "label": "Natural_Environment_Exposome_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000395",
+    "label": "Social_Enviroment_Exposome_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

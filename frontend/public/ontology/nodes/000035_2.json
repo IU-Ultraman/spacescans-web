@@ -1,0 +1,26 @@
+[
+  {
+    "id": "000036_2",
+    "label": "Men_Who_Have_Sex_with_Men",
+    "definition": "Men who have Sex with Men\\n UMLS CUI: C2827413\\n Semantic Types\\n :\\n Population Group\\n Definitions (1)\\n Men who engage in sexual activity with other men, regardless of how they identify themselves. (NCI)",
+    "has_children": false
+  },
+  {
+    "id": "000037_2",
+    "label": "Patient",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000039_2",
+    "label": "Person_Needs_Financial_Support",
+    "definition": "",
+    "has_children": false
+  },
+  {
+    "id": "000038_2",
+    "label": "Person_at_Early_Childhood",
+    "definition": "",
+    "has_children": false
+  }
+]

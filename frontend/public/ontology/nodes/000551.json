@@ -1,0 +1,26 @@
+[
+  {
+    "id": "000552",
+    "label": "Count_of_Native_Population_Born_Outside_the_United_States",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000554",
+    "label": "Native_Population_Born_Outside_the_United_States_Entered_2010_or_Later_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000557",
+    "label": "Native_Population_Born_Outside_the_United_States_Entered_Before_2010_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000553",
+    "label": "Percentage_of_Native_Population_Born_Outside_the_United_States",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  }
+]

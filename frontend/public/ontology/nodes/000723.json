@@ -1,0 +1,44 @@
+[
+  {
+    "id": "000724",
+    "label": "Number_of_Women_15_to_50_Years_Old_Who_Had_a_Birth_in_the_Past_12_Months",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000725",
+    "label": "Percentage_of_Women_15_to_50_Years_Old_Who_Had_a_Birth_in_the_Past_12_Months",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Avaliable: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "000726",
+    "label": "Unmarried_Women_15_to_50_Years_Old_with_a_Birth_in_the_Past_12_Months_Including_Widowed_Divorced_and_Never_Married_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000735",
+    "label": "Women_15_to_50_Years_Old_with_a_Birth_in_the_Past_12_Months_Per_1000_Women_15_to_19_Years_Old_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000732",
+    "label": "Women_15_to_50_Years_Old_with_a_Birth_in_the_Past_12_Months_Per_1000_Women_15_to_50_Years_Old_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000738",
+    "label": "Women_15_to_50_Years_Old_with_a_Birth_in_the_Past_12_Months_Per_1000_Women_20_to_34_Years_Old_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000741",
+    "label": "Women_15_to_50_Years_Old_with_a_Birth_in_the_Past_12_Months_Per_1000_Women_35_to_50_Years_Old_Statistic",
+    "definition": "",
+    "has_children": true
+  }
+]

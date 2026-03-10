@@ -1,0 +1,38 @@
+[
+  {
+    "id": "000094_1",
+    "label": "Fifth_Week_Of_A_Month",
+    "definition": "The fifth week of a particular month. ",
+    "has_children": false
+  },
+  {
+    "id": "000022_1",
+    "label": "First_Week_Of_A_Month",
+    "definition": "The first week of a particular month. ",
+    "has_children": false
+  },
+  {
+    "id": "000023_1",
+    "label": "Fourth_Week_Of_A_Month",
+    "definition": "The fourth week of a particular month. ",
+    "has_children": false
+  },
+  {
+    "id": "000024_1",
+    "label": "Last_Week_Of_A_Month",
+    "definition": "Original IRI: https://sbmi.uth.edu/ontology/TEO.owl#TEO_0000127",
+    "has_children": true
+  },
+  {
+    "id": "000025_1",
+    "label": "Second_Week_Of_A_Month",
+    "definition": "The second week of a particular month. ",
+    "has_children": false
+  },
+  {
+    "id": "000021_1",
+    "label": "Third_Week_Of_A_Month",
+    "definition": "The third week of a particular month. ",
+    "has_children": false
+  }
+]

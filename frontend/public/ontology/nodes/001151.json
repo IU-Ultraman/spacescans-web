@@ -1,0 +1,14 @@
+[
+  {
+    "id": "001021",
+    "label": "Percentage_of_Commuting_to_Work_for_Workers_Age_16_and_Over_by_Car_Truck_or_Van_Drove_Alone",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001171",
+    "label": "Percentage_of_Commuting_to_Work_for_Workers_Age_16_and_Over_by_Car_Truck_or_Van_Drove_Alone",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

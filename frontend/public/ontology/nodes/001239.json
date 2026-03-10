@@ -1,0 +1,92 @@
+[
+  {
+    "id": "001203",
+    "label": "Count_of_Industry_of_Civilian_Employed_Population_Age_16_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  },
+  {
+    "id": "001240",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Agriculture_Forestry_Fishing_Hunting_and_Mining_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001241",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Arts_Entertainment_Recreation_Accommodation_Food_Services_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001242",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Construction_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001243",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Educational_Services_Health_Care_and_Social_Assistance_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001244",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Finance_Insurance_Real_Estate_Rental_and_Leasing_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001245",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Information_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001246",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Manufacturing_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001247",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Other_Services_Except_Public_Administration_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001248",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Professional_Scientific_Management_Administrative_and_Waste_Management_Services_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001249",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Public_Administration_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001250",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Retail_Trade_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001251",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Transportation_Warehousing_and_Utilities_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001252",
+    "label": "Industry_of_Civilian_Employed_Population_Age_16_and_Over_in_Wholesale_Trade_Statistic",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "001273",
+    "label": "Percentage_of_Industry_of_Civilian_Employed_Population_Age_16_and_Over",
+    "definition": "Data Source: American Community Survey Data (https://www.census.gov/programs-surveys/acs/data.html)\n\nSpatial Scale: Census Block Group\n\nTemporal Scale: 5-year\n\nYears Available: 2007-2021",
+    "has_children": false
+  }
+]

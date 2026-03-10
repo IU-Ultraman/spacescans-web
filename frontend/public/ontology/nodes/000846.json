@@ -1,0 +1,62 @@
+[
+  {
+    "id": "000853",
+    "label": "Number_of_Establishments_in_Bowling_Center_Per_10000_Population",
+    "definition": "Data Source: County Business Patterns (https://www.census.gov/programs-surveys/cbp/data/datasets.html)\n\nSpatial Scale: ZCTA5\n\nTemporal Scale: 1-year\n\nYears Avaliable: 2005-2023\n\nModel: Categories of establishments based on NAICS code\n\nModel Specification/Citation: Rupasingha A, Goetz SJ, Freshwater D. The production of social capital in US counties. J Socio Econ. Elsevier; 2006 Feb 1;35(1):83\u2013101.",
+    "has_children": false
+  },
+  {
+    "id": "000849",
+    "label": "Number_of_Establishments_in_Business_Associations_Per_10000_Population",
+    "definition": "Data Source: County Business Patterns (https://www.census.gov/programs-surveys/cbp/data/datasets.html)\n\nSpatial Scale: ZCTA5\n\nTemporal Scale: 1-year\n\nYears Avaliable: 2005-2023\n\nModel: Categories of establishments based on NAICS code\n\nModel Specification/Citation: Rupasingha A, Goetz SJ, Freshwater D. The production of social capital in US counties. J Socio Econ. Elsevier; 2006 Feb 1;35(1):83\u2013101.",
+    "has_children": false
+  },
+  {
+    "id": "000848",
+    "label": "Number_of_Establishments_in_Civic_and_Social_Associations_Per_10000_Population",
+    "definition": "Data Source: County Business Patterns (https://www.census.gov/programs-surveys/cbp/data/datasets.html)\n\nSpatial Scale: ZCTA5\n\nTemporal Scale: 1-year\n\nYears Avaliable: 2005-2023\n\nModel: Categories of establishments based on NAICS code\n\nModel Specification/Citation: Rupasingha A, Goetz SJ, Freshwater D. The production of social capital in US counties. J Socio Econ. Elsevier; 2006 Feb 1;35(1):83\u2013101.",
+    "has_children": false
+  },
+  {
+    "id": "000854",
+    "label": "Number_of_Establishments_in_Fitness_and_Recreational_Sports_Centers_Per_10000_Population",
+    "definition": "Data Source: County Business Patterns (https://www.census.gov/programs-surveys/cbp/data/datasets.html)\n\nSpatial Scale: ZCTA5\n\nTemporal Scale: 1-year\n\nYears Avaliable: 2005-2023\n\nModel: Categories of establishments based on NAICS code\n\nModel Specification/Citation: Rupasingha A, Goetz SJ, Freshwater D. The production of social capital in US counties. J Socio Econ. Elsevier; 2006 Feb 1;35(1):83\u2013101.",
+    "has_children": false
+  },
+  {
+    "id": "000855",
+    "label": "Number_of_Establishments_in_Golf_Cources_and_Country_Clubs_Per_10000_Population",
+    "definition": "Data Source: County Business Patterns (https://www.census.gov/programs-surveys/cbp/data/datasets.html)\n\nSpatial Scale: ZCTA5\n\nTemporal Scale: 1-year\n\nYears Avaliable: 2005-2023\n\nModel: Categories of establishments based on NAICS code\n\nModel Specification/Citation: Rupasingha A, Goetz SJ, Freshwater D. The production of social capital in US counties. J Socio Econ. Elsevier; 2006 Feb 1;35(1):83\u2013101.",
+    "has_children": false
+  },
+  {
+    "id": "000852",
+    "label": "Number_of_Establishments_in_Labor_Organization_Per_10000_Population",
+    "definition": "Data Source: County Business Patterns (https://www.census.gov/programs-surveys/cbp/data/datasets.html)\n\nSpatial Scale: ZCTA5\n\nTemporal Scale: 1-year\n\nYears Avaliable: 2005-2023\n\nModel: Categories of establishments based on NAICS code\n\nModel Specification/Citation: Rupasingha A, Goetz SJ, Freshwater D. The production of social capital in US counties. J Socio Econ. Elsevier; 2006 Feb 1;35(1):83\u2013101.",
+    "has_children": false
+  },
+  {
+    "id": "000850",
+    "label": "Number_of_Establishments_in_Political_Organizations_Per_10000_Population",
+    "definition": "Data Source: County Business Patterns (https://www.census.gov/programs-surveys/cbp/data/datasets.html)\n\nSpatial Scale: ZCTA5\n\nTemporal Scale: 1-year\n\nYears Avaliable: 2005-2023\n\nModel: Categories of establishments based on NAICS code\n\nModel Specification/Citation: Rupasingha A, Goetz SJ, Freshwater D. The production of social capital in US counties. J Socio Econ. Elsevier; 2006 Feb 1;35(1):83\u2013101.",
+    "has_children": false
+  },
+  {
+    "id": "000851",
+    "label": "Number_of_Establishments_in_Professional_Organizations_Per_10000_Population",
+    "definition": "Data Source: County Business Patterns (https://www.census.gov/programs-surveys/cbp/data/datasets.html)\n\nSpatial Scale: ZCTA5\n\nTemporal Scale: 1-year\n\nYears Avaliable: 2005-2023\n\nModel: Categories of establishments based on NAICS code\n\nModel Specification/Citation: Rupasingha A, Goetz SJ, Freshwater D. The production of social capital in US counties. J Socio Econ. Elsevier; 2006 Feb 1;35(1):83\u2013101.",
+    "has_children": false
+  },
+  {
+    "id": "000847",
+    "label": "Number_of_Establishments_in_Religious_Organizations_Per_10000_Population",
+    "definition": "Data Source: County Business Patterns (https://www.census.gov/programs-surveys/cbp/data/datasets.html)\n\nSpatial Scale: ZCTA5\n\nTemporal Scale: 1-year\n\nYears Avaliable: 2005-2023\n\nModel: Categories of establishments based on NAICS code\n\nModel Specification/Citation: Rupasingha A, Goetz SJ, Freshwater D. The production of social capital in US counties. J Socio Econ. Elsevier; 2006 Feb 1;35(1):83\u2013101.",
+    "has_children": false
+  },
+  {
+    "id": "000856",
+    "label": "Number_of_Establishments_in_Sports_Teams_and_Clubs_Per_10000_Population",
+    "definition": "Data Source: County Business Patterns (https://www.census.gov/programs-surveys/cbp/data/datasets.html)\n\nSpatial Scale: ZCTA5\n\nTemporal Scale: 1-year\n\nYears Avaliable: 2005-2023\n\nModel: Categories of establishments based on NAICS code\n\nModel Specification/Citation: Rupasingha A, Goetz SJ, Freshwater D. The production of social capital in US counties. J Socio Econ. Elsevier; 2006 Feb 1;35(1):83\u2013101.",
+    "has_children": false
+  }
+]

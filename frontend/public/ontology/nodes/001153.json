@@ -1,0 +1,14 @@
+[
+  {
+    "id": "001173",
+    "label": "Count_of_Commuting_to_Work_for_Workers_Age_16_and_Over_by_Public_Transportation_Excluding_Taxicab",
+    "definition": "Variable Short Name:DP03_0021E",
+    "has_children": false
+  },
+  {
+    "id": "001023",
+    "label": "Percentage_of_Commuting_to_Work_for_Workers_Age_16_and_Over_by_Public_Transportation_Excluding_Taxicab",
+    "definition": "Variable Short Name:DP03_0021PE",
+    "has_children": false
+  }
+]

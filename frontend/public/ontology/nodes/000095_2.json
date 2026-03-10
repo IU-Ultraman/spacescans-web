@@ -1,0 +1,14 @@
+[
+  {
+    "id": "000096_2",
+    "label": "Criteria_Air_Pollutant",
+    "definition": "",
+    "has_children": true
+  },
+  {
+    "id": "000110_2",
+    "label": "Hazardous_Air_Pollutant",
+    "definition": "",
+    "has_children": true
+  }
+]
