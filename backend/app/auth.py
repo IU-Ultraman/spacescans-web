@@ -1,21 +1,28 @@
 # backend/app/auth.py
 from datetime import datetime, timedelta, timezone
+import bcrypt
 from jose import jwt, JWTError
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import app.config
 from app.database import get_db
 import sqlite3
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
+_BCRYPT_MAX_BYTES = 72
+
+
+def _to_bcrypt_input(password: str) -> bytes:
+    return password.encode("utf-8")[:_BCRYPT_MAX_BYTES]
+
+
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(_to_bcrypt_input(password), bcrypt.gensalt()).decode("utf-8")
+
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(_to_bcrypt_input(plain), hashed.encode("utf-8"))
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
