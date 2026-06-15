@@ -4,6 +4,7 @@ import json
 import uuid
 import shutil
 import csv
+import fcntl
 import os
 import signal
 import subprocess
@@ -11,6 +12,13 @@ import sys
 from pathlib import Path
 from datetime import datetime, timezone
 import app.config
+
+
+class TaskBusyError(RuntimeError):
+    """Raised by start_task when another task currently holds .run_lock."""
+
+    def __init__(self):
+        super().__init__("another task is already running")
 
 def create_task(user_id: int, task_name: str) -> dict:
     task_id = str(uuid.uuid4())
@@ -88,23 +96,57 @@ def save_upload(task_id: str, file_content: bytes, filename: str) -> dict:
 
 def save_config(task_id: str, config: dict):
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
+    # Default experiment to bg_ndi_wi but allow caller-provided override.
+    config = {"experiment": "bg_ndi_wi", **config}
     config["version"] = 1
     config["input_file"] = "input.csv"
     (task_dir / "config.json").write_text(json.dumps(config, indent=2))
 
 def start_task(task_id: str) -> dict:
+    """Spawn the experiment subprocess for a task.
+
+    Acquires .run_lock first; if another task holds it, raises TaskBusyError.
+    Dispatches to app.experiments.bg_ndi_wi or mock_cli based on the
+    task config's experiment field.
+    """
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
     if not (task_dir / "config.json").exists():
         raise ValueError("Task not configured — missing config.json")
     if not (task_dir / "input.csv").exists():
         raise ValueError("No input file uploaded")
-    # Spawn mock CLI subprocess
+
+    config = json.loads((task_dir / "config.json").read_text())
+    experiment = config.get("experiment", "bg_ndi_wi")
+
+    lock_path = app.config.settings.DATA_DIR / ".run_lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.touch()
+    lock_fd = os.open(str(lock_path), os.O_RDWR)
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        os.close(lock_fd)
+        raise TaskBusyError()
+
+    if experiment == "bg_ndi_wi":
+        cmd = [
+            str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
+            "-m", "app.experiments.bg_ndi_wi", "run", str(task_dir),
+        ]
+    else:
+        cmd = [sys.executable, "-m", "mock_cli.cli", "run", str(task_dir)]
+
     proc = subprocess.Popen(
-        [sys.executable, "-m", "mock_cli.cli", "run", str(task_dir)],
+        cmd,
         cwd=str(app.config.settings.BASE_DIR),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+        start_new_session=True,
     )
+    # Note: we deliberately leak lock_fd into this process. When the subprocess
+    # exits, our reaper (a separate watcher) will close it. Simpler MVP: write
+    # PID into a sidecar so other code can join() and release.
+    (task_dir / "lock.fd").write_text(str(lock_fd))
     return {"pid": proc.pid, "task_id": task_id}
 
 def stop_task(task_id: str):
