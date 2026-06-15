@@ -208,7 +208,10 @@ def merge_results(task_dir: Path, variables: list[str]) -> Path:
         var_df = var_df.rename(columns={"PATID": "pid"})
         df = df.merge(var_df, on="pid", how="left")
 
-        match_pct = var_df["pid"].isin(df["pid"]).mean() * 100
+        # var_df was just left-merged into df; check how many input patients
+        # got a real value (i.e., how many input rows are NOT null in the new col).
+        value_col = next(c for c in var_df.columns if c != "pid")
+        match_pct = df[value_col].notna().mean() * 100
         if match_pct < 90.0:
             _append_log(task_dir, "warning", "runner",
                         f"merge: {var} matched only {match_pct:.1f}% of patients")

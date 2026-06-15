@@ -270,3 +270,15 @@ def test_merge_results_ndi_only(tmp_path):
     assert len(df) == 3
     assert "ndi" in df.columns
     assert "NatWalkInd" not in df.columns
+
+
+def test_merge_results_warns_on_low_match(tmp_path):
+    """When only a small fraction of input patients have NDI values, a warning
+    should be appended to logs.jsonl."""
+    task_dir = _seed_task_for_merge(tmp_path, n_input=100, n_ndi=5, n_wi=0)
+    merge_results(task_dir, variables=["ndi"])
+
+    log_text = (task_dir / "logs.jsonl").read_text()
+    assert "matched only" in log_text  # warning fired
+    # 5 / 100 = 5% match rate
+    assert "5.0%" in log_text
