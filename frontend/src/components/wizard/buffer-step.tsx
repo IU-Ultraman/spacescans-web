@@ -83,6 +83,9 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
               Enter a value between 1 and 100,000 meters.
             </p>
           )}
+          <p className="text-xs text-muted-foreground">
+            Typical: 270 m (about a 3-5 minute walk). Larger buffers take significantly longer to run.
+          </p>
         </div>
 
         {/* Rasterization resolution */}

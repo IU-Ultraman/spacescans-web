@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
   ChevronDown,
+  Clock,
   FileSpreadsheet,
   Loader2,
   Play,
@@ -26,6 +27,21 @@ import {
 } from "lucide-react";
 import type { DataSummary } from "./upload-step";
 import type { BufferConfig } from "./buffer-step";
+
+// Helper — heuristic runtime estimate
+function estimateRuntime(nRows: number, bufferM: number, nVariables: number): string {
+  // Base C3 boundary_overlap_fast on BG (~218k boundaries): from /loop testing:
+  //   100k patients × 270m × 25m raster = ~4 min
+  //   scales roughly linearly with patients
+  //   scales with buffer area ~ (bufferM/270)^1.5 (raster cost)
+  //   C4 steps add ~30s each
+  const c3MinutesBase = 4.0 * (nRows / 100000) * Math.pow(bufferM / 270, 1.5);
+  const c4Minutes = 0.5 * nVariables;
+  const totalMin = c3MinutesBase + c4Minutes;
+  if (totalMin < 1) return "<1 min";
+  if (totalMin < 5) return `~${Math.ceil(totalMin)} min`;
+  return `~${Math.round(totalMin)} min`;
+}
 
 interface ReviewStepProps {
   taskId: string;
@@ -141,6 +157,16 @@ export function ReviewStep({
               value={`${bufferConfig.raster_res_m} m`}
             />
           </div>
+        </SummarySection>
+
+        {/* Estimated Runtime */}
+        <SummarySection icon={<Clock className="size-4" />} title="Estimated Runtime">
+          <p className="text-sm">
+            {estimateRuntime(dataSummary.row_count, bufferConfig.size, selectedVariables.length)}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Based on {dataSummary.row_count.toLocaleString()} patients × {bufferConfig.size} m buffer × {selectedVariables.length} variable{selectedVariables.length !== 1 ? "s" : ""}. Actual runtime varies.
+          </p>
         </SummarySection>
 
         {/* Variables */}
