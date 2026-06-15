@@ -35,6 +35,20 @@ def create_task(user_id: int, task_name: str) -> dict:
     (task_dir / "meta.json").write_text(json.dumps(meta, indent=2))
     return meta
 
+def _flatten_status_into_meta(meta: dict, status: dict) -> None:
+    """Project the relevant status.json fields onto a task's meta dict.
+
+    The frontend Task interface expects `status` as a string (one of
+    not_started/running/finished/error/cancelled) plus optional top-level
+    `progress` and `error_message` fields — not the raw status.json dict.
+    """
+    meta["status"] = status.get("status", "not_started")
+    meta["progress"] = status.get("progress")
+    err = status.get("error") or status.get("message") if status.get("status") == "error" else None
+    if err:
+        meta["error_message"] = err
+
+
 def list_tasks(user_id: int) -> list[dict]:
     tasks = []
     if not app.config.settings.TASKS_DIR.exists():
@@ -46,8 +60,7 @@ def list_tasks(user_id: int) -> list[dict]:
         meta = json.loads(meta_path.read_text())
         if meta.get("user_id") != user_id:
             continue
-        status = _read_status(task_dir)
-        meta["status"] = status
+        _flatten_status_into_meta(meta, _read_status(task_dir))
         tasks.append(meta)
     return tasks
 
@@ -57,7 +70,7 @@ def get_task(task_id: str) -> dict | None:
     if not meta_path.exists():
         return None
     meta = json.loads(meta_path.read_text())
-    meta["status"] = _read_status(task_dir)
+    _flatten_status_into_meta(meta, _read_status(task_dir))
     return meta
 
 def delete_task(task_id: str):
