@@ -204,6 +204,15 @@ def test_two_sequential_runs_both_succeed(task_with_5_patients, tmp_path):
 def test_e2e_cache_second_run_faster(task_with_5_patients, tmp_path):
     """Run the same 5-patient cohort twice; the second run hits the c3_bg cache
     and finishes in a small fraction of the first run's wall-clock."""
+    # Clear any cache entries left over from earlier tests in the suite so the
+    # first run below is guaranteed cold. Without this, the assertion on
+    # t2 < 0.7 * t1 is order-dependent: an earlier integration test that runs
+    # the same fixture (e.g. test_e2e_same_inputs_run_twice) will populate the
+    # cache, making run 1 a cache hit and collapsing the speedup.
+    cache_dir = app.config.settings.C3_CACHE_DIR
+    if cache_dir.exists():
+        shutil.rmtree(cache_dir)
+
     cmd = [
         str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
         "-m", "app.experiments.bg_ndi_wi", "run", str(task_with_5_patients),
@@ -247,6 +256,5 @@ def test_e2e_cache_second_run_faster(task_with_5_patients, tmp_path):
     )
 
     # Cache directory exists with one entry.
-    cache_dir = app.config.settings.C3_CACHE_DIR
     parquets = list(cache_dir.glob("*.parquet"))
     assert len(parquets) >= 1
