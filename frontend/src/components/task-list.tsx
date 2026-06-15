@@ -202,7 +202,7 @@ export function TaskList() {
               >
                 <TableCell className="pl-6">
                   <span className="font-medium text-foreground">
-                    {task.name}
+                    {task.task_name}
                   </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground">

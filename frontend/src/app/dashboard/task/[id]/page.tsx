@@ -184,7 +184,7 @@ export default function TaskDetailPage() {
           <ArrowLeft className="size-5" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">{task.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{task.task_name}</h1>
           <p className="text-sm text-muted-foreground">Task ID: {task.id}</p>
         </div>
         <StatusBadge status={task.status} progress={task.progress} />

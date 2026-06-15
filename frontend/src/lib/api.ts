@@ -49,7 +49,7 @@ async function request<T>(
 
 export interface Task {
   id: string;
-  name: string;
+  task_name: string;
   status: "not_started" | "running" | "finished" | "error" | "cancelled";
   progress?: number;
   created_at: string;

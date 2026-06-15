@@ -216,6 +216,17 @@ def test_run_pipeline_step_nonzero_exit(fake_cli_settings):
     assert "ERROR" in log_text or "exit code" in log_text
 
 
+def test_run_pipeline_step_invokes_on_progress(fake_cli_settings):
+    """fake_spacescans emits 3 progress lines; on_progress must be called for each."""
+    task_dir, yaml_path = _make_task(fake_cli_settings)
+    fractions: list[float] = []
+    rc = run_pipeline_step(yaml_path, task_dir, step_name="c3_bg",
+                            on_progress=fractions.append)
+    assert rc == 0
+    # 3 progress lines: 1/3, 2/3, 3/3
+    assert fractions == pytest.approx([1/3, 2/3, 1.0], abs=0.01)
+
+
 from app.experiments.bg_ndi_wi import merge_results
 
 def _seed_task_for_merge(tmp_path, n_input=5, n_ndi=4, n_wi=3) -> Path:

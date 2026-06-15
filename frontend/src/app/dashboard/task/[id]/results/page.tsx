@@ -88,7 +88,7 @@ export default function TaskResultsPage() {
           <ArrowLeft className="size-5" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">{task.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{task.task_name}</h1>
           <p className="text-sm text-muted-foreground">Results</p>
         </div>
         <StatusBadge status={task.status} />
@@ -119,7 +119,7 @@ export default function TaskResultsPage() {
         <div className="mt-3 space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Task Name</span>
-            <span className="font-medium">{task.name}</span>
+            <span className="font-medium">{task.task_name}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Status</span>

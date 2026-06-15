@@ -14,6 +14,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 
 import pandas as pd
 import yaml
@@ -148,13 +149,19 @@ def _append_log(task_dir: Path, level: str, source: str, msg: str) -> None:
         f.write(json.dumps(entry) + "\n")
 
 
-def run_pipeline_step(yaml_path: Path, task_dir: Path, step_name: str) -> int:
+def run_pipeline_step(
+    yaml_path: Path,
+    task_dir: Path,
+    step_name: str,
+    on_progress: "Callable[[float], None] | None" = None,
+) -> int:
     """Run a single `spacescans run` subprocess, streaming stdout into logs.jsonl.
 
     Each output line is appended to task_dir/logs.jsonl as a JSON record with
-    source=step_name so the UI can filter logs by step. Progress lines are
-    parsed for the running step's fractional progress (callers can read the
-    most recent value via parse_step_progress).
+    source=step_name so the UI can filter logs by step. If `on_progress` is
+    provided, it is called whenever a stdout line parses as a progress fraction
+    via parse_step_progress — the caller (typically run()) maps that to a
+    global progress update in status.json.
 
     Returns the subprocess's exit code.
     """
@@ -182,6 +189,10 @@ def run_pipeline_step(yaml_path: Path, task_dir: Path, step_name: str) -> int:
         line = line.rstrip("\n")
         if line:
             _append_log(task_dir, "info", step_name, line)
+            if on_progress is not None:
+                frac = parse_step_progress(line)
+                if frac is not None:
+                    on_progress(frac)
     rc = proc.wait()
     _append_log(task_dir, "info" if rc == 0 else "error", "runner",
                 f"step {step_name} exit code {rc}")
@@ -304,7 +315,17 @@ def run(task_dir: Path) -> int:
                 _write_status(task_dir, status="error", message=f"render failed at {step.name}")
                 return 1
 
-            rc = run_pipeline_step(yaml_path, task_dir, step_name=step.name)
+            def _on_step_progress(frac: float, idx=idx, step=step) -> None:
+                # Map the step's internal [0,1] progress to the global
+                # progress bar position (this step's slot + frac within it).
+                _write_status(
+                    task_dir,
+                    progress=(idx + frac) / total_steps,
+                    message=f"Running {step.name} ({idx+1}/{total_steps}) — {int(frac*100)}%",
+                )
+
+            rc = run_pipeline_step(yaml_path, task_dir, step_name=step.name,
+                                   on_progress=_on_step_progress)
             if rc != 0:
                 _write_status(task_dir, status="error",
                               message=f"step {step.name} failed with exit code {rc}")

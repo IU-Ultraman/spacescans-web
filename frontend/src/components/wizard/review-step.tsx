@@ -130,14 +130,15 @@ export function ReviewStep({
           <div className="grid gap-2 sm:grid-cols-2">
             <InfoItem
               label="Shape"
-              value={
-                bufferConfig.shape.charAt(0).toUpperCase() +
-                bufferConfig.shape.slice(1)
-              }
+              value="Circle"
             />
             <InfoItem
-              label="Size"
+              label="Radius"
               value={`${bufferConfig.size.toLocaleString()} meters`}
+            />
+            <InfoItem
+              label="Raster resolution"
+              value={`${bufferConfig.raster_res_m} m`}
             />
           </div>
         </SummarySection>

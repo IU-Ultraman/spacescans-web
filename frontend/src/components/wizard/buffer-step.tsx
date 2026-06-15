@@ -11,11 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { ArrowLeft, ArrowRight, Circle, Square } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 export interface BufferConfig {
-  shape: "circle" | "square";
+  // spacescans-pipeline only supports circular buffers (shapely .buffer with
+  // a resolution count); square/rectangle buffers have no pipeline code path,
+  // so we omit the shape field from the wizard entirely.
   size: number;
   raster_res_m: number;
 }
@@ -27,11 +28,8 @@ interface BufferStepProps {
 }
 
 export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProps) {
-  const [shape, setShape] = useState<"circle" | "square">(
-    initialConfig?.shape ?? "circle"
-  );
   const [size, setSize] = useState<string>(
-    initialConfig?.size?.toString() ?? "1000"
+    initialConfig?.size?.toString() ?? "270"
   );
   const [rasterResM, setRasterResM] = useState<number>(
     initialConfig?.raster_res_m ?? 25
@@ -42,7 +40,7 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
 
   const handleNext = () => {
     if (isValid) {
-      onComplete({ shape, size: sizeNum, raster_res_m: rasterResM });
+      onComplete({ size: sizeNum, raster_res_m: rasterResM });
     }
   };
 
@@ -58,54 +56,11 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Shape selection */}
-        <div className="space-y-2">
-          <Label>Buffer Shape</Label>
-          <p className="text-xs text-muted-foreground mb-2">
-            v1 supports circular buffers only. Square will be added when the spacescans-pipeline supports it.
-          </p>
-          <div className="flex gap-3">
-            {(["circle", "square"] as const).map((s) => {
-              const isCircle = s === "circle";
-              const isDisabled = !isCircle;
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => {
-                    if (!isDisabled) setShape(s);
-                  }}
-                  disabled={isDisabled}
-                  title={isDisabled ? "Not supported by spacescans-pipeline yet" : undefined}
-                  className={cn(
-                    "flex flex-1 items-center justify-center gap-2.5 rounded-xl border-2 px-4 py-3.5 text-sm font-medium transition-all",
-                    shape === s
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-muted-foreground/20 text-muted-foreground hover:border-muted-foreground/40 hover:bg-muted/30",
-                    isDisabled && "cursor-not-allowed opacity-50 hover:border-muted-foreground/20 hover:bg-transparent"
-                  )}
-                >
-                  {isCircle ? (
-                    <Circle
-                      className={cn(
-                        "size-5",
-                        shape === s && "fill-primary/20"
-                      )}
-                    />
-                  ) : (
-                    <Square
-                      className={cn(
-                        "size-5",
-                        shape === s && "fill-primary/20"
-                      )}
-                    />
-                  )}
-                  <span className="capitalize">{s}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          The spacescans-pipeline computes a circular buffer (radius in meters) around each
+          patient's residence and overlays it with the chosen boundary layer. Set the radius
+          and rasterization resolution below.
+        </p>
 
         {/* Size input */}
         <div className="space-y-2">
@@ -119,7 +74,7 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
               value={size}
               onChange={(e) => setSize(e.target.value)}
               className="max-w-[200px]"
-              placeholder="1000"
+              placeholder="270"
             />
             <span className="text-sm text-muted-foreground">meters</span>
           </div>
@@ -153,12 +108,9 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
           <Label>Preview</Label>
           <div className="flex flex-col items-center justify-center rounded-xl border border-muted-foreground/15 bg-muted/20 p-8">
             <div className="relative flex items-center justify-center">
-              {/* Buffer shape */}
+              {/* Circular buffer */}
               <div
-                className={cn(
-                  "flex items-center justify-center border-2 border-primary/60 bg-primary/10 transition-all duration-300",
-                  shape === "circle" ? "rounded-full" : "rounded-lg"
-                )}
+                className="flex items-center justify-center rounded-full border-2 border-primary/60 bg-primary/10 transition-all duration-300"
                 style={{
                   width: `${previewSize}px`,
                   height: `${previewSize}px`,
@@ -169,8 +121,7 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
               </div>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
-              {isValid ? `${sizeNum.toLocaleString()} m` : "---"}{" "}
-              {shape === "circle" ? "radius" : "side length"}
+              {isValid ? `${sizeNum.toLocaleString()} m` : "---"} radius
             </p>
           </div>
         </div>
