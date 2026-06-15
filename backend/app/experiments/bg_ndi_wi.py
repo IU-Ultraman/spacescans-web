@@ -253,6 +253,10 @@ def run(task_dir: Path) -> int:
         pid=os.getpid(),
         current_step="csv_to_parquet",
         total_steps=total_steps,
+        # Names of the variable pipeline steps in execution order; consumed by
+        # the frontend to render a per-step progress checklist and to compose
+        # the list of intermediate parquet artifacts available for download.
+        steps=[step.name for step in steps],
     )
 
     try:
