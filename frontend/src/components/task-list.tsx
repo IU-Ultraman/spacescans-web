@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api, type Task } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
@@ -86,6 +86,7 @@ export function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +112,29 @@ export function TaskList() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const anyRunning = tasks.some((t) => t.status === "running");
+    if (anyRunning && !intervalRef.current) {
+      intervalRef.current = setInterval(async () => {
+        try {
+          const next = await api.listTasks();
+          setTasks(next);
+        } catch {
+          // swallow polling errors; the next tick will retry
+        }
+      }, 5000);
+    } else if (!anyRunning && intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [tasks]);
 
   if (loading) {
     return (
