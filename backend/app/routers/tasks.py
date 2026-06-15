@@ -123,3 +123,21 @@ def download_results(
     if not result_path.exists() or not result_path.is_file():
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(result_path, filename=result_path.name)
+
+@router.get("/{task_id}/coverage")
+def get_coverage(
+    task_id: str,
+    variables: str = Query(..., description="Comma-separated variable keys"),
+    user: dict = Depends(get_current_user),
+):
+    """Per-variable cohort coverage statistics for a task's input.csv."""
+    _verify_ownership(task_id, user)
+    var_keys = [v.strip() for v in variables.split(",") if v.strip()]
+    if not var_keys:
+        raise HTTPException(status_code=400, detail="variables query is required")
+    try:
+        return task_manager.compute_coverage(task_id, var_keys)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except KeyError as exc:
+        raise HTTPException(status_code=400, detail=f"unknown variable(s): {exc.args[0]}")

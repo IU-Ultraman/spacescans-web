@@ -162,3 +162,105 @@ def test_compute_coverage_emits_warning_on_low_time_coverage(monkeypatch, tmp_pa
     assert out["variables"]["walkability"]["coverage_pct"] == 90.0
     assert len(out["variables"]["walkability"]["warnings"]) >= 1
     assert "2016-2021" in out["variables"]["walkability"]["warnings"][0]
+
+
+def _make_authed_client(monkeypatch, tmp_path):
+    """Boot a TestClient with the variable_metadata fixture + a signed-in user."""
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("TASKS_DIR", str(tmp_path / "tasks"))
+    (tmp_path / "variable_metadata.json").write_text(json.dumps({
+        "ndi": {"label": "NDI", "boundary": "BG", "coverage_years": [2012, 2022],
+                "coverage_region": "CONUS", "experiment": "bg_ndi_wi"},
+        "walkability": {"label": "WI", "boundary": "BG", "coverage_years": [2016, 2021],
+                        "coverage_region": "CONUS", "experiment": "bg_ndi_wi"},
+    }))
+    for mod_name in [
+        "app.config", "app.database", "app.auth", "app.routers.auth",
+        "app.task_manager", "app.routers.tasks", "app.main",
+    ]:
+        mod = importlib.import_module(mod_name)
+        importlib.reload(mod)
+
+    from app.main import create_app
+    from app.database import init_db
+    from fastapi.testclient import TestClient
+
+    init_db()
+    client = TestClient(create_app())
+    resp = client.post("/api/auth/signup", json={
+        "email": "c@c.com", "password": "pw123", "first_name": "C", "last_name": "U"
+    })
+    token = resp.json()["access_token"]
+    return client, {"Authorization": f"Bearer {token}"}
+
+
+def test_coverage_endpoint_basic(monkeypatch, tmp_path):
+    import io
+    client, auth = _make_authed_client(monkeypatch, tmp_path)
+    task_id = client.post("/api/tasks", json={"task_name": "cov"}, headers=auth).json()["id"]
+    csv = b"pid,startDate,endDate,longitude,latitude\nP1,2017-01-01,2017-12-31,-93.0,45.0\n"
+    client.post(f"/api/tasks/{task_id}/upload", headers=auth,
+                files={"file": ("in.csv", io.BytesIO(csv), "text/csv")})
+
+    resp = client.get(f"/api/tasks/{task_id}/coverage?variables=ndi", headers=auth)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["row_count"] == 1
+    assert body["variables"]["ndi"]["coverage_pct"] == 100.0
+
+
+def test_coverage_endpoint_unknown_variable(monkeypatch, tmp_path):
+    import io
+    client, auth = _make_authed_client(monkeypatch, tmp_path)
+    task_id = client.post("/api/tasks", json={"task_name": "cov"}, headers=auth).json()["id"]
+    csv = b"pid,startDate,endDate,longitude,latitude\nP1,2017-01-01,2017-12-31,-93.0,45.0\n"
+    client.post(f"/api/tasks/{task_id}/upload", headers=auth,
+                files={"file": ("in.csv", io.BytesIO(csv), "text/csv")})
+
+    resp = client.get(f"/api/tasks/{task_id}/coverage?variables=pm25", headers=auth)
+    assert resp.status_code == 400
+    assert "unknown variable" in resp.json()["detail"].lower()
+
+
+def test_coverage_endpoint_multi_variables(monkeypatch, tmp_path):
+    import io
+    client, auth = _make_authed_client(monkeypatch, tmp_path)
+    task_id = client.post("/api/tasks", json={"task_name": "cov"}, headers=auth).json()["id"]
+    csv = b"pid,startDate,endDate,longitude,latitude\nP1,2017-01-01,2017-12-31,-93.0,45.0\n"
+    client.post(f"/api/tasks/{task_id}/upload", headers=auth,
+                files={"file": ("in.csv", io.BytesIO(csv), "text/csv")})
+
+    resp = client.get(f"/api/tasks/{task_id}/coverage?variables=ndi,walkability", headers=auth)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "ndi" in body["variables"]
+    assert "walkability" in body["variables"]
+
+
+def test_coverage_endpoint_no_input(monkeypatch, tmp_path):
+    client, auth = _make_authed_client(monkeypatch, tmp_path)
+    task_id = client.post("/api/tasks", json={"task_name": "cov"}, headers=auth).json()["id"]
+    # No upload — task exists but no input.csv
+    resp = client.get(f"/api/tasks/{task_id}/coverage?variables=ndi", headers=auth)
+    assert resp.status_code == 400
+    assert "no input" in resp.json()["detail"].lower()
+
+
+def test_coverage_endpoint_ownership_403(monkeypatch, tmp_path):
+    import io
+    client, auth_a = _make_authed_client(monkeypatch, tmp_path)
+    task_id = client.post("/api/tasks", json={"task_name": "A's task"}, headers=auth_a).json()["id"]
+    csv = b"pid,startDate,endDate,longitude,latitude\nP1,2017-01-01,2017-12-31,-93.0,45.0\n"
+    client.post(f"/api/tasks/{task_id}/upload", headers=auth_a,
+                files={"file": ("in.csv", io.BytesIO(csv), "text/csv")})
+
+    # User B
+    resp_b = client.post("/api/auth/signup", json={
+        "email": "b@b.com", "password": "pw123", "first_name": "B", "last_name": "U"
+    })
+    token_b = resp_b.json()["access_token"]
+    auth_b = {"Authorization": f"Bearer {token_b}"}
+
+    resp = client.get(f"/api/tasks/{task_id}/coverage?variables=ndi", headers=auth_b)
+    assert resp.status_code == 403
