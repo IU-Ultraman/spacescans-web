@@ -95,7 +95,7 @@ def test_upload_valid_csv():
     client, token, _ = get_test_client()
     resp = client.post("/api/tasks", json={"task_name": "Upload Test"}, headers=auth_header(token))
     task_id = resp.json()["id"]
-    csv = "patient_id,longitude,latitude,start_date,end_date\nP1,-82.35,29.65,2020-01-01,2020-12-31\n"
+    csv = "pid,startDate,endDate,longitude,latitude\nP1,2020-01-01,2020-12-31,-82.35,29.65\n"
     resp = client.post(f"/api/tasks/{task_id}/upload", headers=auth_header(token),
                        files={"file": ("test.csv", io.BytesIO(csv.encode()), "text/csv")})
     assert resp.status_code == 200
@@ -116,7 +116,7 @@ def test_save_config_and_start():
     client, token, _ = get_test_client()
     resp = client.post("/api/tasks", json={"task_name": "Run Test"}, headers=auth_header(token))
     task_id = resp.json()["id"]
-    csv = "patient_id,longitude,latitude,start_date,end_date\nP1,-82.35,29.65,2020-01-01,2020-12-31\n"
+    csv = "pid,startDate,endDate,longitude,latitude\nP1,2020-01-01,2020-12-31,-82.35,29.65\n"
     client.post(f"/api/tasks/{task_id}/upload", headers=auth_header(token),
                 files={"file": ("test.csv", io.BytesIO(csv.encode()), "text/csv")})
     config = {"buffer": {"shape": "circle", "size": 1000, "unit": "meters"}, "variables": ["var_a"]}

@@ -66,12 +66,12 @@ def save_upload(task_id: str, file_content: bytes, filename: str) -> dict:
     reader = csv.DictReader(text.splitlines())
     rows = list(reader)
     columns = reader.fieldnames or []
-    required = {"patient_id", "longitude", "latitude", "start_date", "end_date"}
+    required = {"pid", "startDate", "endDate", "longitude", "latitude"}
     missing = required - set(columns)
     if missing:
         input_path.unlink()
         raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
-    dates = [r.get("start_date", "") for r in rows] + [r.get("end_date", "") for r in rows]
+    dates = [r.get("startDate", "") for r in rows] + [r.get("endDate", "") for r in rows]
     dates = [d for d in dates if d]
     summary = {
         "row_count": len(rows),

@@ -17,9 +17,9 @@ def create_task_dir(tmp_path: Path):
         "execution": {"cpu_cores": 2, "memory_limit_gb": 4}
     }
     (task_dir / "config.json").write_text(json.dumps(config))
-    csv_content = "patient_id,longitude,latitude,start_date,end_date\n"
+    csv_content = "pid,startDate,endDate,longitude,latitude\n"
     for i in range(5):
-        csv_content += f"P{i},-82.35,29.65,2020-01-01,2020-12-31\n"
+        csv_content += f"P{i},2020-01-01,2020-12-31,-82.35,29.65\n"
     (task_dir / "input.csv").write_text(csv_content)
     return task_dir
 

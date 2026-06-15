@@ -20,7 +20,28 @@ import {
   CheckCircle2,
   ArrowRight,
   Loader2,
+  Info,
 } from "lucide-react";
+
+const REQUIRED_COLUMNS: { name: string; type: string; desc: string }[] = [
+  { name: "pid", type: "string", desc: "Patient identifier — unique per row" },
+  { name: "startDate", type: "YYYY-MM-DD", desc: "Episode start (ISO date)" },
+  { name: "endDate", type: "YYYY-MM-DD", desc: "Episode end (ISO date)" },
+  { name: "longitude", type: "float", desc: "WGS84 (EPSG:4326), e.g. -82.35" },
+  { name: "latitude", type: "float", desc: "WGS84 (EPSG:4326), e.g. 29.65" },
+];
+
+const OPTIONAL_COLUMNS: { name: string; type: string; desc: string }[] = [
+  { name: "state_fips", type: "string (2)", desc: "Census state FIPS, e.g. '06' — leading zeros required" },
+  { name: "county_fips", type: "string (5)", desc: "state+county FIPS, e.g. '06037'" },
+  { name: "tract_geoid", type: "string (11)", desc: "state+county+tract GEOID" },
+  { name: "bg_geoid", type: "string (12)", desc: "state+county+tract+block-group GEOID" },
+];
+
+const EXAMPLE_CSV = `pid,startDate,endDate,longitude,latitude,state_fips,county_fips,tract_geoid,bg_geoid
+PID0000001,2017-08-19,2017-11-11,-93.028635,45.088976,27,27123,27123040504,271230405042
+PID0000002,2017-03-24,2017-06-21,-95.345115,29.738952,48,48201,48201451601,482014516012
+PID0000003,2014-05-03,2014-07-25,-79.840332,36.105148,37,37147,37147002001,371470020012`;
 
 export interface DataSummary {
   filename: string;
@@ -110,7 +131,8 @@ export function UploadStep({ onComplete }: UploadStepProps) {
       <CardHeader>
         <CardTitle className="text-lg">Upload Your Data</CardTitle>
         <CardDescription>
-          Provide a task name and upload a CSV file to get started.
+          Provide a task name and upload a CSV cohort file. See the required
+          column schema below before uploading.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -125,6 +147,95 @@ export function UploadStep({ onComplete }: UploadStepProps) {
             disabled={!!dataSummary}
           />
         </div>
+
+        {/* CSV format spec */}
+        {!dataSummary && (
+          <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-2">
+              <Info className="size-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">
+                Required CSV format
+              </h3>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Your CSV must include these 5 columns (header names are
+              case-sensitive). Geographic identifiers (state_fips, county_fips,
+              tract_geoid, bg_geoid) are optional — they are computed downstream
+              if absent.
+            </p>
+
+            <div className="overflow-x-auto rounded-md border bg-background">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/50">
+                  <tr className="border-b">
+                    <th className="px-3 py-2 text-left font-medium">Column</th>
+                    <th className="px-3 py-2 text-left font-medium">Type</th>
+                    <th className="px-3 py-2 text-left font-medium">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {REQUIRED_COLUMNS.map((c) => (
+                    <tr key={c.name} className="border-b last:border-b-0">
+                      <td className="px-3 py-2 font-mono font-medium text-foreground">
+                        {c.name}
+                      </td>
+                      <td className="px-3 py-2 font-mono text-muted-foreground">
+                        {c.type}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{c.desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <details className="group">
+              <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
+                Optional GEOID columns (4) — if you have pre-computed them
+              </summary>
+              <div className="mt-2 overflow-x-auto rounded-md border bg-background">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50">
+                    <tr className="border-b">
+                      <th className="px-3 py-2 text-left font-medium">Column</th>
+                      <th className="px-3 py-2 text-left font-medium">Type</th>
+                      <th className="px-3 py-2 text-left font-medium">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {OPTIONAL_COLUMNS.map((c) => (
+                      <tr key={c.name} className="border-b last:border-b-0">
+                        <td className="px-3 py-2 font-mono font-medium text-foreground">
+                          {c.name}
+                        </td>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">
+                          {c.type}
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground/80">
+                FIPS columns are <strong>strings</strong>, not integers. Leading
+                zeros (e.g. <code className="font-mono">&quot;06&quot;</code> for
+                California) must be preserved — open the file in a text editor or
+                set the type to text in your spreadsheet tool to avoid losing
+                them.
+              </p>
+            </details>
+
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">
+                Example (matches the bundled demo cohort)
+              </p>
+              <pre className="overflow-x-auto rounded-md border bg-background p-3 text-xs text-foreground">
+                <code>{EXAMPLE_CSV}</code>
+              </pre>
+            </div>
+          </div>
+        )}
 
         {/* Dropzone */}
         {!dataSummary && (
