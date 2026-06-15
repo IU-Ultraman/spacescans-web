@@ -5,8 +5,14 @@ Spawned by app.task_manager.start_task as:
 """
 from __future__ import annotations
 
+import json
+import os
 import re
+import signal
+import subprocess
+import sys
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -129,3 +135,54 @@ def parse_step_progress(line: str) -> float | None:
     if total <= 0:
         return None
     return cur / total
+
+
+def _append_log(task_dir: Path, level: str, source: str, msg: str) -> None:
+    entry = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "level": level,
+        "source": source,
+        "msg": msg,
+    }
+    with open(task_dir / "logs.jsonl", "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+def run_pipeline_step(yaml_path: Path, task_dir: Path, step_name: str) -> int:
+    """Run a single `spacescans run` subprocess, streaming stdout into logs.jsonl.
+
+    Each output line is appended to task_dir/logs.jsonl as a JSON record with
+    source=step_name so the UI can filter logs by step. Progress lines are
+    parsed for the running step's fractional progress (callers can read the
+    most recent value via parse_step_progress).
+
+    Returns the subprocess's exit code.
+    """
+    cmd = [
+        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
+        str(app.config.settings.SPACESCANS_PIPELINE_CLI),
+        "run",
+        "--data-dir", str(app.config.settings.SPACESCANS_DATA_DIR),
+        str(yaml_path),
+    ]
+    _append_log(task_dir, "info", "runner", f"spawning {step_name}: {' '.join(cmd)}")
+
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        start_new_session=True,  # for clean kill via killpg later
+    )
+
+    # Stream stdout line by line.
+    assert proc.stdout is not None
+    for line in proc.stdout:
+        line = line.rstrip("\n")
+        if line:
+            _append_log(task_dir, "info", step_name, line)
+    rc = proc.wait()
+    _append_log(task_dir, "info" if rc == 0 else "error", "runner",
+                f"step {step_name} exit code {rc}")
+    return rc

@@ -165,3 +165,52 @@ def test_parse_step_progress_non_progress_returns_none():
     assert parse_step_progress("[overlap_fast] === SUMMARY ===") is None
     assert parse_step_progress("random log line") is None
     assert parse_step_progress("") is None
+
+
+import json
+import sys
+from app.experiments.bg_ndi_wi import run_pipeline_step
+
+@pytest.fixture
+def fake_cli_settings(monkeypatch, tmp_path):
+    """Point SPACESCANS_PIPELINE_CLI at the fake_spacescans.py fixture so the
+    subprocess test does not need the real conda env."""
+    fixture = Path(__file__).parent / "fixtures" / "fake_spacescans.py"
+    import app.config
+    monkeypatch.setattr(app.config.settings, "SPACESCANS_PIPELINE_CLI", fixture)
+    monkeypatch.setattr(app.config.settings, "SPACESCANS_PIPELINE_PYTHON", Path(sys.executable))
+    monkeypatch.setattr(app.config.settings, "SPACESCANS_DATA_DIR", tmp_path)
+    return tmp_path
+
+
+def _make_task(tmp_path, name="step.yaml") -> tuple[Path, Path]:
+    task_dir = tmp_path / "task-deadbeef"
+    task_dir.mkdir()
+    (task_dir / "logs.jsonl").touch()
+    yaml_path = task_dir / "pipeline_configs" / name
+    yaml_path.parent.mkdir()
+    yaml_path.write_text(yaml.safe_dump({
+        "name": "fake",
+        "output": {"path": str(task_dir / "output" / "step.parquet")},
+    }))
+    return task_dir, yaml_path
+
+
+def test_run_pipeline_step_success(fake_cli_settings):
+    task_dir, yaml_path = _make_task(fake_cli_settings)
+    rc = run_pipeline_step(yaml_path, task_dir, step_name="c3_bg")
+    assert rc == 0
+    assert (task_dir / "output" / "step.parquet").exists()
+    log_lines = (task_dir / "logs.jsonl").read_text().strip().split("\n")
+    progress_lines = [json.loads(l) for l in log_lines if "tile" in l]
+    assert len(progress_lines) >= 3
+    # logs.jsonl rows are tagged with source = step name
+    assert all(j["source"] == "c3_bg" for j in progress_lines)
+
+
+def test_run_pipeline_step_nonzero_exit(fake_cli_settings):
+    task_dir, yaml_path = _make_task(fake_cli_settings, name="fail_step.yaml")
+    rc = run_pipeline_step(yaml_path, task_dir, step_name="c3_bg")
+    assert rc != 0
+    log_text = (task_dir / "logs.jsonl").read_text()
+    assert "ERROR" in log_text or "exit code" in log_text
