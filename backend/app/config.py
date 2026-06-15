@@ -32,6 +32,10 @@ def validate_pipeline_settings() -> None:
 
     Called from app.main:create_app on startup so the FastAPI process refuses
     to serve traffic before its required external dependencies are present.
+
+    Note on SPACESCANS_DATA_DIR semantics: this is the project root that the
+    pipeline CLI's --data-dir parameter resolves YAML config relative paths
+    against. The actual exposure data lives under <SPACESCANS_DATA_DIR>/data_full/.
     """
     missing = []
     for name in (
@@ -43,6 +47,10 @@ def validate_pipeline_settings() -> None:
         path = getattr(settings, name)
         if not path.exists():
             missing.append(f"{name}={path}")
+    # Check the data subtree exists since YAML configs use `data_full/...` prefixes
+    data_subdir = settings.SPACESCANS_DATA_DIR / "data_full"
+    if settings.SPACESCANS_DATA_DIR.exists() and not data_subdir.exists():
+        missing.append(f"SPACESCANS_DATA_DIR/{data_subdir.name}={data_subdir}")
     if missing:
         raise RuntimeError(
             "Pipeline integration disabled. Missing paths: " + ", ".join(missing)
