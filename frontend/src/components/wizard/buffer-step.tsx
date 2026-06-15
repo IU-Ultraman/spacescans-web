@@ -17,6 +17,7 @@ import { ArrowLeft, ArrowRight, Circle, Square } from "lucide-react";
 export interface BufferConfig {
   shape: "circle" | "square";
   size: number;
+  raster_res_m: number;
 }
 
 interface BufferStepProps {
@@ -32,13 +33,16 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
   const [size, setSize] = useState<string>(
     initialConfig?.size?.toString() ?? "1000"
   );
+  const [rasterResM, setRasterResM] = useState<number>(
+    initialConfig?.raster_res_m ?? 25
+  );
 
   const sizeNum = parseFloat(size);
   const isValid = !isNaN(sizeNum) && sizeNum > 0 && sizeNum <= 100000;
 
   const handleNext = () => {
     if (isValid) {
-      onComplete({ shape, size: sizeNum });
+      onComplete({ shape, size: sizeNum, raster_res_m: rasterResM });
     }
   };
 
@@ -57,37 +61,49 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
         {/* Shape selection */}
         <div className="space-y-2">
           <Label>Buffer Shape</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            v1 supports circular buffers only. Square will be added when the spacescans-pipeline supports it.
+          </p>
           <div className="flex gap-3">
-            {(["circle", "square"] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setShape(s)}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-2.5 rounded-xl border-2 px-4 py-3.5 text-sm font-medium transition-all",
-                  shape === s
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-muted-foreground/20 text-muted-foreground hover:border-muted-foreground/40 hover:bg-muted/30"
-                )}
-              >
-                {s === "circle" ? (
-                  <Circle
-                    className={cn(
-                      "size-5",
-                      shape === s && "fill-primary/20"
-                    )}
-                  />
-                ) : (
-                  <Square
-                    className={cn(
-                      "size-5",
-                      shape === s && "fill-primary/20"
-                    )}
-                  />
-                )}
-                <span className="capitalize">{s}</span>
-              </button>
-            ))}
+            {(["circle", "square"] as const).map((s) => {
+              const isCircle = s === "circle";
+              const isDisabled = !isCircle;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => {
+                    if (!isDisabled) setShape(s);
+                  }}
+                  disabled={isDisabled}
+                  title={isDisabled ? "Not supported by spacescans-pipeline yet" : undefined}
+                  className={cn(
+                    "flex flex-1 items-center justify-center gap-2.5 rounded-xl border-2 px-4 py-3.5 text-sm font-medium transition-all",
+                    shape === s
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-muted-foreground/20 text-muted-foreground hover:border-muted-foreground/40 hover:bg-muted/30",
+                    isDisabled && "cursor-not-allowed opacity-50 hover:border-muted-foreground/20 hover:bg-transparent"
+                  )}
+                >
+                  {isCircle ? (
+                    <Circle
+                      className={cn(
+                        "size-5",
+                        shape === s && "fill-primary/20"
+                      )}
+                    />
+                  ) : (
+                    <Square
+                      className={cn(
+                        "size-5",
+                        shape === s && "fill-primary/20"
+                      )}
+                    />
+                  )}
+                  <span className="capitalize">{s}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -112,6 +128,24 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
               Enter a value between 1 and 100,000 meters.
             </p>
           )}
+        </div>
+
+        {/* Rasterization resolution */}
+        <div className="space-y-2">
+          <Label htmlFor="raster-res">Rasterization resolution (m)</Label>
+          <Input
+            id="raster-res"
+            type="number"
+            min={5}
+            max={100}
+            step={5}
+            value={rasterResM}
+            onChange={(e) => setRasterResM(parseInt(e.target.value) || 25)}
+            className="w-32"
+          />
+          <p className="text-xs text-muted-foreground">
+            Resolution for boundary overlap rasterization. Lower = more accurate, slower. 25 m is the standard.
+          </p>
         </div>
 
         {/* Visual preview */}
