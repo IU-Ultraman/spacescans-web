@@ -107,7 +107,7 @@ export const api = {
   saveConfig: (id: string, config: Record<string, unknown>) =>
     request<Task>(`/api/tasks/${id}/config`, {
       method: "PUT",
-      body: JSON.stringify(config),
+      body: JSON.stringify({ experiment: "bg_ndi_wi", ...config }),
     }),
 
   startTask: (id: string) =>
