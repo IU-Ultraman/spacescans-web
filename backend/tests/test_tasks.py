@@ -120,7 +120,10 @@ def test_save_config_and_start():
     csv = "pid,startDate,endDate,longitude,latitude\nP1,2020-01-01,2020-12-31,-82.35,29.65\n"
     client.post(f"/api/tasks/{task_id}/upload", headers=auth_header(token),
                 files={"file": ("test.csv", io.BytesIO(csv.encode()), "text/csv")})
-    config = {"buffer": {"shape": "circle", "size": 1000, "unit": "meters"}, "variables": ["var_a"]}
+    # Use mock experiment so this test doesn't require SPACESCANS_PIPELINE_PYTHON
+    # to exist on disk (the bg_ndi_wi dispatch path needs the conda env binary,
+    # which is only present when backend/.env is configured).
+    config = {"experiment": "mock", "buffer": {"shape": "circle", "size": 1000, "unit": "meters"}, "variables": ["var_a"]}
     resp = client.put(f"/api/tasks/{task_id}/config", json=config, headers=auth_header(token))
     assert resp.status_code == 200
     resp = client.post(f"/api/tasks/{task_id}/start", headers=auth_header(token))
