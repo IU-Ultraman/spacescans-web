@@ -175,7 +175,7 @@ orchestrator. Five small functions:
 | `csv_to_parquet(src, dst)` | Read CSV with explicit FIPS=string dtype. Parse dates. Write parquet (no column rename — `demo_conus` adapter handles renaming at runtime). |
 | `render_yaml(step, task_dir, config) -> Path` | Read template YAML, inject 5 keys, write to `pipeline_configs/<step>.yaml`. |
 | `run_pipeline_step(yaml_path, task_dir, step_name) -> int` | `subprocess.Popen` with new process session; capture stdout line-by-line; parse progress; tee to logs.jsonl. |
-| `merge_results(task_dir, variables) -> Path` | pandas outer-join of per-variable parquets on `(PATID, startDate, endDate)`. Write `output/result.csv`. |
+| `merge_results(task_dir, variables) -> Path` | Start from `input.csv` (preserves pid/dates/coords). Left-merge each per-variable parquet on `pid==PATID`. Write `output/result.csv`. |
 
 ### Modified files
 
@@ -438,7 +438,7 @@ endpoint. Step 5 returns 409. Step 6 onward is the async lifecycle.
 | `test_render_yaml_injects_patient_file` | Rendered `buffer.patient_file` equals `task_dir/input.parquet` |
 | `test_render_yaml_preserves_source_file` | Template `source.file` unchanged after render |
 | `test_render_yaml_c4_no_raster_res_m` | C4 templates without `raster_res_m` key render without error |
-| `test_merge_results_outer_join` | 50 NDI rows + 80 Walkability rows → 100-row result.csv |
+| `test_merge_results_left_join` | 100-row input + 80-row NDI + 50-row WI → 100-row result.csv with NDI/NatWalkInd columns, nulls where unmatched |
 | `test_merge_results_warns_on_high_null` | Low match rate produces a warning log entry |
 | `test_parse_overlap_fast_progress` | `[overlap_fast] tile 7460/14938 ( 49.9%)` → progress 0.499 |
 
