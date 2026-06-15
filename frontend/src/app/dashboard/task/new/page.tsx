@@ -42,8 +42,9 @@ export default function NewTaskPage() {
         />
       )}
 
-      {step === 2 && (
+      {step === 2 && taskId && (
         <VariablesStep
+          taskId={taskId}
           onComplete={handleVariablesComplete}
           onBack={() => setStep(1)}
           initialSelection={selectedVariables}

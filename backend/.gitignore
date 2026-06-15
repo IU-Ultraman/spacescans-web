@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 data/
 .env
+data/variable_metadata.json
+data/c3_cache/

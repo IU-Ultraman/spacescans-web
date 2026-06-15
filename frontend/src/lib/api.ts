@@ -93,6 +93,20 @@ export interface TaskStatus {
   pid?: number;
 }
 
+export interface VarCoverage {
+  coverage_years: [number, number];
+  patients_in_time_window: number;
+  patients_in_region: number;
+  patients_covered: number;
+  coverage_pct: number;
+  warnings: string[];
+}
+
+export interface CoverageResponse {
+  row_count: number;
+  variables: Record<string, VarCoverage>;
+}
+
 export const api = {
   // Auth
   signup: (data: {
@@ -156,6 +170,11 @@ export const api = {
     request<Task>(`/api/tasks/${id}/stop`, {
       method: "POST",
     }),
+
+  getCoverage: (id: string, variables: string[]) =>
+    request<CoverageResponse>(
+      `/api/tasks/${id}/coverage?variables=${variables.join(",")}`,
+    ),
 
   getStatus: (id: string) => request<TaskStatus>(`/api/tasks/${id}/status`),
 

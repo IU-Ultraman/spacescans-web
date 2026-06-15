@@ -79,3 +79,27 @@ It is not part of automated pytest; run it before publishing any release.
 - Both `ndi` and `NatWalkInd` columns have non-null values for at least 90% of patients.
 - Wall-clock under 5 minutes.
 - No errors in the backend stdout.
+
+## Sprint 1 additions (Pre-flight + Cache)
+
+### Pre-flight coverage check
+
+On the Variables step, after checking NDI:
+- Expect a colored panel below: green if ≥95% covered, yellow 60-95%, red <60%.
+- The panel reads: "X% of your cohort covered" with breakdown by time and region.
+- Try a cohort with patients in 2010 (outside NDI 2012-2022) — expect a warning line.
+
+### C3 cache speedup
+
+After completing one task with NDI + Walkability:
+1. Note the wall-clock for c3_bg step in the LogViewer (timestamp diff between
+   "spawning c3_bg" and "step c3_bg exit code 0").
+2. Create a NEW task, upload the same CSV, select the same variables and buffer.
+3. Start the task. The c3_bg step should appear, log "cache hit", and complete
+   in under a second (you'll see the step list flicker by quickly).
+4. result.csv should still be produced.
+
+To force a cache rebuild:
+
+    rm -rf backend/data/c3_cache/
+

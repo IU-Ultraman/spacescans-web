@@ -180,6 +180,11 @@ def fake_cli_settings(monkeypatch, tmp_path):
     monkeypatch.setattr(app.config.settings, "SPACESCANS_PIPELINE_CLI", fixture)
     monkeypatch.setattr(app.config.settings, "SPACESCANS_PIPELINE_PYTHON", Path(sys.executable))
     monkeypatch.setattr(app.config.settings, "SPACESCANS_DATA_DIR", tmp_path)
+    # Redirect the C3 weights cache into the test's tmp_path so cache-aware
+    # runs don't pollute the real on-disk cache or pick up state across tests.
+    cache_dir = tmp_path / "c3_cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(app.config.settings, "C3_CACHE_DIR", cache_dir)
     return tmp_path
 
 
@@ -329,3 +334,242 @@ def test_run_writes_status_file_on_completion(fake_template_dir, fake_cli_settin
     assert (task_dir / "output" / "result.csv").exists()
     df = pd.read_csv(task_dir / "output" / "result.csv")
     assert len(df) == 2  # input rows preserved
+
+
+def test_hash_input_parquet_is_deterministic(tmp_path):
+    """Same bytes → same hash; one byte change → different hash."""
+    from app.experiments.bg_ndi_wi import _hash_input_parquet
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"hello world" * 1000)
+    h1 = _hash_input_parquet(p)
+    h2 = _hash_input_parquet(p)
+    assert h1 == h2
+    assert len(h1) == 64  # sha256 hex digest
+
+    p.write_bytes(b"hello WORLD" * 1000)  # one byte case change
+    h3 = _hash_input_parquet(p)
+    assert h3 != h1
+
+
+def test_cache_key_stable_same_inputs(tmp_path):
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"\x00" * 4096)
+    cfg = {"buffer": {"size": 270, "raster_res_m": 25}}
+    k1 = _cache_key(p, _C3_STEP, cfg)
+    k2 = _cache_key(p, _C3_STEP, cfg)
+    assert k1 == k2
+
+
+def test_cache_key_changes_on_input(tmp_path):
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"\x00" * 4096)
+    cfg = {"buffer": {"size": 270, "raster_res_m": 25}}
+    k1 = _cache_key(p, _C3_STEP, cfg)
+    p.write_bytes(b"\x01" * 4096)
+    k2 = _cache_key(p, _C3_STEP, cfg)
+    assert k1 != k2
+
+
+def test_cache_key_changes_on_buffer(tmp_path):
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"\x00" * 4096)
+    k1 = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 25}})
+    k2 = _cache_key(p, _C3_STEP, {"buffer": {"size": 500, "raster_res_m": 25}})
+    assert k1 != k2
+
+
+def test_cache_key_changes_on_raster(tmp_path):
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"\x00" * 4096)
+    k1 = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 25}})
+    k2 = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 50}})
+    assert k1 != k2
+
+
+def test_cache_key_format_human_readable(tmp_path):
+    """Sanity-check the filename grammar so devs can identify cache entries."""
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"\x00" * 4096)
+    k = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 25}})
+    assert "__BG__" in k
+    assert "__b270m__" in k
+    assert "__r25m" in k
+
+
+def test_is_valid_cached_parquet_rejects_short_file(tmp_path):
+    from app.experiments.bg_ndi_wi import _is_valid_cached_parquet
+
+    p = tmp_path / "fake.parquet"
+    p.write_bytes(b"too short")
+    assert not _is_valid_cached_parquet(p)
+
+
+def test_is_valid_cached_parquet_rejects_missing(tmp_path):
+    from app.experiments.bg_ndi_wi import _is_valid_cached_parquet
+
+    assert not _is_valid_cached_parquet(tmp_path / "does-not-exist.parquet")
+
+
+def test_is_valid_cached_parquet_accepts_real_parquet(tmp_path):
+    import pandas as pd
+    from app.experiments.bg_ndi_wi import _is_valid_cached_parquet
+
+    p = tmp_path / "real.parquet"
+    pd.DataFrame({"a": [1, 2, 3]}).to_parquet(p, index=False)
+    assert _is_valid_cached_parquet(p)
+
+
+import shutil
+
+
+def test_cache_miss_creates_artifact_and_meta(fake_template_dir, fake_cli_settings, tmp_path):
+    """First run with no cache → cache dir gets <key>.parquet + <key>.meta.json."""
+    import app.config
+
+    task_dir = tmp_path / "task-cache-01"
+    task_dir.mkdir()
+    (task_dir / "input.csv").write_text(
+        "pid,startDate,endDate,longitude,latitude\n"
+        "P1,2017-01-01,2017-12-31,-93.0,45.0\n"
+    )
+    (task_dir / "config.json").write_text(json.dumps({
+        "experiment": "bg_ndi_wi",
+        "variables": ["ndi"],
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+    }))
+
+    from app.experiments.bg_ndi_wi import run
+    rc = run(task_dir)
+    assert rc == 0
+
+    cache_dir = app.config.settings.C3_CACHE_DIR
+    parquets = list(cache_dir.glob("*.parquet"))
+    metas = list(cache_dir.glob("*.meta.json"))
+    assert len(parquets) == 1
+    assert len(metas) == 1
+    # filename grammar
+    assert "__BG__b270m__r25m" in parquets[0].name
+
+
+def test_cache_hit_skips_subprocess(fake_template_dir, fake_cli_settings, tmp_path, monkeypatch):
+    """Second run with same inputs → Popen called 0 times for c3_bg."""
+    import app.config
+
+    # Run 1: populates cache.
+    task_dir = tmp_path / "task-cache-A"
+    task_dir.mkdir()
+    (task_dir / "input.csv").write_text(
+        "pid,startDate,endDate,longitude,latitude\n"
+        "P1,2017-01-01,2017-12-31,-93.0,45.0\n"
+    )
+    (task_dir / "config.json").write_text(json.dumps({
+        "experiment": "bg_ndi_wi",
+        "variables": ["ndi"],
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+    }))
+    from app.experiments.bg_ndi_wi import run
+    assert run(task_dir) == 0
+
+    # Run 2: byte-identical input + same config. Should hit cache for c3_bg.
+    task_dir_2 = tmp_path / "task-cache-B"
+    task_dir_2.mkdir()
+    shutil.copy(task_dir / "input.csv", task_dir_2 / "input.csv")
+    shutil.copy(task_dir / "config.json", task_dir_2 / "config.json")
+
+    # Monkeypatch run_pipeline_step to count invocations BY STEP NAME.
+    from app.experiments import bg_ndi_wi
+    calls: list[str] = []
+    real_run_step = bg_ndi_wi.run_pipeline_step
+
+    def counting_run_step(yaml_path, task_dir, step_name, on_progress=None):
+        calls.append(step_name)
+        return real_run_step(yaml_path, task_dir, step_name, on_progress)
+
+    monkeypatch.setattr(bg_ndi_wi, "run_pipeline_step", counting_run_step)
+    assert run(task_dir_2) == 0
+
+    # c3_bg should be a cache hit (not in calls); c4_ndi must still run.
+    assert "c3_bg" not in calls, f"c3_bg should have hit cache; calls={calls}"
+    assert "c4_ndi" in calls
+
+
+def test_cache_corrupted_falls_through(fake_template_dir, fake_cli_settings, tmp_path):
+    """Pre-existing 10-byte fake cache entry → ignored, fresh run, cache overwritten."""
+    import app.config
+
+    task_dir = tmp_path / "task-cache-C"
+    task_dir.mkdir()
+    (task_dir / "input.csv").write_text(
+        "pid,startDate,endDate,longitude,latitude\n"
+        "P1,2017-01-01,2017-12-31,-93.0,45.0\n"
+    )
+    (task_dir / "config.json").write_text(json.dumps({
+        "experiment": "bg_ndi_wi",
+        "variables": ["ndi"],
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+    }))
+
+    # Pre-populate the cache with a corrupted file at the EXACT key the run will compute.
+    # Easiest: do one real run first to learn the key, then truncate the file.
+    from app.experiments.bg_ndi_wi import run
+    run(task_dir)  # populates cache
+    cache_dir = app.config.settings.C3_CACHE_DIR
+    parquets = list(cache_dir.glob("*.parquet"))
+    assert len(parquets) == 1
+    parquets[0].write_bytes(b"truncated!")  # corrupt it
+
+    # Now run again — should detect corruption and rebuild.
+    task_dir_2 = tmp_path / "task-cache-D"
+    task_dir_2.mkdir()
+    shutil.copy(task_dir / "input.csv", task_dir_2 / "input.csv")
+    shutil.copy(task_dir / "config.json", task_dir_2 / "config.json")
+    assert run(task_dir_2) == 0
+    # Cache should be rewritten with valid content.
+    assert parquets[0].stat().st_size > 100
+
+
+def test_cache_write_failure_does_not_break_task(
+    fake_template_dir, fake_cli_settings, tmp_path, monkeypatch
+):
+    """shutil.copy raising OSError on cache write → task still finishes."""
+    import shutil as real_shutil
+    from app.experiments import bg_ndi_wi
+
+    task_dir = tmp_path / "task-cache-E"
+    task_dir.mkdir()
+    (task_dir / "input.csv").write_text(
+        "pid,startDate,endDate,longitude,latitude\n"
+        "P1,2017-01-01,2017-12-31,-93.0,45.0\n"
+    )
+    (task_dir / "config.json").write_text(json.dumps({
+        "experiment": "bg_ndi_wi",
+        "variables": ["ndi"],
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+    }))
+
+    # Sabotage cache writes only — keep other copies working.
+    real_copy = real_shutil.copy
+
+    def failing_copy(src, dst, *a, **kw):
+        # Identify cache-write copies by destination containing /c3_cache/.
+        if "c3_cache" in str(dst):
+            raise OSError(28, "No space left on device")
+        return real_copy(src, dst, *a, **kw)
+
+    monkeypatch.setattr(bg_ndi_wi.shutil, "copy", failing_copy)
+
+    rc = bg_ndi_wi.run(task_dir)
+    assert rc == 0  # task still finishes
+    status = json.loads((task_dir / "status.json").read_text())
+    assert status["status"] == "finished"

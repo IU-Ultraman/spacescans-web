@@ -11,8 +11,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { VariableCoveragePanel } from "./variable-coverage-panel";
 
 interface VariablesStepProps {
+  taskId: string;
   onComplete: (selectedVariables: string[]) => void;
   onBack: () => void;
   initialSelection?: string[];
@@ -34,6 +36,7 @@ const V1_VARIABLES = [
 ] as const;
 
 export function VariablesStep({
+  taskId,
   onComplete,
   onBack,
   initialSelection = [],
@@ -70,11 +73,14 @@ export function VariablesStep({
               onCheckedChange={() => toggle(v.id)}
               className="mt-0.5"
             />
-            <div>
+            <div className="flex-1">
               <div className="font-medium">{v.label}</div>
               <div className="text-sm text-muted-foreground">
                 {v.description}
               </div>
+              {selected.includes(v.id) && (
+                <VariableCoveragePanel taskId={taskId} variableKey={v.id} />
+              )}
             </div>
           </label>
         ))}

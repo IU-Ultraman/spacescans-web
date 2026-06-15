@@ -198,3 +198,63 @@ def test_two_sequential_runs_both_succeed(task_with_5_patients, tmp_path):
     # Both result.csv must exist
     assert (task_with_5_patients / "output" / "result.csv").exists()
     assert (task_dir_2 / "output" / "result.csv").exists()
+
+
+@pytest.mark.integration
+def test_e2e_cache_second_run_faster(task_with_5_patients, tmp_path):
+    """Run the same 5-patient cohort twice; the second run hits the c3_bg cache
+    and finishes in a small fraction of the first run's wall-clock."""
+    # Clear any cache entries left over from earlier tests in the suite so the
+    # first run below is guaranteed cold. Without this, the assertion on
+    # t2 < 0.7 * t1 is order-dependent: an earlier integration test that runs
+    # the same fixture (e.g. test_e2e_same_inputs_run_twice) will populate the
+    # cache, making run 1 a cache hit and collapsing the speedup.
+    cache_dir = app.config.settings.C3_CACHE_DIR
+    if cache_dir.exists():
+        shutil.rmtree(cache_dir)
+
+    cmd = [
+        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
+        "-m", "app.experiments.bg_ndi_wi", "run", str(task_with_5_patients),
+    ]
+
+    # First run: full pipeline.
+    t1_start = time.monotonic()
+    proc1 = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    t1 = time.monotonic() - t1_start
+    assert proc1.returncode == 0
+
+    # Second task with byte-identical input.csv + config.
+    task_dir_2 = tmp_path / "task-int-cache-02"
+    task_dir_2.mkdir()
+    (task_dir_2 / "output").mkdir()
+    shutil.copy(
+        Path(__file__).parent / "fixtures" / "patients_5.csv",
+        task_dir_2 / "input.csv",
+    )
+    (task_dir_2 / "config.json").write_text(json.dumps({
+        "experiment": "bg_ndi_wi",
+        "variables": ["ndi", "walkability"],
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+    }))
+    cmd2 = [
+        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
+        "-m", "app.experiments.bg_ndi_wi", "run", str(task_dir_2),
+    ]
+    t2_start = time.monotonic()
+    proc2 = subprocess.run(cmd2, capture_output=True, text=True, timeout=300)
+    t2 = time.monotonic() - t2_start
+    assert proc2.returncode == 0
+
+    # Second run should be noticeably faster (C3 step skipped).
+    # On the 5-patient fixture C3 takes ~5-6s of the ~14s total; the other ~8s
+    # is NDI .Rda load + walkability raster crop, which the cache does NOT skip.
+    # So a cache hit shaves ~40%, giving t2 ≈ 0.6 * t1. Threshold 0.7 catches a
+    # cache regression (no cache → t2 ≈ t1) without being flaky on slow hardware.
+    assert t2 < 0.7 * t1, (
+        f"expected second run to be < 70% of first; got t1={t1:.2f}s t2={t2:.2f}s"
+    )
+
+    # Cache directory exists with one entry.
+    parquets = list(cache_dir.glob("*.parquet"))
+    assert len(parquets) >= 1

@@ -14,6 +14,137 @@ from datetime import datetime, timezone
 import app.config
 
 
+# Module-level cache for variable_metadata.json (mtime-invalidated).
+_VARIABLE_METADATA_CACHE: dict | None = None
+_VARIABLE_METADATA_MTIME: float | None = None
+
+
+def _load_variable_metadata() -> dict:
+    """Read and cache backend/data/variable_metadata.json.
+
+    Cache is invalidated whenever the file's mtime changes so dev edits
+    are picked up without restarting the server.
+    """
+    global _VARIABLE_METADATA_CACHE, _VARIABLE_METADATA_MTIME
+    path = app.config.settings.DATA_DIR / "variable_metadata.json"
+    if not path.exists():
+        raise FileNotFoundError(f"variable_metadata.json missing at {path}")
+    mtime = path.stat().st_mtime
+    if _VARIABLE_METADATA_CACHE is None or mtime != _VARIABLE_METADATA_MTIME:
+        _VARIABLE_METADATA_CACHE = json.loads(path.read_text())
+        _VARIABLE_METADATA_MTIME = mtime
+    return _VARIABLE_METADATA_CACHE
+
+
+def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
+    """Compute per-variable cohort coverage statistics for a task's input.csv.
+
+    Returns
+    -------
+    dict
+        Shape:
+            {
+              "row_count": int,
+              "variables": {
+                  var_key: {
+                      "coverage_years": [int, int],
+                      "patients_in_time_window": int,
+                      "patients_in_region": int,
+                      "patients_covered": int,
+                      "coverage_pct": float (2 dp),
+                      "warnings": list[str],
+                  },
+                  ...
+              }
+            }
+
+    Raises
+    ------
+    FileNotFoundError
+        If the task's input.csv is missing.
+    KeyError
+        If any requested variable is not in variable_metadata.json (the
+        exception args[0] is a comma-separated list of unknown keys).
+    """
+    import pandas as pd  # noqa: PLC0415  — local import to keep cold-import light
+
+    task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
+    input_csv = task_dir / "input.csv"
+    if not input_csv.exists():
+        raise FileNotFoundError("No input uploaded")
+
+    metadata = _load_variable_metadata()
+    unknown = [v for v in variable_keys if v not in metadata]
+    if unknown:
+        raise KeyError(", ".join(unknown))
+
+    df = pd.read_csv(
+        input_csv,
+        parse_dates=["startDate", "endDate"],
+        dtype={"state_fips": "string", "county_fips": "string",
+               "tract_geoid": "string", "bg_geoid": "string"},
+    )
+    n_total = len(df)
+
+    # Empty cohort: return zero coverage for every requested variable, no warnings.
+    if n_total == 0:
+        return {
+            "row_count": 0,
+            "variables": {
+                var: {
+                    "coverage_years": list(metadata[var]["coverage_years"]),
+                    "patients_in_time_window": 0,
+                    "patients_in_region": 0,
+                    "patients_covered": 0,
+                    "coverage_pct": 0.0,
+                    "warnings": ["Cohort is empty — no patients to evaluate"],
+                }
+                for var in variable_keys
+            },
+        }
+
+    out_vars: dict[str, dict] = {}
+    for var in variable_keys:
+        m = metadata[var]
+        y0, y1 = m["coverage_years"]
+        cov_start = pd.Timestamp(f"{y0}-01-01")
+        cov_end = pd.Timestamp(f"{y1}-12-31")
+        in_time = (df["startDate"] <= cov_end) & (df["endDate"] >= cov_start)
+        if m.get("coverage_region") == "CONUS":
+            in_region = (
+                df["longitude"].between(-125, -66)
+                & df["latitude"].between(24, 50)
+            )
+        else:
+            in_region = pd.Series(True, index=df.index)
+        covered = in_time & in_region
+
+        warnings: list[str] = []
+        time_out_pct = (~in_time).sum() / n_total * 100
+        if time_out_pct > 5:
+            warnings.append(
+                f"{time_out_pct:.0f}% of patients have episodes entirely outside "
+                f"{y0}-{y1}"
+            )
+        region_out_pct = (~in_region).sum() / n_total * 100
+        if region_out_pct > 5:
+            warnings.append(
+                f"{region_out_pct:.0f}% of patients fall outside the "
+                f"{m['coverage_region']} coverage region"
+            )
+
+        out_vars[var] = {
+            "coverage_years": [y0, y1],
+            "patients_in_time_window": int(in_time.sum()),
+            "patients_in_region": int(in_region.sum()),
+            "patients_covered": int(covered.sum()),
+            "coverage_pct": round(100 * covered.sum() / n_total, 2),
+            "warnings": warnings,
+        }
+
+    return {"row_count": n_total, "variables": out_vars}
+
+
 class TaskBusyError(RuntimeError):
     """Raised by start_task when another task currently holds .run_lock."""
 

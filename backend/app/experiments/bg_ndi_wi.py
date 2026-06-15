@@ -6,12 +6,15 @@ Spawned by app.task_manager.start_task as:
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import json
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -245,6 +248,46 @@ def _write_status(task_dir: Path, **fields) -> None:
     status_path.write_text(json.dumps(current, indent=2))
 
 
+def _hash_input_parquet(path: Path) -> str:
+    """Return the SHA256 hex digest of a parquet file's bytes."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):  # 1 MB chunks
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _cache_key(input_parquet: Path, step: PipelineStep, user_config: dict) -> str:
+    """Build a deterministic, human-readable cache key.
+
+    Format: ``<sha8>__<boundary>__b<buffer>m__r<raster>m``
+    Example: ``a8f3c2b1__BG__b270m__r25m``
+    """
+    sha = _hash_input_parquet(input_parquet)
+    boundary = "BG"  # Sprint 1: only BG. Sprint 3 will derive from step.
+    buf = user_config["buffer"]["size"]
+    raster = user_config["buffer"]["raster_res_m"]
+    return f"{sha[:8]}__{boundary}__b{buf}m__r{raster}m"
+
+
+def _is_valid_cached_parquet(path: Path) -> bool:
+    """Cheap sanity check before trusting a cached file.
+
+    Rejects missing files, files under 100 bytes (typical truncated /
+    in-progress writes), and files whose parquet header is unreadable.
+    """
+    if not path.exists():
+        return False
+    if path.stat().st_size < 100:
+        return False
+    try:
+        import pandas as pd
+        pd.read_parquet(path, columns=[])  # header read; ignores data
+        return True
+    except Exception:
+        return False
+
+
 def _install_cancel_handler(task_dir: Path) -> None:
     """Install a SIGTERM handler that writes status="cancelled" before exit.
 
@@ -266,6 +309,19 @@ def _install_cancel_handler(task_dir: Path) -> None:
         # Re-raise so subprocess + cleanup finally{} blocks still run.
         raise SystemExit(143)
     signal.signal(signal.SIGTERM, _handler)
+
+
+def _write_cache_meta(path: Path, **fields) -> None:
+    """Write a JSON sidecar describing a cache entry."""
+    fields.setdefault("created_at", datetime.now(timezone.utc).isoformat())
+    path.write_text(json.dumps(fields, indent=2))
+
+
+def _count_input_rows(input_csv: Path) -> int:
+    """Cheap row count — used only for the meta sidecar."""
+    with open(input_csv) as f:
+        next(f, None)  # header
+        return sum(1 for _ in f)
 
 
 def run(task_dir: Path) -> int:
@@ -335,11 +391,39 @@ def run(task_dir: Path) -> int:
                 message=f"Running {step.name} ({idx+1}/{total_steps})",
                 progress=idx / total_steps,
             )
+
+            out_parquet = task_dir / "output" / f"{step.name}.parquet"
+
+            # C3 cache check
+            cache_path: Path | None = None
+            if step.is_c3:
+                try:
+                    cache_key = _cache_key(task_dir / "input.parquet", step, config)
+                    cache_path = app.config.settings.C3_CACHE_DIR / f"{cache_key}.parquet"
+                    if _is_valid_cached_parquet(cache_path):
+                        out_parquet.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy(cache_path, out_parquet)
+                        _append_log(task_dir, "info", "runner",
+                                    f"cache hit: {cache_key} — skipping pipeline run")
+                        _write_status(
+                            task_dir,
+                            current_step=step.name,
+                            progress=(idx + 1) / total_steps,
+                            message=f"Reused cached {step.name}",
+                        )
+                        continue  # skip subprocess entirely
+                except Exception as exc:
+                    _append_log(task_dir, "warning", "runner",
+                                f"cache check failed for {step.name}: {exc!r} — running fresh")
+                    cache_path = None  # disable write-back too
+
             try:
                 yaml_path = render_yaml(step, task_dir, config)
             except Exception as exc:
-                _append_log(task_dir, "error", "runner", f"render_yaml({step.name}) failed: {exc!r}")
-                _write_status(task_dir, status="error", message=f"render failed at {step.name}")
+                _append_log(task_dir, "error", "runner",
+                            f"render_yaml({step.name}) failed: {exc!r}")
+                _write_status(task_dir, status="error",
+                              message=f"render failed at {step.name}")
                 return 1
 
             def _on_step_progress(frac: float, idx=idx, step=step) -> None:
@@ -351,6 +435,7 @@ def run(task_dir: Path) -> int:
                     message=f"Running {step.name} ({idx+1}/{total_steps}) — {int(frac*100)}%",
                 )
 
+            step_start = time.time()
             rc = run_pipeline_step(yaml_path, task_dir, step_name=step.name,
                                    on_progress=_on_step_progress)
             if rc != 0:
@@ -358,11 +443,31 @@ def run(task_dir: Path) -> int:
                               message=f"step {step.name} failed with exit code {rc}")
                 return rc
 
-            out_parquet = task_dir / "output" / f"{step.name}.parquet"
             if not out_parquet.exists():
                 _write_status(task_dir, status="error",
                               message=f"step {step.name} produced no output parquet")
                 return 1
+
+            # C3 cache write-back on success
+            if step.is_c3 and cache_path is not None:
+                try:
+                    cache_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy(out_parquet, cache_path)
+                    _write_cache_meta(
+                        cache_path.with_suffix(".meta.json"),
+                        sha_full=_hash_input_parquet(task_dir / "input.parquet"),
+                        boundary="BG",
+                        buffer_m=config["buffer"]["size"],
+                        raster_res_m=config["buffer"]["raster_res_m"],
+                        input_row_count=_count_input_rows(task_dir / "input.csv"),
+                        wall_clock_seconds=int(time.time() - step_start),
+                        file_size_bytes=out_parquet.stat().st_size,
+                    )
+                    _append_log(task_dir, "info", "runner",
+                                f"cache write: {cache_path.name}")
+                except OSError as exc:
+                    _append_log(task_dir, "warning", "runner",
+                                f"cache write failed: {exc!r} — continuing")
 
         _write_status(task_dir, current_step="merge", message="Merging variable outputs",
                       progress=(total_steps - 0.1) / total_steps)
