@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
-import { Square } from "lucide-react";
+import { CheckCircle2, Loader2, Pause, Square } from "lucide-react";
 
 interface ProgressPanelProps {
   progress: number;
@@ -70,14 +70,24 @@ export function ProgressPanel({
           <div className="space-y-1 border-t pt-3">
             {steps.map((stepName, i) => {
               const state = stepState(stepName, currentStep);
-              const icon =
-                state === "done" ? "✅" : state === "running" ? "⏳" : "⏸";
+              const Icon =
+                state === "done"
+                  ? CheckCircle2
+                  : state === "running"
+                    ? Loader2
+                    : Pause;
+              const iconClass =
+                state === "running"
+                  ? "size-4 animate-spin text-primary"
+                  : state === "done"
+                    ? "size-4 text-green-600"
+                    : "size-4 text-muted-foreground";
               return (
                 <div
                   key={stepName}
                   className="flex items-center gap-2 text-sm"
                 >
-                  <span aria-hidden>{icon}</span>
+                  <Icon className={iconClass} aria-hidden />
                   <span className="font-mono text-xs text-muted-foreground">
                     Step {i + 1}/{totalSteps ?? steps.length}
                   </span>

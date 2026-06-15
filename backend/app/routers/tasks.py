@@ -12,6 +12,7 @@ class CreateTaskRequest(BaseModel):
     task_name: str
 
 class ConfigRequest(BaseModel):
+    experiment: str | None = None
     buffer: dict
     variables: list[str]
     execution: dict | None = None
