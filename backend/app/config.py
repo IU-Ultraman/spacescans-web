@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
     DATA_DIR: Path = BASE_DIR / "data"
     TASKS_DIR: Path = DATA_DIR / "tasks"
+    C3_CACHE_DIR: Path = DATA_DIR / "c3_cache"
     DB_PATH: Path = DATA_DIR / "spacescans.db"
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
     MAX_UPLOAD_SIZE_MB: int = 100

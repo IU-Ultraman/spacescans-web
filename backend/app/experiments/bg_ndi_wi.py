@@ -6,6 +6,7 @@ Spawned by app.task_manager.start_task as:
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import json
 import os
 import re
@@ -243,6 +244,46 @@ def _write_status(task_dir: Path, **fields) -> None:
             current = {}
     current.update(fields)
     status_path.write_text(json.dumps(current, indent=2))
+
+
+def _hash_input_parquet(path: Path) -> str:
+    """Return the SHA256 hex digest of a parquet file's bytes."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):  # 1 MB chunks
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _cache_key(input_parquet: Path, step: PipelineStep, user_config: dict) -> str:
+    """Build a deterministic, human-readable cache key.
+
+    Format: ``<sha8>__<boundary>__b<buffer>m__r<raster>m``
+    Example: ``a8f3c2b1__BG__b270m__r25m``
+    """
+    sha = _hash_input_parquet(input_parquet)
+    boundary = "BG"  # Sprint 1: only BG. Sprint 3 will derive from step.
+    buf = user_config["buffer"]["size"]
+    raster = user_config["buffer"]["raster_res_m"]
+    return f"{sha[:8]}__{boundary}__b{buf}m__r{raster}m"
+
+
+def _is_valid_cached_parquet(path: Path) -> bool:
+    """Cheap sanity check before trusting a cached file.
+
+    Rejects missing files, files under 100 bytes (typical truncated /
+    in-progress writes), and files whose parquet header is unreadable.
+    """
+    if not path.exists():
+        return False
+    if path.stat().st_size < 100:
+        return False
+    try:
+        import pandas as pd
+        pd.read_parquet(path, columns=[])  # header read; ignores data
+        return True
+    except Exception:
+        return False
 
 
 def _install_cancel_handler(task_dir: Path) -> None:

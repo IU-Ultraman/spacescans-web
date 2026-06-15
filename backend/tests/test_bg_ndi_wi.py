@@ -329,3 +329,97 @@ def test_run_writes_status_file_on_completion(fake_template_dir, fake_cli_settin
     assert (task_dir / "output" / "result.csv").exists()
     df = pd.read_csv(task_dir / "output" / "result.csv")
     assert len(df) == 2  # input rows preserved
+
+
+def test_hash_input_parquet_is_deterministic(tmp_path):
+    """Same bytes → same hash; one byte change → different hash."""
+    from app.experiments.bg_ndi_wi import _hash_input_parquet
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"hello world" * 1000)
+    h1 = _hash_input_parquet(p)
+    h2 = _hash_input_parquet(p)
+    assert h1 == h2
+    assert len(h1) == 64  # sha256 hex digest
+
+    p.write_bytes(b"hello WORLD" * 1000)  # one byte case change
+    h3 = _hash_input_parquet(p)
+    assert h3 != h1
+
+
+def test_cache_key_stable_same_inputs(tmp_path):
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"\x00" * 4096)
+    cfg = {"buffer": {"size": 270, "raster_res_m": 25}}
+    k1 = _cache_key(p, _C3_STEP, cfg)
+    k2 = _cache_key(p, _C3_STEP, cfg)
+    assert k1 == k2
+
+
+def test_cache_key_changes_on_input(tmp_path):
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"\x00" * 4096)
+    cfg = {"buffer": {"size": 270, "raster_res_m": 25}}
+    k1 = _cache_key(p, _C3_STEP, cfg)
+    p.write_bytes(b"\x01" * 4096)
+    k2 = _cache_key(p, _C3_STEP, cfg)
+    assert k1 != k2
+
+
+def test_cache_key_changes_on_buffer(tmp_path):
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"\x00" * 4096)
+    k1 = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 25}})
+    k2 = _cache_key(p, _C3_STEP, {"buffer": {"size": 500, "raster_res_m": 25}})
+    assert k1 != k2
+
+
+def test_cache_key_changes_on_raster(tmp_path):
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"\x00" * 4096)
+    k1 = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 25}})
+    k2 = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 50}})
+    assert k1 != k2
+
+
+def test_cache_key_format_human_readable(tmp_path):
+    """Sanity-check the filename grammar so devs can identify cache entries."""
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"\x00" * 4096)
+    k = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 25}})
+    assert "__BG__" in k
+    assert "__b270m__" in k
+    assert "__r25m" in k
+
+
+def test_is_valid_cached_parquet_rejects_short_file(tmp_path):
+    from app.experiments.bg_ndi_wi import _is_valid_cached_parquet
+
+    p = tmp_path / "fake.parquet"
+    p.write_bytes(b"too short")
+    assert not _is_valid_cached_parquet(p)
+
+
+def test_is_valid_cached_parquet_rejects_missing(tmp_path):
+    from app.experiments.bg_ndi_wi import _is_valid_cached_parquet
+
+    assert not _is_valid_cached_parquet(tmp_path / "does-not-exist.parquet")
+
+
+def test_is_valid_cached_parquet_accepts_real_parquet(tmp_path):
+    import pandas as pd
+    from app.experiments.bg_ndi_wi import _is_valid_cached_parquet
+
+    p = tmp_path / "real.parquet"
+    pd.DataFrame({"a": [1, 2, 3]}).to_parquet(p, index=False)
+    assert _is_valid_cached_parquet(p)
