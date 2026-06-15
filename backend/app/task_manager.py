@@ -86,6 +86,23 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
     )
     n_total = len(df)
 
+    # Empty cohort: return zero coverage for every requested variable, no warnings.
+    if n_total == 0:
+        return {
+            "row_count": 0,
+            "variables": {
+                var: {
+                    "coverage_years": list(metadata[var]["coverage_years"]),
+                    "patients_in_time_window": 0,
+                    "patients_in_region": 0,
+                    "patients_covered": 0,
+                    "coverage_pct": 0.0,
+                    "warnings": ["Cohort is empty — no patients to evaluate"],
+                }
+                for var in variable_keys
+            },
+        }
+
     out_vars: dict[str, dict] = {}
     for var in variable_keys:
         m = metadata[var]

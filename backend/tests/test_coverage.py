@@ -264,3 +264,17 @@ def test_coverage_endpoint_ownership_403(monkeypatch, tmp_path):
 
     resp = client.get(f"/api/tasks/{task_id}/coverage?variables=ndi", headers=auth_b)
     assert resp.status_code == 403
+
+
+def test_compute_coverage_empty_cohort_does_not_crash(monkeypatch, tmp_path):
+    """Empty input.csv (header only, no rows) must not raise ZeroDivisionError."""
+    csv = "pid,startDate,endDate,longitude,latitude\n"  # header only
+    task_id = _seed_task_with_csv(monkeypatch, tmp_path, csv)
+    from app.task_manager import compute_coverage
+    out = compute_coverage(task_id, ["ndi", "walkability"])
+    assert out["row_count"] == 0
+    assert out["variables"]["ndi"]["coverage_pct"] == 0.0
+    assert out["variables"]["ndi"]["patients_covered"] == 0
+    assert out["variables"]["walkability"]["patients_covered"] == 0
+    # Warning should mention empty cohort
+    assert any("empty" in w.lower() for w in out["variables"]["ndi"]["warnings"])
