@@ -129,6 +129,9 @@ def test_render_yaml_c3_injects_all_five_keys(fake_template_dir, tmp_path):
     assert cfg["output"]["path"] == str(task_dir / "output" / "c3_bg.parquet")
     # source.file is left alone — pipeline resolves it via --data-dir
     assert cfg["source"]["file"] == "data_full/BG_FL/C3/..."
+    # Preservation: keys not in the 5 injection points must round-trip unchanged.
+    assert cfg["linkage_pattern"] == "boundary_overlap_fast"
+    assert cfg["source"]["join_col"] == "GEOID10"
 
 
 def test_render_yaml_c4_skips_raster_res_m(fake_template_dir, tmp_path):
@@ -143,3 +146,6 @@ def test_render_yaml_c4_skips_raster_res_m(fake_template_dir, tmp_path):
     # The fake C4 template does not have raster_res_m and rendering must not
     # add it (C4 doesn't use rasterization).
     assert "raster_res_m" not in cfg["buffer"]
+    # Preservation: C4 template's source.file must round-trip unchanged.
+    assert cfg["source"]["file"] == "data_full/BG_NDI/C4/ndi.Rda"
+    assert cfg["linkage_pattern"] == "yearly_areal"

@@ -102,6 +102,6 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     cfg["output"]["path"] = str(task_dir / "output" / f"{step.name}.parquet")
 
     out = task_dir / "pipeline_configs" / f"{step.name}.yaml"
-    out.parent.mkdir(exist_ok=True)
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(yaml.safe_dump(cfg, sort_keys=False))
     return out
