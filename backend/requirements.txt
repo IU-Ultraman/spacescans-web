@@ -9,3 +9,5 @@ aiofiles==24.1.0
 owlready2==0.47
 pytest>=7.0
 httpx>=0.24.0
+pyyaml>=6.0
+pandas>=2.0

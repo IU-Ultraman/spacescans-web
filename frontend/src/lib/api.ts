@@ -56,6 +56,28 @@ export interface Task {
   error_message?: string;
 }
 
+/**
+ * Raw status payload returned by `GET /api/tasks/{id}/status`.
+ *
+ * The backend writes this from `_write_status` (see
+ * backend/app/experiments/bg_ndi_wi.py). Fields beyond `status` /
+ * `progress` / `message` are optional so payloads from older runs
+ * (or non-experiment task flows) still parse.
+ */
+export interface TaskStatus {
+  status: "not_started" | "running" | "finished" | "error" | "cancelled";
+  progress?: number;
+  message?: string;
+  /** Currently executing step name (e.g. "csv_to_parquet", "c3_bg", "c4_ndi", "c4_wi", "merge"). */
+  current_step?: string;
+  /** Total number of variable pipeline steps (excludes csv_to_parquet and merge). */
+  total_steps?: number;
+  /** Ordered list of variable pipeline step names, written once at run start. */
+  steps?: string[];
+  started_at?: string;
+  pid?: number;
+}
+
 export const api = {
   // Auth
   signup: (data: {
@@ -107,7 +129,7 @@ export const api = {
   saveConfig: (id: string, config: Record<string, unknown>) =>
     request<Task>(`/api/tasks/${id}/config`, {
       method: "PUT",
-      body: JSON.stringify(config),
+      body: JSON.stringify({ experiment: "bg_ndi_wi", ...config }),
     }),
 
   startTask: (id: string) =>
@@ -120,7 +142,7 @@ export const api = {
       method: "POST",
     }),
 
-  getStatus: (id: string) => request<Task>(`/api/tasks/${id}/status`),
+  getStatus: (id: string) => request<TaskStatus>(`/api/tasks/${id}/status`),
 
   getLogs: (id: string, since?: string) =>
     request<unknown[]>(

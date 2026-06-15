@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import settings
+from app.config import settings, validate_pipeline_settings
 from app.database import init_db
 from app.routers.auth import router as auth_router
 from app.routers.tasks import router as tasks_router
@@ -27,6 +27,7 @@ def create_app() -> FastAPI:
         settings.TASKS_DIR.mkdir(parents=True, exist_ok=True)
         init_db()
         recover_orphaned_tasks()
+        validate_pipeline_settings()
 
     @app.get("/api/health")
     async def health():

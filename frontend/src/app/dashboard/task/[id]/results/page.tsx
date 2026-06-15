@@ -28,10 +28,9 @@ export default function TaskResultsPage() {
     async function load() {
       try {
         const t = await api.getTask(id);
-        if (!cancelled) {
-          setTask(t);
-          setLoading(false);
-        }
+        if (cancelled) return;
+        setTask(t);
+        setLoading(false);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Failed to load task");
@@ -141,8 +140,10 @@ export default function TaskResultsPage() {
         </p>
         <Button onClick={handleDownload} className="mt-4 gap-2">
           <Download className="size-4" />
-          Download Results
+          Download result.csv
         </Button>
+
+        {/* Intermediate parquet downloads disabled until backend /results endpoint supports ?file= queries. */}
       </div>
 
       {/* Navigation */}

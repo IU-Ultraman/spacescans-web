@@ -3,6 +3,7 @@ import json
 import tempfile
 import os
 from pathlib import Path
+import pytest
 from fastapi.testclient import TestClient
 
 def get_test_client():
@@ -139,3 +140,55 @@ def test_recover_orphaned_tasks():
     recover_orphaned_tasks()
     status = json.loads((task_dir / "status.json").read_text())
     assert status["status"] == "error"
+
+
+def test_save_config_default_experiment_is_bg_ndi_wi(monkeypatch, tmp_path):
+    import io, importlib, app.config, app.task_manager
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("TASKS_DIR", str(tmp_path / "tasks"))
+    importlib.reload(app.config)
+    importlib.reload(app.task_manager)
+
+    from app.task_manager import create_task, save_config
+    meta = create_task(user_id=1, task_name="t")
+    save_config(meta["id"], {
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+        "variables": ["ndi"],
+    })
+    cfg_path = (app.config.settings.TASKS_DIR / f"task-{meta['id']}" / "config.json")
+    saved = json.loads(cfg_path.read_text())
+    assert saved["experiment"] == "bg_ndi_wi"
+
+
+def test_start_lock_returns_409_when_busy(monkeypatch, tmp_path):
+    """Acquire the lock from outside, then call start_task and expect TaskBusyError."""
+    import io, importlib, fcntl, os, app.config, app.task_manager
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("TASKS_DIR", str(tmp_path / "tasks"))
+    importlib.reload(app.config)
+    importlib.reload(app.task_manager)
+
+    # Externally acquire the lock to simulate another running task.
+    lock_path = app.config.settings.DATA_DIR / ".run_lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.touch()
+    fd = os.open(str(lock_path), os.O_RDWR)
+    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+    from app.task_manager import create_task, save_config, start_task, TaskBusyError
+    meta = create_task(user_id=1, task_name="t")
+    save_config(meta["id"], {
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+        "variables": ["ndi"],
+        "experiment": "mock",  # don't actually try to run bg_ndi_wi here
+    })
+    (app.config.settings.TASKS_DIR / f"task-{meta['id']}" / "input.csv").write_text(
+        "pid,startDate,endDate,longitude,latitude\nP1,2017-01-01,2017-06-30,-93.0,45.0\n"
+    )
+    with pytest.raises(TaskBusyError):
+        start_task(meta["id"])
+
+    fcntl.flock(fd, fcntl.LOCK_UN)
+    os.close(fd)

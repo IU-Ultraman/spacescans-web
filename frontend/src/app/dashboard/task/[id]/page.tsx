@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, type Task } from "@/lib/api";
+import { api, type Task, type TaskStatus } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
 import { LogViewer, type LogEntry } from "@/components/log-viewer";
 import { ProgressPanel } from "@/components/progress-panel";
@@ -27,21 +27,32 @@ export default function TaskDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("Processing...");
+  // Full status payload from `/api/tasks/{id}/status` — kept separately from
+  // `task` so the multi-step fields (current_step, total_steps, steps) survive
+  // polling updates and remain available after the run finishes.
+  const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null);
 
   const lastTimestampRef = useRef<string | undefined>(undefined);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const logPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch the task on mount
+  // Fetch the task on mount. We also pull status.json so that already-running
+  // or already-finished tasks render their step-list immediately (the polling
+  // effect below only fires while status === "running").
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
         const t = await api.getTask(id);
-        if (!cancelled) {
-          setTask(t);
-          setLoading(false);
+        if (cancelled) return;
+        setTask(t);
+        try {
+          const s = await api.getStatus(id);
+          if (!cancelled) setTaskStatus(s);
+        } catch {
+          // status.json may not exist yet for not_started tasks — fine.
         }
+        setLoading(false);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Failed to load task");
@@ -82,6 +93,7 @@ export default function TaskDetailPage() {
     pollRef.current = setInterval(async () => {
       try {
         const status = await api.getStatus(id);
+        setTaskStatus(status);
         setTask((prev) =>
           prev
             ? { ...prev, status: status.status, progress: status.progress }
@@ -89,7 +101,7 @@ export default function TaskDetailPage() {
         );
         if (status.progress !== undefined) {
           setStatusMessage(
-            `Progress: ${status.progress}%`,
+            `Progress: ${Math.round((status.progress ?? 0) * 100)}%`,
           );
         }
       } catch {
@@ -185,6 +197,9 @@ export default function TaskDetailPage() {
             progress={task.progress ?? 0}
             message={statusMessage}
             onStop={handleStop}
+            steps={taskStatus?.steps}
+            currentStep={taskStatus?.current_step}
+            totalSteps={taskStatus?.total_steps}
           />
           <LogViewer logs={logs} />
         </>
