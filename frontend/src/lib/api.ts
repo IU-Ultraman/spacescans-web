@@ -57,6 +57,21 @@ export interface Task {
 }
 
 /**
+ * A single log line emitted by the backend pipeline.
+ *
+ * The backend writes each `logs.jsonl` row with a `source` field
+ * identifying which subprocess produced the line ("runner" for the
+ * top-level orchestrator, or one of the variable steps).
+ */
+export interface LogEntry {
+  ts: string;
+  level: string;
+  msg: string;
+  /** "runner" | "c3_bg" | "c4_ndi" | "c4_wi" */
+  source?: string;
+}
+
+/**
  * Raw status payload returned by `GET /api/tasks/{id}/status`.
  *
  * The backend writes this from `_write_status` (see

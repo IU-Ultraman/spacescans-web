@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, type Task } from "@/lib/api";
+import { api, type Task, type TaskStatus } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -14,12 +14,52 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+interface IntermediateFile {
+  file: string;
+  label: string;
+}
+
+// All possible pipeline intermediates. We render the subset that the
+// task's status.steps reports — falling back to the full list when
+// status is unavailable so a stale browser still surfaces every file
+// (missing ones will 404 cleanly).
+const ALL_INTERMEDIATES: Record<string, IntermediateFile> = {
+  c3_bg: { file: "c3_bg.parquet", label: "c3_bg.parquet (BG weights)" },
+  c4_ndi: {
+    file: "c4_ndi.parquet",
+    label: "c4_ndi.parquet (raw NDI per patient)",
+  },
+  c4_wi: {
+    file: "c4_wi.parquet",
+    label: "c4_wi.parquet (raw Walkability per patient)",
+  },
+};
+
+function intermediatesForStatus(
+  status: TaskStatus | null,
+): IntermediateFile[] {
+  const steps = status?.steps;
+  if (!steps || steps.length === 0) {
+    // Unknown — show all three; missing ones will 404 cleanly.
+    return Object.values(ALL_INTERMEDIATES);
+  }
+  const out: IntermediateFile[] = [];
+  for (const step of steps) {
+    const entry = ALL_INTERMEDIATES[step];
+    if (entry) out.push(entry);
+  }
+  return out;
+}
+
 export default function TaskResultsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params.id;
 
   const [task, setTask] = useState<Task | null>(null);
+  const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +70,12 @@ export default function TaskResultsPage() {
         const t = await api.getTask(id);
         if (cancelled) return;
         setTask(t);
+        try {
+          const s = await api.getStatus(id);
+          if (!cancelled) setTaskStatus(s);
+        } catch {
+          // status.json may be unavailable for legacy tasks — fine.
+        }
         setLoading(false);
       } catch (err) {
         if (!cancelled) {
@@ -76,6 +122,8 @@ export default function TaskResultsPage() {
   const completedAt = task.created_at
     ? new Date(task.created_at).toLocaleString()
     : "Unknown";
+
+  const intermediates = intermediatesForStatus(taskStatus);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -143,7 +191,26 @@ export default function TaskResultsPage() {
           Download result.csv
         </Button>
 
-        {/* Intermediate parquet downloads disabled until backend /results endpoint supports ?file= queries. */}
+        {intermediates.length > 0 && (
+          <details className="mt-4 text-sm">
+            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+              Advanced: pipeline intermediates
+            </summary>
+            <ul className="mt-2 list-disc space-y-1 pl-4">
+              {intermediates.map(({ file, label }) => (
+                <li key={file}>
+                  <a
+                    className="underline hover:text-foreground"
+                    href={`${API_BASE}/api/tasks/${id}/results?file=${encodeURIComponent(file)}`}
+                    download={file}
+                  >
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </div>
 
       {/* Navigation */}
