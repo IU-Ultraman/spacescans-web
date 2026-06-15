@@ -45,7 +45,7 @@ export function ProgressPanel({
   return (
     <div className="rounded-lg border bg-card p-6 shadow-sm">
       <div className="space-y-4">
-        <Progress value={progress} className="w-full">
+        <Progress value={progress * 100} className="w-full">
           <ProgressLabel>Progress</ProgressLabel>
           <ProgressValue />
         </Progress>
