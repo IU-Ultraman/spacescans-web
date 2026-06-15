@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
+import yaml
+
+import app.config
 
 
 @dataclass(frozen=True)
@@ -73,3 +76,32 @@ def csv_to_parquet(src: Path, dst: Path) -> None:
     df["endDate"] = pd.to_datetime(df["endDate"], format="%Y-%m-%d", errors="raise")
     dst.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(dst, index=False)
+
+
+def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
+    """Read a pipeline YAML template, inject task-specific fields, write to task dir.
+
+    Only five keys are overwritten; everything else (source.file, exposure.file,
+    time.years, engine.backend, etc.) is preserved as-is so the rendered config
+    behaves identically to the canonical experiment pipeline.
+    """
+    template_path = (
+        app.config.settings.SPACESCANS_CONFIG_TEMPLATES_DIR / step.template_relpath
+    )
+    cfg = yaml.safe_load(template_path.read_text())
+
+    task_id_short = task_dir.name[-8:]
+    cfg["name"] = f"{cfg['name']}_task_{task_id_short}"
+    cfg["buffer"]["patient_file"] = str(task_dir / "input.parquet")
+    # patient_adapter "demo_conus" stays as-is: our upload schema mirrors the
+    # demo cohort's columns, so the adapter's rename + synthetic-geoid logic
+    # applies unchanged.
+    cfg["buffer"]["buffer_m"] = user_config["buffer"]["size"]
+    if step.is_c3:
+        cfg["buffer"]["raster_res_m"] = user_config["buffer"]["raster_res_m"]
+    cfg["output"]["path"] = str(task_dir / "output" / f"{step.name}.parquet")
+
+    out = task_dir / "pipeline_configs" / f"{step.name}.yaml"
+    out.parent.mkdir(exist_ok=True)
+    out.write_text(yaml.safe_dump(cfg, sort_keys=False))
+    return out
