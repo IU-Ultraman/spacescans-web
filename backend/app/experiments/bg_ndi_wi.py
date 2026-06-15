@@ -186,3 +186,33 @@ def run_pipeline_step(yaml_path: Path, task_dir: Path, step_name: str) -> int:
     _append_log(task_dir, "info" if rc == 0 else "error", "runner",
                 f"step {step_name} exit code {rc}")
     return rc
+
+
+_VARIABLE_PARQUET = {
+    "ndi": "c4_ndi.parquet",
+    "walkability": "c4_wi.parquet",
+}
+
+
+def merge_results(task_dir: Path, variables: list[str]) -> Path:
+    """Left-join each per-variable parquet onto the original input CSV by PATID.
+
+    Returns the path to the written result.csv. The input CSV is loaded as-is
+    so all original metadata columns (startDate, endDate, lon/lat, FIPS) are
+    preserved alongside the new exposure columns.
+    """
+    df = pd.read_csv(task_dir / "input.csv", dtype=str)
+    for var in variables:
+        parquet_name = _VARIABLE_PARQUET[var]
+        var_df = pd.read_parquet(task_dir / "output" / parquet_name)
+        var_df = var_df.rename(columns={"PATID": "pid"})
+        df = df.merge(var_df, on="pid", how="left")
+
+        match_pct = var_df["pid"].isin(df["pid"]).mean() * 100
+        if match_pct < 90.0:
+            _append_log(task_dir, "warning", "runner",
+                        f"merge: {var} matched only {match_pct:.1f}% of patients")
+
+    out = task_dir / "output" / "result.csv"
+    df.to_csv(out, index=False)
+    return out

@@ -214,3 +214,59 @@ def test_run_pipeline_step_nonzero_exit(fake_cli_settings):
     assert rc != 0
     log_text = (task_dir / "logs.jsonl").read_text()
     assert "ERROR" in log_text or "exit code" in log_text
+
+
+from app.experiments.bg_ndi_wi import merge_results
+
+def _seed_task_for_merge(tmp_path, n_input=5, n_ndi=4, n_wi=3) -> Path:
+    """Create a task_dir with input.csv + ndi/walkability parquets at common
+    paths, so merge_results can be exercised without running the pipeline."""
+    task_dir = tmp_path / "task-abcdef12"
+    task_dir.mkdir()
+    (task_dir / "output").mkdir()
+    (task_dir / "logs.jsonl").touch()
+
+    pids = [f"PID{i:07d}" for i in range(n_input)]
+    pd.DataFrame({
+        "pid": pids,
+        "startDate": ["2017-01-01"] * n_input,
+        "endDate": ["2017-12-31"] * n_input,
+        "longitude": [-93.0] * n_input,
+        "latitude": [45.0] * n_input,
+    }).to_csv(task_dir / "input.csv", index=False)
+
+    pd.DataFrame({
+        "PATID": pids[:n_ndi],
+        "ndi": [0.1 * i for i in range(n_ndi)],
+    }).to_parquet(task_dir / "output" / "c4_ndi.parquet", index=False)
+
+    pd.DataFrame({
+        "PATID": pids[:n_wi],
+        "NatWalkInd": [1.0 + i for i in range(n_wi)],
+    }).to_parquet(task_dir / "output" / "c4_wi.parquet", index=False)
+
+    return task_dir
+
+
+def test_merge_results_both_variables(tmp_path):
+    task_dir = _seed_task_for_merge(tmp_path, n_input=5, n_ndi=4, n_wi=3)
+    out = merge_results(task_dir, variables=["ndi", "walkability"])
+
+    assert out == task_dir / "output" / "result.csv"
+    df = pd.read_csv(out)
+    assert len(df) == 5
+    assert "pid" in df.columns
+    assert "ndi" in df.columns
+    assert "NatWalkInd" in df.columns
+    # First 3 patients matched both; pid #4 matched NDI only; pid #5 matched none.
+    assert df["ndi"].isna().sum() == 1
+    assert df["NatWalkInd"].isna().sum() == 2
+
+
+def test_merge_results_ndi_only(tmp_path):
+    task_dir = _seed_task_for_merge(tmp_path, n_input=3, n_ndi=3, n_wi=0)
+    out = merge_results(task_dir, variables=["ndi"])
+    df = pd.read_csv(out)
+    assert len(df) == 3
+    assert "ndi" in df.columns
+    assert "NatWalkInd" not in df.columns
