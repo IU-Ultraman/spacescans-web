@@ -94,9 +94,32 @@ def get_logs(task_id: str, since: str | None = Query(None), user: dict = Depends
     return task_manager.get_logs(task_id, since)
 
 @router.get("/{task_id}/results")
-def download_results(task_id: str, user: dict = Depends(get_current_user)):
+def download_results(
+    task_id: str,
+    file: str | None = Query(None),
+    user: dict = Depends(get_current_user),
+):
+    """Download a result file from a task's output/ directory.
+
+    Without ?file=, returns the merged output/result.csv (the canonical final
+    output). With ?file=<basename>, returns any file under output/ — used by
+    the frontend to fetch intermediate per-step parquet artifacts.
+
+    The `file` parameter must be a plain basename (no path separators, no
+    parent-dir traversal) so callers cannot escape the task's output dir.
+    """
     _verify_ownership(task_id, user)
-    path = task_manager.get_result_path(task_id)
-    if not path:
-        raise HTTPException(status_code=404, detail="Results not available")
-    return FileResponse(path, media_type="text/csv", filename="result.csv")
+    import app.config  # local import — module-level reload in tests rebinds it
+    if file is not None:
+        if "/" in file or ".." in file:
+            raise HTTPException(status_code=400, detail="Invalid file parameter")
+        result_path = (
+            app.config.settings.TASKS_DIR / f"task-{task_id}" / "output" / file
+        )
+    else:
+        result_path = task_manager.get_result_path(task_id)
+        if result_path is None:
+            raise HTTPException(status_code=404, detail="Results not ready")
+    if not result_path.exists() or not result_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(result_path, filename=result_path.name)

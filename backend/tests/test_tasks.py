@@ -195,3 +195,50 @@ def test_start_lock_returns_409_when_busy(monkeypatch, tmp_path):
 
     fcntl.flock(fd, fcntl.LOCK_UN)
     os.close(fd)
+
+
+def test_get_results_with_file_query(monkeypatch, tmp_path):
+    """The /results endpoint accepts a ?file= query for any output/ subfile."""
+    import io, importlib, json, app.config, app.task_manager
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("TASKS_DIR", str(tmp_path / "tasks"))
+    importlib.reload(app.config)
+    importlib.reload(app.task_manager)
+    import app.main
+    importlib.reload(app.main)
+
+    from app.main import create_app
+    from app.database import init_db
+    from fastapi.testclient import TestClient
+
+    init_db()
+    app_instance = create_app()
+    client = TestClient(app_instance)
+
+    # Sign up
+    resp = client.post("/api/auth/signup", json={
+        "email": "f@f.com", "password": "pw123", "first_name": "F", "last_name": "U"
+    })
+    token = resp.json()["access_token"]
+    auth = {"Authorization": f"Bearer {token}"}
+
+    # Create + populate a fake task with an intermediate parquet
+    resp = client.post("/api/tasks", json={"task_name": "files"}, headers=auth)
+    task_id = resp.json()["id"]
+    task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
+    (task_dir / "output").mkdir(parents=True, exist_ok=True)
+    (task_dir / "output" / "c3_bg.parquet").write_bytes(b"FAKE-PARQUET")
+
+    # Without ?file= — 404 because result.csv missing
+    resp = client.get(f"/api/tasks/{task_id}/results", headers=auth)
+    assert resp.status_code == 404
+
+    # With ?file=c3_bg.parquet — should succeed
+    resp = client.get(f"/api/tasks/{task_id}/results?file=c3_bg.parquet", headers=auth)
+    assert resp.status_code == 200
+    assert resp.content == b"FAKE-PARQUET"
+
+    # Reject traversal
+    resp = client.get(f"/api/tasks/{task_id}/results?file=../../../etc/passwd", headers=auth)
+    assert resp.status_code == 400

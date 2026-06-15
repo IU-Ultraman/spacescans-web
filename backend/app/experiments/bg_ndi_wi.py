@@ -9,6 +9,7 @@ import fcntl
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -244,6 +245,29 @@ def _write_status(task_dir: Path, **fields) -> None:
     status_path.write_text(json.dumps(current, indent=2))
 
 
+def _install_cancel_handler(task_dir: Path) -> None:
+    """Install a SIGTERM handler that writes status="cancelled" before exit.
+
+    task_manager.stop_task sends SIGTERM to this orchestrator's process group.
+    Without this handler the process would die silently and recover_orphaned_tasks
+    would later mistakenly mark the task as "error" — but the user actively
+    cancelled, so the correct terminal status is "cancelled".
+
+    We raise SystemExit (rather than calling os._exit) so the `finally` block in
+    run() that releases .run_lock still executes.
+    """
+    def _handler(_signum, _frame):
+        _write_status(
+            task_dir,
+            status="cancelled",
+            message="Task cancelled by user",
+        )
+        _append_log(task_dir, "info", "runner", "received SIGTERM — task cancelled")
+        # Re-raise so subprocess + cleanup finally{} blocks still run.
+        raise SystemExit(143)
+    signal.signal(signal.SIGTERM, _handler)
+
+
 def run(task_dir: Path) -> int:
     """Main entry point for an experiment run.
 
@@ -256,6 +280,9 @@ def run(task_dir: Path) -> int:
     per-variable outputs, and writes status.json + logs.jsonl + output/result.csv.
     Returns 0 on success, non-zero on any step failure.
     """
+    # Install SIGTERM handler first — must be in place before any blocking work
+    # so that stop_task can cleanly cancel us at any point during the run.
+    _install_cancel_handler(task_dir)
     # Acquire .run_lock for the lifetime of this orchestrator process.
     lock_path = app.config.settings.DATA_DIR / ".run_lock"
     lock_path.parent.mkdir(parents=True, exist_ok=True)

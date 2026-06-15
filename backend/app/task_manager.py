@@ -175,8 +175,15 @@ def stop_task(task_id: str):
     if not pid:
         raise ValueError("No running process found")
     try:
-        os.kill(pid, signal.SIGTERM)
-        # Wait up to 10 seconds
+        # Send SIGTERM to the orchestrator's whole process group so the
+        # spacescans grandchild (in a new session via start_new_session=True)
+        # also receives it. Falls back to os.kill if the pid has no group.
+        try:
+            pgid = os.getpgid(pid)
+            os.killpg(pgid, signal.SIGTERM)
+        except ProcessLookupError:
+            os.kill(pid, signal.SIGTERM)
+        # Wait up to 10s for graceful exit
         import time
         for _ in range(100):
             try:
@@ -184,10 +191,16 @@ def stop_task(task_id: str):
                 time.sleep(0.1)
             except OSError:
                 return
-        # Force kill
-        os.kill(pid, signal.SIGKILL)
+        # Force kill the group
+        try:
+            os.killpg(os.getpgid(pid), signal.SIGKILL)
+        except OSError:
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except OSError:
+                pass
     except OSError:
-        pass  # Process already dead
+        pass
 
 def get_status(task_id: str) -> dict:
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
@@ -215,7 +228,14 @@ def get_result_path(task_id: str) -> Path | None:
     return None
 
 def recover_orphaned_tasks():
-    """On startup, check for tasks stuck in 'running' state with dead PIDs."""
+    """On startup, check for tasks stuck in 'running' state with dead PIDs.
+
+    Only marks status="error" when the pre-existing status was "running" and
+    the recorded pid is no longer alive. Tasks that already wrote a terminal
+    status (cancelled / finished / error) before exiting are left untouched —
+    in particular, a task that was SIGTERMed via stop_task installs a handler
+    that writes status="cancelled" before exit, and we must preserve that.
+    """
     if not app.config.settings.TASKS_DIR.exists():
         return
     for task_dir in app.config.settings.TASKS_DIR.iterdir():
@@ -223,6 +243,8 @@ def recover_orphaned_tasks():
         if not status_path.exists():
             continue
         status = json.loads(status_path.read_text())
+        # Only consider tasks still claiming "running"; never overwrite a
+        # terminal status that the orchestrator already wrote.
         if status.get("status") != "running":
             continue
         pid = status.get("pid")
