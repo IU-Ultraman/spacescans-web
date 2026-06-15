@@ -101,7 +101,7 @@ export default function TaskDetailPage() {
         );
         if (status.progress !== undefined) {
           setStatusMessage(
-            `Progress: ${status.progress}%`,
+            `Progress: ${Math.round((status.progress ?? 0) * 100)}%`,
           );
         }
       } catch {

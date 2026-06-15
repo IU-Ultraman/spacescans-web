@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, type Task, type TaskStatus } from "@/lib/api";
+import { api, type Task } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -20,9 +20,6 @@ export default function TaskResultsPage() {
   const id = params.id;
 
   const [task, setTask] = useState<Task | null>(null);
-  // `taskStatus.steps` is the source of truth for which variable parquets
-  // the run produced — we list one download link per step.
-  const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,12 +30,6 @@ export default function TaskResultsPage() {
         const t = await api.getTask(id);
         if (cancelled) return;
         setTask(t);
-        try {
-          const s = await api.getStatus(id);
-          if (!cancelled) setTaskStatus(s);
-        } catch {
-          // Older or non-experiment tasks may not have a status.json.
-        }
         setLoading(false);
       } catch (err) {
         if (!cancelled) {
@@ -152,28 +143,7 @@ export default function TaskResultsPage() {
           Download result.csv
         </Button>
 
-        {taskStatus?.steps && taskStatus.steps.length > 0 && (
-          <details className="mt-4 text-sm">
-            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-              Advanced: pipeline intermediates
-            </summary>
-            {/* TODO: backend /results endpoint needs ?file= support for
-                intermediate parquet downloads. Until then these links resolve
-                to the same result.csv as the main download button. */}
-            <ul className="mt-2 space-y-1 pl-4 list-disc">
-              {taskStatus.steps.map((stepName) => (
-                <li key={stepName}>
-                  <a
-                    className="underline"
-                    href={`${api.downloadResults(id)}?file=${stepName}.parquet`}
-                  >
-                    {stepName}.parquet
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
+        {/* Intermediate parquet downloads disabled until backend /results endpoint supports ?file= queries. */}
       </div>
 
       {/* Navigation */}
