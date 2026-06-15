@@ -282,3 +282,39 @@ def test_merge_results_warns_on_low_match(tmp_path):
     assert "matched only" in log_text  # warning fired
     # 5 / 100 = 5% match rate
     assert "5.0%" in log_text
+
+
+from app.experiments.bg_ndi_wi import run
+
+def test_run_writes_status_file_on_completion(fake_template_dir, fake_cli_settings, tmp_path):
+    # Re-stub templates dir to wherever fake_cli_settings put SPACESCANS_DATA_DIR;
+    # both fixtures use the same tmp_path so they coexist.
+    # The fake_template_dir fixture created c3/ and c4/ under tmp_path.
+    # fake_cli_settings already monkeypatched CLI/PYTHON/DATA_DIR to tmp_path.
+    # Now also monkeypatch templates dir to the same tmp_path.
+    import app.config
+    # (fake_template_dir already did this monkeypatch)
+
+    task_dir = tmp_path / "task-runtest1"
+    task_dir.mkdir()
+    (task_dir / "output").mkdir()
+    (task_dir / "input.csv").write_text(
+        "pid,startDate,endDate,longitude,latitude\n"
+        "P1,2017-01-01,2017-12-31,-93.0,45.0\n"
+        "P2,2017-01-01,2017-12-31,-94.0,44.0\n"
+    )
+    (task_dir / "config.json").write_text(json.dumps({
+        "experiment": "bg_ndi_wi",
+        "variables": ["ndi"],
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+    }))
+
+    rc = run(task_dir)
+
+    assert rc == 0
+    status = json.loads((task_dir / "status.json").read_text())
+    assert status["status"] == "finished"
+    assert status["total_steps"] == 2  # c3_bg + c4_ndi
+    assert (task_dir / "output" / "result.csv").exists()
+    df = pd.read_csv(task_dir / "output" / "result.csv")
+    assert len(df) == 2  # input rows preserved
