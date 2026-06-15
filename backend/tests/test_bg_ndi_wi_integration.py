@@ -156,3 +156,45 @@ def test_stop_kills_pipeline_subprocess(task_with_5_patients):
         if os.path.basename(comm) == "spacescans":
             live_spacescans.append(line)
     assert not live_spacescans, f"leftover spacescans procs: {live_spacescans}"
+
+
+@pytest.mark.integration
+def test_two_sequential_runs_both_succeed(task_with_5_patients, tmp_path):
+    """After one orchestrator subprocess finishes, the lock must release so
+    a second can acquire it without 409. Regression test for v1's lock-leak bug."""
+    cmd = [
+        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
+        "-m", "app.experiments.bg_ndi_wi", "run", str(task_with_5_patients),
+    ]
+    # First run
+    proc1 = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    assert proc1.returncode == 0, (
+        f"first run failed: stdout={proc1.stdout!r} stderr={proc1.stderr!r}"
+    )
+
+    # Second run on a fresh task_dir
+    task_dir_2 = tmp_path / "task-int00002"
+    task_dir_2.mkdir()
+    (task_dir_2 / "output").mkdir()
+    shutil.copy(
+        Path(__file__).parent / "fixtures" / "patients_5.csv",
+        task_dir_2 / "input.csv",
+    )
+    (task_dir_2 / "config.json").write_text(json.dumps({
+        "experiment": "bg_ndi_wi",
+        "variables": ["ndi"],
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+    }))
+
+    cmd2 = [
+        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
+        "-m", "app.experiments.bg_ndi_wi", "run", str(task_dir_2),
+    ]
+    proc2 = subprocess.run(cmd2, capture_output=True, text=True, timeout=600)
+    assert proc2.returncode == 0, (
+        f"second run failed: stdout={proc2.stdout!r} stderr={proc2.stderr!r}"
+    )
+
+    # Both result.csv must exist
+    assert (task_with_5_patients / "output" / "result.csv").exists()
+    assert (task_dir_2 / "output" / "result.csv").exists()

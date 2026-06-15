@@ -105,9 +105,15 @@ def save_config(task_id: str, config: dict):
 def start_task(task_id: str) -> dict:
     """Spawn the experiment subprocess for a task.
 
-    Acquires .run_lock first; if another task holds it, raises TaskBusyError.
-    Dispatches to app.experiments.bg_ndi_wi or mock_cli based on the
-    task config's experiment field.
+    The subprocess itself acquires .run_lock for its lifetime; the kernel
+    releases the lock when the process exits. To surface TaskBusyError to
+    HTTP callers without spawning a doomed subprocess, we do a quick
+    pre-check here (acquire-then-release) before dispatch.
+
+    There is a microsecond TOCTOU window between the pre-check release and
+    the subprocess starting up: a concurrent caller could race in and grab
+    the lock first. In that case the loser's subprocess will fail its own
+    flock attempt and write status="error" — acceptable for v1.
     """
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
     if not (task_dir / "config.json").exists():
@@ -118,15 +124,19 @@ def start_task(task_id: str) -> dict:
     config = json.loads((task_dir / "config.json").read_text())
     experiment = config.get("experiment", "bg_ndi_wi")
 
+    # Pre-check the lock; the real acquisition happens inside the subprocess.
     lock_path = app.config.settings.DATA_DIR / ".run_lock"
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     lock_path.touch()
-    lock_fd = os.open(str(lock_path), os.O_RDWR)
+    pre_fd = os.open(str(lock_path), os.O_RDWR)
     try:
-        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fcntl.flock(pre_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
-        os.close(lock_fd)
+        os.close(pre_fd)
         raise TaskBusyError()
+    # Release immediately — the subprocess re-acquires and holds it for life.
+    fcntl.flock(pre_fd, fcntl.LOCK_UN)
+    os.close(pre_fd)
 
     if experiment == "bg_ndi_wi":
         cmd = [
@@ -143,10 +153,6 @@ def start_task(task_id: str) -> dict:
         stderr=subprocess.DEVNULL,
         start_new_session=True,
     )
-    # Note: we deliberately leak lock_fd into this process. When the subprocess
-    # exits, our reaper (a separate watcher) will close it. Simpler MVP: write
-    # PID into a sidecar so other code can join() and release.
-    (task_dir / "lock.fd").write_text(str(lock_fd))
     return {"pid": proc.pid, "task_id": task_id}
 
 def stop_task(task_id: str):

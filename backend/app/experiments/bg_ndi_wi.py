@@ -5,6 +5,7 @@ Spawned by app.task_manager.start_task as:
 """
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import re
@@ -235,74 +236,107 @@ def _write_status(task_dir: Path, **fields) -> None:
 def run(task_dir: Path) -> int:
     """Main entry point for an experiment run.
 
+    Holds .run_lock for the duration of the run so concurrent task spawns are
+    blocked. The kernel releases the lock when this process exits, so a
+    sequential second task can acquire it without waiting for any cleanup in
+    the parent FastAPI process.
+
     Reads task_dir/config.json, drives the C3 + C4 pipeline steps, merges the
     per-variable outputs, and writes status.json + logs.jsonl + output/result.csv.
     Returns 0 on success, non-zero on any step failure.
     """
-    config = json.loads((task_dir / "config.json").read_text())
-    steps = plan(config)
-    total_steps = len(steps)
-
-    _write_status(
-        task_dir,
-        status="running",
-        progress=0.0,
-        message="Preparing input data",
-        started_at=datetime.now(timezone.utc).isoformat(),
-        pid=os.getpid(),
-        current_step="csv_to_parquet",
-        total_steps=total_steps,
-        # Names of the variable pipeline steps in execution order; consumed by
-        # the frontend to render a per-step progress checklist and to compose
-        # the list of intermediate parquet artifacts available for download.
-        steps=[step.name for step in steps],
-    )
-
+    # Acquire .run_lock for the lifetime of this orchestrator process.
+    lock_path = app.config.settings.DATA_DIR / ".run_lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.touch()
+    lock_fd = os.open(str(lock_path), os.O_RDWR)
     try:
-        csv_to_parquet(task_dir / "input.csv", task_dir / "input.parquet")
-    except Exception as exc:
-        _append_log(task_dir, "error", "runner", f"csv_to_parquet failed: {exc!r}")
-        _write_status(task_dir, status="error", message=f"input conversion failed: {exc}")
-        return 1
-
-    for idx, step in enumerate(steps):
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        # Should not normally happen — task_manager.start_task pre-checks the
+        # lock — but handle the TOCTOU race by failing loudly.
         _write_status(
             task_dir,
-            current_step=step.name,
-            message=f"Running {step.name} ({idx+1}/{total_steps})",
-            progress=idx / total_steps,
+            status="error",
+            message="another task acquired the run lock first; retry shortly",
         )
-        try:
-            yaml_path = render_yaml(step, task_dir, config)
-        except Exception as exc:
-            _append_log(task_dir, "error", "runner", f"render_yaml({step.name}) failed: {exc!r}")
-            _write_status(task_dir, status="error", message=f"render failed at {step.name}")
-            return 1
-
-        rc = run_pipeline_step(yaml_path, task_dir, step_name=step.name)
-        if rc != 0:
-            _write_status(task_dir, status="error",
-                          message=f"step {step.name} failed with exit code {rc}")
-            return rc
-
-        out_parquet = task_dir / "output" / f"{step.name}.parquet"
-        if not out_parquet.exists():
-            _write_status(task_dir, status="error",
-                          message=f"step {step.name} produced no output parquet")
-            return 1
-
-    _write_status(task_dir, current_step="merge", message="Merging variable outputs",
-                  progress=(total_steps - 0.1) / total_steps)
-    try:
-        merge_results(task_dir, variables=config["variables"])
-    except Exception as exc:
-        _append_log(task_dir, "error", "runner", f"merge_results failed: {exc!r}")
-        _write_status(task_dir, status="error", message=f"merge failed: {exc}")
+        os.close(lock_fd)
         return 1
 
-    _write_status(task_dir, status="finished", progress=1.0,
-                  message=f"Completed {total_steps} pipeline steps")
-    return 0
+    try:
+        config = json.loads((task_dir / "config.json").read_text())
+        steps = plan(config)
+        total_steps = len(steps)
+
+        _write_status(
+            task_dir,
+            status="running",
+            progress=0.0,
+            message="Preparing input data",
+            started_at=datetime.now(timezone.utc).isoformat(),
+            pid=os.getpid(),
+            current_step="csv_to_parquet",
+            total_steps=total_steps,
+            # Names of the variable pipeline steps in execution order; consumed by
+            # the frontend to render a per-step progress checklist and to compose
+            # the list of intermediate parquet artifacts available for download.
+            steps=[step.name for step in steps],
+        )
+
+        try:
+            csv_to_parquet(task_dir / "input.csv", task_dir / "input.parquet")
+        except Exception as exc:
+            _append_log(task_dir, "error", "runner", f"csv_to_parquet failed: {exc!r}")
+            _write_status(task_dir, status="error", message=f"input conversion failed: {exc}")
+            return 1
+
+        for idx, step in enumerate(steps):
+            _write_status(
+                task_dir,
+                current_step=step.name,
+                message=f"Running {step.name} ({idx+1}/{total_steps})",
+                progress=idx / total_steps,
+            )
+            try:
+                yaml_path = render_yaml(step, task_dir, config)
+            except Exception as exc:
+                _append_log(task_dir, "error", "runner", f"render_yaml({step.name}) failed: {exc!r}")
+                _write_status(task_dir, status="error", message=f"render failed at {step.name}")
+                return 1
+
+            rc = run_pipeline_step(yaml_path, task_dir, step_name=step.name)
+            if rc != 0:
+                _write_status(task_dir, status="error",
+                              message=f"step {step.name} failed with exit code {rc}")
+                return rc
+
+            out_parquet = task_dir / "output" / f"{step.name}.parquet"
+            if not out_parquet.exists():
+                _write_status(task_dir, status="error",
+                              message=f"step {step.name} produced no output parquet")
+                return 1
+
+        _write_status(task_dir, current_step="merge", message="Merging variable outputs",
+                      progress=(total_steps - 0.1) / total_steps)
+        try:
+            merge_results(task_dir, variables=config["variables"])
+        except Exception as exc:
+            _append_log(task_dir, "error", "runner", f"merge_results failed: {exc!r}")
+            _write_status(task_dir, status="error", message=f"merge failed: {exc}")
+            return 1
+
+        _write_status(task_dir, status="finished", progress=1.0,
+                      message=f"Completed {total_steps} pipeline steps")
+        return 0
+    finally:
+        # Kernel releases the lock on process exit, but be explicit on the
+        # success path too so a long-lived test runner (e.g. pytest) that
+        # imports this module and calls run() in-process doesn't leak the fd.
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        except OSError:
+            pass
+        os.close(lock_fd)
 
 
 def _cli_main(argv: list[str]) -> int:
