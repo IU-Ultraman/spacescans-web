@@ -149,3 +149,19 @@ def test_render_yaml_c4_skips_raster_res_m(fake_template_dir, tmp_path):
     # Preservation: C4 template's source.file must round-trip unchanged.
     assert cfg["source"]["file"] == "data_full/BG_NDI/C4/ndi.Rda"
     assert cfg["linkage_pattern"] == "yearly_areal"
+
+
+from app.experiments.bg_ndi_wi import parse_step_progress
+
+def test_parse_step_progress_overlap_fast():
+    line = "[overlap_fast] tile 7460/14938 ( 49.9%) elapsed=  1.64m  rate= 75.9/s  ETA= 1.64m  tiles_with_work=2807"
+    assert parse_step_progress(line) == pytest.approx(0.499, abs=0.005)
+
+def test_parse_step_progress_overlap_classic():
+    line = "[overlap]   1600/3221 ( 49.7%)  elapsed=   2.0m  rate=13.20/s"
+    assert parse_step_progress(line) == pytest.approx(0.497, abs=0.005)
+
+def test_parse_step_progress_non_progress_returns_none():
+    assert parse_step_progress("[overlap_fast] === SUMMARY ===") is None
+    assert parse_step_progress("random log line") is None
+    assert parse_step_progress("") is None

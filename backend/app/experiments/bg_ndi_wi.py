@@ -5,6 +5,7 @@ Spawned by app.task_manager.start_task as:
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -105,3 +106,26 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(yaml.safe_dump(cfg, sort_keys=False))
     return out
+
+
+# Matches both:
+#   [overlap_fast] tile 7460/14938 ( 49.9%) ...
+#   [overlap]   1600/3221 ( 49.7%)  ...
+_PROGRESS_RE = re.compile(
+    r"\[(?:overlap|overlap_fast)\]\s+(?:tile\s+)?(\d+)/(\d+)"
+)
+
+
+def parse_step_progress(line: str) -> float | None:
+    """Return progress fraction in [0,1] if line contains a tile/iteration count.
+
+    Returns None for non-progress lines (SUMMARY, errors, empty lines, etc.).
+    """
+    m = _PROGRESS_RE.search(line)
+    if not m:
+        return None
+    cur = int(m.group(1))
+    total = int(m.group(2))
+    if total <= 0:
+        return None
+    return cur / total
