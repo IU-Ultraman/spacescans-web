@@ -240,7 +240,7 @@ export function TaskList() {
                     />
                     {task.status === "running" && task.progress != null && (
                       <Progress
-                        value={task.progress}
+                        value={task.progress * 100}
                         className="w-32"
                       />
                     )}

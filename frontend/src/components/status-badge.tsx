@@ -60,7 +60,9 @@ export function StatusBadge({ status, progress, className }: StatusBadgeProps) {
       )}
       {config.label}
       {status === "running" && progress != null && (
-        <span className="ml-1 tabular-nums opacity-70">{progress}%</span>
+        <span className="ml-1 tabular-nums opacity-70">
+          {Math.round(progress * 100)}%
+        </span>
       )}
     </Badge>
   );
