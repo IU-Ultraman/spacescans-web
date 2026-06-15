@@ -14,6 +14,28 @@ from datetime import datetime, timezone
 import app.config
 
 
+# Module-level cache for variable_metadata.json (mtime-invalidated).
+_VARIABLE_METADATA_CACHE: dict | None = None
+_VARIABLE_METADATA_MTIME: float | None = None
+
+
+def _load_variable_metadata() -> dict:
+    """Read and cache backend/data/variable_metadata.json.
+
+    Cache is invalidated whenever the file's mtime changes so dev edits
+    are picked up without restarting the server.
+    """
+    global _VARIABLE_METADATA_CACHE, _VARIABLE_METADATA_MTIME
+    path = app.config.settings.DATA_DIR / "variable_metadata.json"
+    if not path.exists():
+        raise FileNotFoundError(f"variable_metadata.json missing at {path}")
+    mtime = path.stat().st_mtime
+    if _VARIABLE_METADATA_CACHE is None or mtime != _VARIABLE_METADATA_MTIME:
+        _VARIABLE_METADATA_CACHE = json.loads(path.read_text())
+        _VARIABLE_METADATA_MTIME = mtime
+    return _VARIABLE_METADATA_CACHE
+
+
 class TaskBusyError(RuntimeError):
     """Raised by start_task when another task currently holds .run_lock."""
 
