@@ -70,10 +70,10 @@ def _sanity_check_pipeline_supports_precomputed_areal_episode() -> None:
     """
     from spacescans.linkage import precomputed_areal_linkage
     src = inspect.getsource(precomputed_areal_linkage)
-    if "episode" not in src:
+    if "output_grouping" not in src:
         raise RuntimeError(
             "tiger_proximity: live spacescans.linkage.precomputed_areal_linkage "
-            "does not mention 'episode' — Phase A output_grouping dispatch is "
+            "does not mention 'output_grouping' — Phase A output_grouping dispatch is "
             "missing or pipeline editable install is stale; refusing to run."
         )
 

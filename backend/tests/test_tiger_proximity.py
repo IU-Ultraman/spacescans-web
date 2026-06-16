@@ -176,3 +176,29 @@ def test_merge_results_delegates_to_write_partial(
     assert captured["experiment_key"] == "tiger_proximity"
     assert captured["variables"] == ["tiger_proximity"]
     assert captured["parquet_map"] == {"tiger_proximity": "c4_tiger_roads.parquet"}
+
+
+def test_sanity_check_passes_against_current_pipeline():
+    """Positive case: live pipeline contains output_grouping dispatch."""
+    from app.experiments import tiger_proximity
+    tiger_proximity._sanity_check_pipeline_supports_precomputed_areal_episode()
+
+
+def test_sanity_check_raises_on_stale_pipeline(monkeypatch):
+    """Negative case: pipeline source without 'output_grouping' raises RuntimeError.
+    Catches the R3 stale-editable-install silent-corruption scenario."""
+    from app.experiments import tiger_proximity
+    import inspect
+
+    stale_src = '''
+"""Run precomputed_areal linkage. For each patient episode..."""
+def run_precomputed_areal(config, engine):
+    # Prepare patient episodes
+    # Compute overlap days between patient episode and each annual window
+    # GROUP BY PATID
+    pass
+'''
+    monkeypatch.setattr(inspect, "getsource", lambda mod: stale_src)
+    import pytest
+    with pytest.raises(RuntimeError, match="output_grouping"):
+        tiger_proximity._sanity_check_pipeline_supports_precomputed_areal_episode()
