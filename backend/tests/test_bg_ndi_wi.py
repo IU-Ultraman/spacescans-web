@@ -241,28 +241,39 @@ from app.experiments.bg_ndi_wi import merge_results
 
 def _seed_task_for_merge(tmp_path, n_input=5, n_ndi=4, n_wi=3) -> Path:
     """Create a task_dir with input.csv + ndi/walkability parquets at common
-    paths, so merge_results can be exercised without running the pipeline."""
+    paths, so merge_results can be exercised without running the pipeline.
+
+    Sprint 2 pipeline contract: each pipeline parquet is one row per
+    (PATID, episode_id) with the per-episode key carried in the ``geoid``
+    column. The test fixtures mirror that — input CSV carries an episode_id
+    (one episode per pid here for simplicity), pipeline parquets carry a
+    matching ``geoid`` column.
+    """
     task_dir = tmp_path / "task-abcdef12"
     task_dir.mkdir()
     (task_dir / "output").mkdir()
     (task_dir / "logs.jsonl").touch()
 
     pids = [f"PID{i:07d}" for i in range(n_input)]
+    episode_ids = list(range(n_input))
     pd.DataFrame({
         "pid": pids,
         "startDate": ["2017-01-01"] * n_input,
         "endDate": ["2017-12-31"] * n_input,
         "longitude": [-93.0] * n_input,
         "latitude": [45.0] * n_input,
+        "episode_id": episode_ids,
     }).to_csv(task_dir / "input.csv", index=False)
 
     pd.DataFrame({
         "PATID": pids[:n_ndi],
+        "geoid": episode_ids[:n_ndi],
         "ndi": [0.1 * i for i in range(n_ndi)],
     }).to_parquet(task_dir / "output" / "c4_ndi.parquet", index=False)
 
     pd.DataFrame({
         "PATID": pids[:n_wi],
+        "geoid": episode_ids[:n_wi],
         "NatWalkInd": [1.0 + i for i in range(n_wi)],
     }).to_parquet(task_dir / "output" / "c4_wi.parquet", index=False)
 
@@ -648,3 +659,76 @@ def test_render_yaml_preserves_other_time_fields(fake_template_dir, tmp_path):
     cfg = yaml.safe_load(out.read_text())
     # whatever existing keys were already populated should still be there
     assert "years" in cfg["time"] or "start_date" in cfg["time"]
+
+
+def test_merge_results_joins_on_pid_and_episode_id(tmp_path):
+    """When pipeline emits one row per (PATID, episode_id), merge_results must
+    join on BOTH so a patient with 2 episodes gets 2 result rows, not 1."""
+    task_dir = tmp_path / "task-ep-merge1"
+    task_dir.mkdir()
+    (task_dir / "output").mkdir()
+    (task_dir / "logs.jsonl").touch()
+
+    # Input: pid=A has 2 episodes (episode_id 0 and 1), pid=B has 1 (episode_id 2)
+    input_df = pd.DataFrame({
+        "pid": ["A", "A", "B"],
+        "startDate": pd.to_datetime(["2017-01-01", "2018-01-01", "2017-01-01"]),
+        "endDate": pd.to_datetime(["2017-12-31", "2018-12-31", "2017-12-31"]),
+        "longitude": [-93.0, -94.0, -95.0],
+        "latitude": [45.0, 41.0, 30.0],
+        "episode_id": [0, 1, 2],
+    })
+    input_df.to_csv(task_dir / "input.csv", index=False)
+
+    # Pipeline output: PATID + geoid (= episode_id), one row per (PATID, geoid)
+    pipeline_df = pd.DataFrame({
+        "PATID": ["A", "A", "B"],
+        "geoid": [0, 1, 2],
+        "NDI_quintile_v1": [3, 1, 5],
+    })
+    pipeline_df.to_parquet(task_dir / "output" / "c4_ndi.parquet", index=False)
+
+    merge_results(task_dir, variables=["ndi"])
+
+    out = pd.read_csv(task_dir / "output" / "result.csv")
+    # 3 rows out (one per residential episode), not 2 (one per patient)
+    assert len(out) == 3
+    assert out["pid"].tolist() == ["A", "A", "B"]
+    # Each row got its OWN exposure value, distinguishable per episode
+    assert out["NDI_quintile_v1"].tolist() == [3, 1, 5]
+
+
+def test_merge_results_missing_pipeline_row_fills_na(tmp_path):
+    """Left-join semantics: an input episode with no matching pipeline row
+    keeps its input columns + NaN exposures."""
+    task_dir = tmp_path / "task-ep-merge2"
+    task_dir.mkdir()
+    (task_dir / "output").mkdir()
+    (task_dir / "logs.jsonl").touch()
+
+    input_df = pd.DataFrame({
+        "pid": ["A", "A"],
+        "startDate": pd.to_datetime(["2017-01-01", "2018-01-01"]),
+        "endDate": pd.to_datetime(["2017-12-31", "2018-12-31"]),
+        "longitude": [-93.0, -94.0],
+        "latitude": [45.0, 41.0],
+        "episode_id": [0, 1],
+    })
+    input_df.to_csv(task_dir / "input.csv", index=False)
+
+    # Pipeline only has episode_id=0; episode_id=1 (maybe geocode failed) is missing.
+    pipeline_df = pd.DataFrame({
+        "PATID": ["A"],
+        "geoid": [0],
+        "NDI_quintile_v1": [3],
+    })
+    pipeline_df.to_parquet(task_dir / "output" / "c4_ndi.parquet", index=False)
+
+    merge_results(task_dir, variables=["ndi"])
+
+    out = pd.read_csv(task_dir / "output" / "result.csv")
+    assert len(out) == 2  # both input rows preserved
+    assert out["pid"].tolist() == ["A", "A"]
+    # First row matched, second is NaN
+    assert out["NDI_quintile_v1"].tolist()[0] == 3
+    assert pd.isna(out["NDI_quintile_v1"].tolist()[1])

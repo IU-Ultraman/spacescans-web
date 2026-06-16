@@ -33,7 +33,24 @@ def main():
     cfg = yaml.safe_load(yaml_path.read_text())
     out_path = Path(cfg["output"]["path"])
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame({"PATID": ["P1"], "value": [0.0]}).to_parquet(out_path, index=False)
+
+    # Sprint 2 pipeline contract: one row per (PATID, episode_id), with the
+    # per-row key carried in the ``geoid`` column. Read the rendered config's
+    # patient_file to discover the input cohort, then emit one stub row per
+    # input row with PATID=pid and geoid=episode_id (matching what
+    # _adapt_demo_conus does in the real pipeline).
+    patient_file = cfg.get("buffer", {}).get("patient_file")
+    if patient_file and Path(patient_file).exists():
+        patients = pd.read_parquet(patient_file)
+        out_df = pd.DataFrame({
+            "PATID": patients["pid"].astype(str).tolist(),
+            "geoid": patients["episode_id"].tolist(),
+            "value": [0.0] * len(patients),
+        })
+    else:
+        # Defensive fallback for tests that don't supply a patient parquet.
+        out_df = pd.DataFrame({"PATID": ["P1"], "geoid": [0], "value": [0.0]})
+    out_df.to_parquet(out_path, index=False)
     sys.exit(0)
 
 
