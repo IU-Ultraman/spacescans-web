@@ -240,3 +240,50 @@ def test_legacy_experiment_field_logged_but_ignored(task_dir_with_config, monkey
     assert len(audit) == 1, f"expected exactly one config_saved audit entry; got {audit}"
     assert audit[0]["experiment_field_received"] == "bg_ndi_wi"
     assert set(audit[0]["dispatch_plan"].keys()) == {"bg_ndi_wi", "zcta5_cbp"}
+
+
+def test_three_experiment_dispatch_preserves_metadata_order(
+    task_dir_with_config, monkeypatch
+):
+    """Sprint 5: 4 variables across 3 experiments dispatch in metadata-file order.
+
+    Spec L602-605: dispatch order is JSON-file order of first experiment
+    appearance — bg_ndi_wi (ndi), zcta5_cbp (cbp_zcta5), tiger_proximity
+    (tiger_proximity), in that order regardless of the variable
+    selection order in config.json.
+    """
+    import json as _json
+    from app import dispatcher
+
+    # Rewrite config to include all 4 variables in deliberately scrambled order.
+    cfg_path = task_dir_with_config / "config.json"
+    cfg = _json.loads(cfg_path.read_text())
+    cfg["variables"] = ["tiger_proximity", "cbp_zcta5", "ndi", "walkability"]
+    cfg_path.write_text(_json.dumps(cfg))
+
+    _FakePopen.instances = []
+    monkeypatch.setattr(dispatcher.subprocess, "Popen",
+                        lambda cmd, **kw: _FakePopen(cmd, returncode=0, **kw))
+    # variables_by_experiment must return a dict ordered by metadata-file
+    # first-appearance: bg_ndi_wi, zcta5_cbp, tiger_proximity.
+    monkeypatch.setattr(
+        dispatcher.variable_registry, "variables_by_experiment",
+        lambda selected: {
+            "bg_ndi_wi": ["ndi", "walkability"],
+            "zcta5_cbp": ["cbp_zcta5"],
+            "tiger_proximity": ["tiger_proximity"],
+        },
+    )
+    fan_in = MagicMock()
+    monkeypatch.setattr("app.experiments._merge.fan_in", fan_in)
+
+    result = dispatcher.dispatch(str(task_dir_with_config))
+
+    assert len(_FakePopen.instances) == 3
+    assert "app.experiments.bg_ndi_wi" in _FakePopen.instances[0].cmd
+    assert "app.experiments.zcta5_cbp" in _FakePopen.instances[1].cmd
+    assert "app.experiments.tiger_proximity" in _FakePopen.instances[2].cmd
+    assert result["completed"] == ["bg_ndi_wi", "zcta5_cbp", "tiger_proximity"]
+    fan_in.assert_called_once_with(
+        task_dir_with_config, ["bg_ndi_wi", "zcta5_cbp", "tiger_proximity"]
+    )

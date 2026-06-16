@@ -121,6 +121,38 @@ def test_write_partial_value_cols_sourced_from_registry(tmp_path):
     assert "r_unused" not in df.columns
 
 
+def test_write_partial_value_cols_picks_3_tiger_columns_from_one_parquet(tmp_path):
+    """Sprint 5 B3 (spec L712): tiger_proximity ships a single parquet
+    carrying all three TIGER distance columns. _merge.write_partial must
+    pick exactly value_cols=[dist_pri, dist_sec, dist_prisec] from the
+    registry — no extra/missing columns leaking through.
+    """
+    from app.experiments import _merge
+
+    task_dir = tmp_path / "task-b3-tiger-merge"
+    _write_input_csv(task_dir, n=5)
+    _write_variable_parquet(
+        task_dir / "output", "c4_tiger_roads", n=5,
+        value_cols=["dist_pri", "dist_sec", "dist_prisec", "dist_unused"],
+    )
+
+    with patch("app.variable_registry.get_variable",
+               return_value={
+                   "value_cols": ["dist_pri", "dist_sec", "dist_prisec"]
+               }):
+        out = _merge.write_partial(
+            task_dir=task_dir,
+            experiment_key="tiger_proximity",
+            variables=["tiger_proximity"],
+            parquet_map={"tiger_proximity": "c4_tiger_roads.parquet"},
+        )
+
+    assert out == task_dir / "output" / "result_tiger_proximity.csv"
+    df = pd.read_csv(out)
+    assert {"dist_pri", "dist_sec", "dist_prisec"}.issubset(df.columns)
+    assert "dist_unused" not in df.columns
+
+
 def test_fan_in_left_joins_two_partials_no_row_duplication(tmp_path):
     from app.experiments import _merge
 
