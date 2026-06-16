@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app import variable_registry
-from app.routers.tasks import require_user
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/variables", tags=["variables"])
 
@@ -32,7 +32,7 @@ class VariableCatalogResponse(BaseModel):
     response_model=VariableCatalogResponse,
     include_in_schema=True,
 )
-def list_variables(_user=Depends(require_user)) -> VariableCatalogResponse:
+def list_variables(_user=Depends(get_current_user)) -> VariableCatalogResponse:
     try:
         payload = variable_registry.load_variables()
     except FileNotFoundError as e:

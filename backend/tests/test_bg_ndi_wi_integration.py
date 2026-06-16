@@ -39,6 +39,10 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 def task_with_5_patients(tmp_path):
+    """Subprocess-friendly raw-Path fixture used by test_stop_kills_pipeline_subprocess
+    (which spawns the runner module directly via subprocess.Popen). The four Sprint 2
+    e2e tests have migrated to the dispatcher-driven task_with_5_patients_dispatched
+    fixture below (Sprint 4 F6)."""
     task_dir = tmp_path / "task-int00001"
     task_dir.mkdir()
     (task_dir / "output").mkdir()
@@ -54,22 +58,61 @@ def task_with_5_patients(tmp_path):
     return task_dir
 
 
+@pytest.fixture
+def task_with_5_patients_dispatched(tmp_path, monkeypatch):
+    """Dispatcher-driven 5-patient cohort fixture (Sprint 4 F6 migration).
+
+    Returns (task_id, task_dir). Caller invokes start_task(task_id) and polls
+    status.json — replacing the Sprint 2 subprocess.run([..., '-m',
+    'app.experiments.bg_ndi_wi', 'run', task_dir]) pattern.
+    """
+    monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("TASKS_DIR", str(tmp_path / "data" / "tasks"))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "data" / "test.db"))
+
+    import importlib
+    import app.config as _config
+    import app.task_manager as _tm
+    importlib.reload(_config)
+    importlib.reload(_tm)
+
+    from app.task_manager import create_task, save_config
+    meta = create_task(user_id=1, task_name="bg-ndi-wi-int-5p")
+    task_dir = _config.settings.TASKS_DIR / f"task-{meta['id']}"
+    task_dir.mkdir(parents=True, exist_ok=True)
+    (task_dir / "output").mkdir(exist_ok=True)
+    shutil.copy(
+        Path(__file__).parent / "fixtures" / "patients_5.csv",
+        task_dir / "input.csv",
+    )
+    save_config(meta["id"], {
+        "experiment": "auto",
+        "variables": ["ndi", "walkability"],
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+    })
+    return meta["id"], task_dir
+
+
 @pytest.mark.integration
-def test_e2e_small_cohort(task_with_5_patients):
-    cmd = [
-        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
-        "-m", "app.experiments.bg_ndi_wi", "run", str(task_with_5_patients),
-    ]
-    env = {**os.environ}
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600, env=env)
+def test_e2e_small_cohort(task_with_5_patients_dispatched):
+    task_id, task_dir = task_with_5_patients_dispatched
 
-    assert proc.returncode == 0, f"runner failed: stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    from app.task_manager import start_task
+    start_task(task_id)
 
-    status = json.loads((task_with_5_patients / "status.json").read_text())
-    assert status["status"] == "finished"
-    assert status["total_steps"] == 3
+    deadline = time.monotonic() + 240.0
+    status = {}
+    while time.monotonic() < deadline:
+        status = json.loads((task_dir / "status.json").read_text())
+        if status.get("status") in ("finished", "error", "partial", "cancelled"):
+            break
+        time.sleep(1.0)
+    else:
+        pytest.fail(f"task did not terminate within 240s; last status={status}")
 
-    result_csv = task_with_5_patients / "output" / "result.csv"
+    assert status["status"] == "finished", f"unexpected terminal status: {status}"
+
+    result_csv = task_dir / "output" / "result.csv"
     assert result_csv.exists()
     df = pd.read_csv(result_csv)
     assert len(df) == 5
@@ -159,150 +202,188 @@ def test_stop_kills_pipeline_subprocess(task_with_5_patients):
 
 
 @pytest.mark.integration
-def test_two_sequential_runs_both_succeed(task_with_5_patients, tmp_path):
-    """After one orchestrator subprocess finishes, the lock must release so
-    a second can acquire it without 409. Regression test for v1's lock-leak bug."""
-    cmd = [
-        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
-        "-m", "app.experiments.bg_ndi_wi", "run", str(task_with_5_patients),
-    ]
-    # First run
-    proc1 = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
-    assert proc1.returncode == 0, (
-        f"first run failed: stdout={proc1.stdout!r} stderr={proc1.stderr!r}"
-    )
+def test_two_sequential_runs_both_succeed(task_with_5_patients_dispatched, tmp_path, monkeypatch):
+    """After one dispatcher run finishes, the lock must release so a second
+    start_task can acquire it without TaskBusyError. Regression test for the
+    Sprint 1 lock-leak bug, now exercising the dispatcher path."""
+    task_id_1, task_dir_1 = task_with_5_patients_dispatched
 
-    # Second run on a fresh task_dir
-    task_dir_2 = tmp_path / "task-int00002"
-    task_dir_2.mkdir()
-    (task_dir_2 / "output").mkdir()
+    from app.task_manager import start_task, create_task, save_config
+
+    # First run
+    start_task(task_id_1)
+    deadline = time.monotonic() + 240.0
+    status1 = {}
+    while time.monotonic() < deadline:
+        status1 = json.loads((task_dir_1 / "status.json").read_text())
+        if status1.get("status") in ("finished", "error", "partial", "cancelled"):
+            break
+        time.sleep(1.0)
+    else:
+        pytest.fail(f"first run did not terminate within 240s; last status={status1}")
+    assert status1["status"] == "finished", f"first run not finished: {status1}"
+
+    # Second task on a fresh task_id (dispatcher path), same fixture cohort + variables.
+    meta2 = create_task(user_id=1, task_name="bg-ndi-wi-int-5p-2")
+    import app.config as _config
+    task_dir_2 = _config.settings.TASKS_DIR / f"task-{meta2['id']}"
+    task_dir_2.mkdir(parents=True, exist_ok=True)
+    (task_dir_2 / "output").mkdir(exist_ok=True)
     shutil.copy(
         Path(__file__).parent / "fixtures" / "patients_5.csv",
         task_dir_2 / "input.csv",
     )
-    (task_dir_2 / "config.json").write_text(json.dumps({
-        "experiment": "bg_ndi_wi",
+    save_config(meta2["id"], {
+        "experiment": "auto",
         "variables": ["ndi"],
         "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
-    }))
+    })
 
-    cmd2 = [
-        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
-        "-m", "app.experiments.bg_ndi_wi", "run", str(task_dir_2),
-    ]
-    proc2 = subprocess.run(cmd2, capture_output=True, text=True, timeout=600)
-    assert proc2.returncode == 0, (
-        f"second run failed: stdout={proc2.stdout!r} stderr={proc2.stderr!r}"
-    )
+    start_task(meta2["id"])
+    deadline2 = time.monotonic() + 240.0
+    status2 = {}
+    while time.monotonic() < deadline2:
+        status2 = json.loads((task_dir_2 / "status.json").read_text())
+        if status2.get("status") in ("finished", "error", "partial", "cancelled"):
+            break
+        time.sleep(1.0)
+    else:
+        pytest.fail(f"second run did not terminate within 240s; last status={status2}")
+    assert status2["status"] == "finished", f"second run not finished: {status2}"
 
-    # Both result.csv must exist
-    assert (task_with_5_patients / "output" / "result.csv").exists()
+    assert (task_dir_1 / "output" / "result.csv").exists()
     assert (task_dir_2 / "output" / "result.csv").exists()
 
 
 @pytest.mark.integration
-def test_e2e_cache_second_run_faster(task_with_5_patients, tmp_path):
-    """Run the same 5-patient cohort twice; the second run hits the c3_bg cache
-    and finishes in a small fraction of the first run's wall-clock."""
-    # Clear any cache entries left over from earlier tests in the suite so the
-    # first run below is guaranteed cold. Without this, the assertion on
-    # t2 < 0.7 * t1 is order-dependent: an earlier integration test that runs
-    # the same fixture (e.g. test_e2e_same_inputs_run_twice) will populate the
-    # cache, making run 1 a cache hit and collapsing the speedup.
+def test_e2e_cache_second_run_faster(task_with_5_patients_dispatched, tmp_path, monkeypatch):
+    """Run the same 5-patient cohort twice via the dispatcher; the second run
+    hits the c3_bg cache and finishes in a small fraction of the first run's
+    wall-clock."""
     cache_dir = app.config.settings.C3_CACHE_DIR
     if cache_dir.exists():
         shutil.rmtree(cache_dir)
 
-    cmd = [
-        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
-        "-m", "app.experiments.bg_ndi_wi", "run", str(task_with_5_patients),
-    ]
+    task_id_1, task_dir_1 = task_with_5_patients_dispatched
+    from app.task_manager import start_task, create_task, save_config
 
-    # First run: full pipeline.
+    # First run: full pipeline (cold cache).
     t1_start = time.monotonic()
-    proc1 = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    start_task(task_id_1)
+    deadline = time.monotonic() + 240.0
+    status1 = {}
+    while time.monotonic() < deadline:
+        status1 = json.loads((task_dir_1 / "status.json").read_text())
+        if status1.get("status") in ("finished", "error", "partial", "cancelled"):
+            break
+        time.sleep(1.0)
+    else:
+        pytest.fail(f"first run did not terminate within 240s; last status={status1}")
     t1 = time.monotonic() - t1_start
-    assert proc1.returncode == 0
+    assert status1["status"] == "finished", f"first run not finished: {status1}"
 
-    # Second task with byte-identical input.csv + config.
-    task_dir_2 = tmp_path / "task-int-cache-02"
-    task_dir_2.mkdir()
-    (task_dir_2 / "output").mkdir()
+    # Second task with byte-identical input.csv + config (cache hit).
+    meta2 = create_task(user_id=1, task_name="bg-ndi-wi-int-cache-2")
+    import app.config as _config
+    task_dir_2 = _config.settings.TASKS_DIR / f"task-{meta2['id']}"
+    task_dir_2.mkdir(parents=True, exist_ok=True)
+    (task_dir_2 / "output").mkdir(exist_ok=True)
     shutil.copy(
         Path(__file__).parent / "fixtures" / "patients_5.csv",
         task_dir_2 / "input.csv",
     )
-    (task_dir_2 / "config.json").write_text(json.dumps({
-        "experiment": "bg_ndi_wi",
+    save_config(meta2["id"], {
+        "experiment": "auto",
         "variables": ["ndi", "walkability"],
         "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
-    }))
-    cmd2 = [
-        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
-        "-m", "app.experiments.bg_ndi_wi", "run", str(task_dir_2),
-    ]
-    t2_start = time.monotonic()
-    proc2 = subprocess.run(cmd2, capture_output=True, text=True, timeout=300)
-    t2 = time.monotonic() - t2_start
-    assert proc2.returncode == 0
+    })
 
-    # Second run should be noticeably faster (C3 step skipped).
-    # On the 5-patient fixture C3 takes ~5-6s of the ~14s total; the other ~8s
-    # is NDI .Rda load + walkability raster crop, which the cache does NOT skip.
-    # So a cache hit shaves ~40%, giving t2 ≈ 0.6 * t1. Threshold 0.7 catches a
-    # cache regression (no cache → t2 ≈ t1) without being flaky on slow hardware.
+    t2_start = time.monotonic()
+    start_task(meta2["id"])
+    deadline2 = time.monotonic() + 240.0
+    status2 = {}
+    while time.monotonic() < deadline2:
+        status2 = json.loads((task_dir_2 / "status.json").read_text())
+        if status2.get("status") in ("finished", "error", "partial", "cancelled"):
+            break
+        time.sleep(1.0)
+    else:
+        pytest.fail(f"second run did not terminate within 240s; last status={status2}")
+    t2 = time.monotonic() - t2_start
+    assert status2["status"] == "finished", f"second run not finished: {status2}"
+
+    # Second run should be noticeably faster (C3 step skipped). Threshold 0.7
+    # catches a cache regression without being flaky on slow hardware. Wall-clock
+    # now includes dispatcher Popen overhead (~2s constant) on both sides, so the
+    # ratio is preserved.
     assert t2 < 0.7 * t1, (
         f"expected second run to be < 70% of first; got t1={t1:.2f}s t2={t2:.2f}s"
     )
 
-    # Cache directory exists with one entry.
     parquets = list(cache_dir.glob("*.parquet"))
     assert len(parquets) >= 1
 
 
 @pytest.fixture
-def task_with_multi_episode_cohort(tmp_path):
-    """11-row cohort: 5 patients × 2 episodes + 1 single-episode patient.
+def task_with_multi_episode_cohort(tmp_path, monkeypatch):
+    """11-row cohort: 5 patients x 2 episodes + 1 single-episode patient.
 
-    Proves the Sprint 2 episode-dimension change: result.csv must have one
-    row per residential episode, not one per patient. Patients with 2
-    different residences should get 2 distinct NDI values."""
-    task_dir = tmp_path / "task-int-multi-ep"
-    task_dir.mkdir()
-    (task_dir / "output").mkdir()
+    Dispatcher-driven (Sprint 4 F6 migration). Returns (task_id, task_dir).
+    """
+    monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("TASKS_DIR", str(tmp_path / "data" / "tasks"))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "data" / "test.db"))
+
+    import importlib
+    import app.config as _config
+    import app.task_manager as _tm
+    importlib.reload(_config)
+    importlib.reload(_tm)
+
+    from app.task_manager import create_task, save_config
+    meta = create_task(user_id=1, task_name="bg-ndi-wi-int-multi-ep")
+    task_dir = _config.settings.TASKS_DIR / f"task-{meta['id']}"
+    task_dir.mkdir(parents=True, exist_ok=True)
+    (task_dir / "output").mkdir(exist_ok=True)
     shutil.copy(
         Path(__file__).parent / "fixtures" / "patients_multi_episode.csv",
         task_dir / "input.csv",
     )
-    (task_dir / "config.json").write_text(json.dumps({
-        "experiment": "bg_ndi_wi",
+    save_config(meta["id"], {
+        "experiment": "auto",
         "variables": ["ndi", "walkability"],
         "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
-    }))
-    return task_dir
+    })
+    return meta["id"], task_dir
 
 
 @pytest.mark.integration
 def test_e2e_multi_episode_cohort(task_with_multi_episode_cohort):
-    """Sprint 2: pipeline emits per-(patient, episode) rows; the 5×2+1 cohort
-    must produce 11 result rows, not 6."""
-    cmd = [
-        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
-        "-m", "app.experiments.bg_ndi_wi", "run", str(task_with_multi_episode_cohort),
-    ]
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
-    assert proc.returncode == 0, f"runner failed: stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    """Sprint 2: pipeline emits per-(patient, episode) rows; the 5x2+1 cohort
+    must produce 11 result rows, not 6. Migrated to dispatcher path in Sprint 4 F6."""
+    task_id, task_dir = task_with_multi_episode_cohort
 
-    status = json.loads((task_with_multi_episode_cohort / "status.json").read_text())
-    assert status["status"] == "finished"
+    from app.task_manager import start_task
+    start_task(task_id)
 
-    result_csv = task_with_multi_episode_cohort / "output" / "result.csv"
+    deadline = time.monotonic() + 240.0
+    status = {}
+    while time.monotonic() < deadline:
+        status = json.loads((task_dir / "status.json").read_text())
+        if status.get("status") in ("finished", "error", "partial", "cancelled"):
+            break
+        time.sleep(1.0)
+    else:
+        pytest.fail(f"task did not terminate within 240s; last status={status}")
+
+    assert status["status"] == "finished", f"unexpected terminal status: {status}"
+
+    result_csv = task_dir / "output" / "result.csv"
     df = pd.read_csv(result_csv)
 
     # CRITICAL: one row per residential episode, not per patient.
     assert len(df) == 11, f"expected 11 rows (per-episode), got {len(df)}"
 
-    # Same pids as input (5 dups + 1 single), in input order.
     assert df["pid"].tolist() == [
         "PID0000001", "PID0000001",
         "PID0000002", "PID0000002",
@@ -312,9 +393,6 @@ def test_e2e_multi_episode_cohort(task_with_multi_episode_cohort):
         "PID0000006",
     ]
 
-    # For at least 2 patients, the two episodes must yield DIFFERENT NDI quintile
-    # values — this proves the episode dimension is actually preserved (and not
-    # just a duplicate of the patient-level value).
     multi_episode_pids = ["PID0000001", "PID0000002", "PID0000003", "PID0000004", "PID0000005"]
     distinct_ndi_count = 0
     for pid in multi_episode_pids:
@@ -322,6 +400,6 @@ def test_e2e_multi_episode_cohort(task_with_multi_episode_cohort):
         if len(vals) == 2 and vals[0] != vals[1]:
             distinct_ndi_count += 1
     assert distinct_ndi_count >= 2, (
-        f"expected ≥2 patients with distinct NDI across their 2 episodes; "
+        f"expected >=2 patients with distinct NDI across their 2 episodes; "
         f"only {distinct_ndi_count} differed. Result df:\n{df}"
     )

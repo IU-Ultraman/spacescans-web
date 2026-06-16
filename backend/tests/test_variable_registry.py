@@ -15,9 +15,11 @@ def _reset_registry_cache():
     from app import variable_registry as vr
     vr._CACHE["mtime"] = None
     vr._CACHE["payload"] = None
+    vr._PROBE_DONE = False
     yield
     vr._CACHE["mtime"] = None
     vr._CACHE["payload"] = None
+    vr._PROBE_DONE = False
 
 
 def test_load_variables_passes_schema_validation():
@@ -222,3 +224,48 @@ def test_list_experiments_dedupes_in_file_order():
     # ndi + walkability both map to bg_ndi_wi; cbp_zcta5 → zcta5_cbp.
     # bg_ndi_wi appears first because ndi is the first key in the JSON file.
     assert exps == ["bg_ndi_wi", "zcta5_cbp"]
+
+
+# ----- Sprint 4 F3: startup probe -----
+
+def test_startup_probe_passes_in_env():
+    """In a correctly-installed env, the probe is a no-op (no raise)."""
+    from app import variable_registry as vr
+    vr._PROBE_DONE = False
+    vr._assert_pipeline_version_compatible()
+    assert vr._PROBE_DONE is True
+
+
+def test_startup_probe_raises_on_missing_field(monkeypatch):
+    """Drop output_grouping from TimeConfig.model_fields — probe must raise."""
+    from app import variable_registry as vr
+    import spacescans.models.config as _cfg
+
+    vr._PROBE_DONE = False
+    patched = {k: v for k, v in _cfg.TimeConfig.model_fields.items() if k != "output_grouping"}
+
+    class _StubTimeConfig:
+        model_fields = patched
+
+    monkeypatch.setattr(_cfg, "TimeConfig", _StubTimeConfig)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc:
+        vr._assert_pipeline_version_compatible()
+    assert "output_grouping" in str(exc.value)
+    assert vr._PROBE_DONE is False
+
+
+def test_startup_probe_runs_once(monkeypatch):
+    """Once _PROBE_DONE is True, the probe must short-circuit before re-entering imports."""
+    from app import variable_registry as vr
+    import spacescans._extras as _extras
+
+    vr._PROBE_DONE = True
+
+    def _boom(*_a, **_kw):
+        raise RuntimeError("probe should not have re-entered require()")
+
+    monkeypatch.setattr(_extras, "require", _boom)
+    # No raise expected — second invocation must short-circuit.
+    vr._assert_pipeline_version_compatible()
+    assert vr._PROBE_DONE is True

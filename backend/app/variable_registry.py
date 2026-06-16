@@ -29,6 +29,38 @@ class MetadataSchemaError(RuntimeError):
     propagates as-is for raw schema violations."""
 
 
+_PROBE_DONE: bool = False
+
+
+def _assert_pipeline_version_compatible() -> None:
+    """Defensive boot-time check. Raises MetadataSchemaError on drift.
+
+    Runs once per process — guarded by module-level _PROBE_DONE flag.
+    Verifies the editable-installed spacescans pipeline has:
+      1. A working `pyreadr` extra (Sprint 3 ZCTA5xCBP .Rda reader).
+      2. `TimeConfig.output_grouping` field (Sprint 2 episode-dimension contract).
+    """
+    global _PROBE_DONE
+    if _PROBE_DONE:
+        return
+    try:
+        from spacescans._extras import require as _require_extra
+        _require_extra("rda", "pyreadr")
+        from spacescans.models.config import TimeConfig
+    except Exception as exc:
+        raise MetadataSchemaError(
+            f"pipeline import failed: {exc}. "
+            "Install/upgrade spacescans-pipeline >= 0.2 "
+            "(Sprint 2 episode-dimension contract)."
+        ) from exc
+    if "output_grouping" not in TimeConfig.model_fields:
+        raise MetadataSchemaError(
+            "pipeline missing TimeConfig.output_grouping — install/upgrade "
+            "spacescans-pipeline >= 0.2 (Sprint 2 episode-dimension contract)."
+        )
+    _PROBE_DONE = True
+
+
 def _discover_experiments() -> set[str]:
     exp_dir = Path(__file__).parent / "experiments"
     return {
@@ -38,6 +70,7 @@ def _discover_experiments() -> set[str]:
 
 
 def load_variables(*, force: bool = False) -> dict[str, Any]:
+    _assert_pipeline_version_compatible()
     mtime = _METADATA_PATH.stat().st_mtime
     if not force and _CACHE["mtime"] == mtime and _CACHE["payload"]:
         return _CACHE["payload"]

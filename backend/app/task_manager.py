@@ -268,10 +268,29 @@ def start_task(task_id: str) -> dict:
     `python -m app.dispatcher run <task_id>` (in a new session) and returns
     immediately with the supervisor pid. The supervisor sequentially spawns
     each per-experiment runner.
+
+    Sprint 4 F2: synchronously probe DATA_DIR/.run_lock before Popen. If
+    another task currently holds it, raise TaskBusyError so the router can
+    map to HTTP 409. The probe releases immediately — the runner will
+    re-acquire the lock for real inside its own process.
     """
     task_dir = _task_dir(task_id)
     if not (task_dir / "config.json").exists():
         raise FileNotFoundError(f"config.json missing for task {task_id}")
+
+    lock_path = app.config.settings.DATA_DIR / ".run_lock"
+    lock_path.touch(exist_ok=True)
+    probe_fd = os.open(str(lock_path), os.O_RDWR)
+    try:
+        try:
+            fcntl.flock(probe_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise TaskBusyError() from exc
+        finally:
+            # Release immediately — the runner will re-acquire.
+            fcntl.flock(probe_fd, fcntl.LOCK_UN)
+    finally:
+        os.close(probe_fd)
 
     cmd = [
         sys.executable,
@@ -289,34 +308,42 @@ def start_task(task_id: str) -> dict:
     return {"pid": proc.pid, "task_id": task_id}
 
 def stop_task(task_id: str) -> dict:
-    """Sprint 3: SIGTERM the supervisor AND any per-experiment runner pids
-    recorded under status.experiments[<exp_key>].pid by dispatcher.dispatch.
+    """Sprint 4 F1a: SIGTERM ONLY the recorded per-experiment runner pids
+    when at least one is present. The supervisor pid is signalled ONLY as
+    a fallback when no runner pid has been recorded yet (early-cancel
+    before dispatcher.dispatch launched any slot).
 
-    The supervisor uses start_new_session=True, so SIGTERM to its pid
-    normally takes down its child runners via the process group as well —
-    but the dispatcher also Popens each runner with start_new_session=True,
-    which puts each runner in its OWN session. We therefore walk the
-    experiments map and SIGTERM each runner pid explicitly to avoid orphans.
+    Rationale (spec 2026-06-16 lines 191-243): SIGTERM-ing the supervisor
+    kills the dispatcher's Python interpreter before its blocking
+    proc.wait() can observe rc == 143, defeating the cancellation
+    discriminator added by Sprint 4 F1b. Narrowing the scope to runner
+    pids lets the dispatcher reach its rc == 143 branch naturally.
     """
-    import os
-    import signal
     task_dir = _task_dir(task_id)
     status_path = task_dir / "status.json"
     if not status_path.exists():
         return {"status": "no-op", "reason": "no status.json"}
     status = json.loads(status_path.read_text())
 
-    pids: list[int] = []
-    sup_pid = status.get("pid")
-    if isinstance(sup_pid, int):
-        pids.append(sup_pid)
+    runner_pids: list[int] = []
     for exp in (status.get("experiments") or {}).values():
         exp_pid = exp.get("pid")
         if isinstance(exp_pid, int) and exp.get("status") == "running":
-            pids.append(exp_pid)
+            runner_pids.append(exp_pid)
+
+    if runner_pids:
+        pids_to_signal: list[int] = runner_pids
+    else:
+        # Defensive fallback: no runner recorded (early-cancel before
+        # dispatcher launched any slot). SIGTERM the supervisor so the
+        # dispatcher process is still reaped.
+        pids_to_signal = []
+        sup_pid = status.get("pid")
+        if isinstance(sup_pid, int):
+            pids_to_signal.append(sup_pid)
 
     sent: list[int] = []
-    for pid in pids:
+    for pid in pids_to_signal:
         try:
             os.kill(pid, signal.SIGTERM)
             sent.append(pid)
