@@ -12,3 +12,4 @@ httpx>=0.24.0
 pyyaml>=6.0
 pandas>=2.0
 jsonschema>=4.21
+spacescans-pipeline>=0.2
