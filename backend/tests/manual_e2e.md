@@ -103,3 +103,36 @@ To force a cache rebuild:
 
     rm -rf backend/data/c3_cache/
 
+## Sprint 2 additions (Episode-dimension preservation)
+
+### Multi-episode result rows
+
+The pipeline now emits one result row per residential episode (a patient
+who moved during the study window gets one row per residence) instead of
+collapsing to one row per patient.
+
+1. Upload `backend/tests/fixtures/patients_multi_episode.csv` (11 rows:
+   5 patients with 2 episodes each + 1 single-episode control).
+2. Run with NDI + Walkability, default buffer (270m circle).
+3. After completion, download result.csv.
+4. Expected:
+   - **11 data rows** (not 6).
+   - `pid` column repeats `PID0000001` twice, then `PID0000002` twice, etc.
+   - At least 2 of the multi-episode patients show **different** `ndi`
+     values across their two rows — proves the per-episode dispatch is
+     live, not just row duplication.
+
+### Results page hint
+
+On the results page (`/dashboard/task/<id>/results`), the Download Results
+card should display: "Result shape: one row per residential episode. A
+patient with multiple residences during the study window gets one row
+per residence; exposure values reflect that specific residence."
+
+### Backward compatibility
+
+Re-upload the original `patients_5.csv` (5 patients × 1 episode each).
+Expected: 5 result rows — identical to v1 behaviour because each patient
+has one episode. The episode-dimension change is invisible on
+single-episode cohorts.
+
