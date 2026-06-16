@@ -77,21 +77,24 @@ def test_e2e_cancellation_terminal_state(task_with_multi_experiment):
     from app.task_manager import start_task, stop_task
     start_task(task_id)
 
-    # Wait for the first runner to enter the 'prepare' step (proves the
-    # dispatcher has Popened a real runner whose SIGTERM handler is armed).
+    # Wait for the first runner to write ANY current_step under status='running'
+    # (proves the dispatcher has Popened a real runner whose SIGTERM handler is
+    # armed, without depending on a specific step name — the bg_ndi_wi steps
+    # are {csv_to_parquet, c3_bg, c4_ndi, c4_wi, merge} and zcta5_cbp's are
+    # {csv_to_parquet, c3_zcta5, c4_zcta5_cbp, merge}; neither writes 'prepare').
     arm_deadline = time.monotonic() + 60.0
     armed = False
     while time.monotonic() < arm_deadline:
         if (task_dir / "status.json").exists():
             status = json.loads((task_dir / "status.json").read_text())
             slot = (status.get("experiments") or {}).get("bg_ndi_wi") or {}
-            if slot.get("current_step") == "prepare" and slot.get("status") == "running":
+            if slot.get("status") == "running" and slot.get("current_step") is not None:
                 armed = True
                 break
         time.sleep(0.5)
     assert armed, (
-        f"first runner never entered the 'prepare' step within 60s; "
-        f"last status={status if 'status' in dir() else 'unread'}"
+        f"first runner never reported a current_step under status='running' "
+        f"within 60s; last status={status if 'status' in dir() else 'unread'}"
     )
 
     stop_task(task_id)
