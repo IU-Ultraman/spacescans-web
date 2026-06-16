@@ -292,7 +292,7 @@ def run(task_dir: Path, variables: list[str] | None = None) -> int:
                     if _is_valid_cached_parquet(cache_path):
                         out_parquet.parent.mkdir(parents=True, exist_ok=True)
                         shutil.copy(cache_path, out_parquet)
-                        _append_log(task_dir, "info", "runner",
+                        _append_log(task_dir, "info", step.name,
                                     f"cache hit: {cache_key} — skipping pipeline run")
                         cached_progress = (idx + 1) / total_steps
                         if dispatcher_driven:
@@ -311,7 +311,7 @@ def run(task_dir: Path, variables: list[str] | None = None) -> int:
                             )
                         continue
                 except Exception as exc:
-                    _append_log(task_dir, "warning", "runner",
+                    _append_log(task_dir, "warning", step.name,
                                 f"cache check failed for {step.name}: {exc!r} — running fresh")
                     cache_path = None
 
@@ -376,10 +376,10 @@ def run(task_dir: Path, variables: list[str] | None = None) -> int:
                         wall_clock_seconds=int(time.time() - step_start),
                         file_size_bytes=out_parquet.stat().st_size,
                     )
-                    _append_log(task_dir, "info", "runner",
+                    _append_log(task_dir, "info", step.name,
                                 f"cache write: {cache_path.name}")
                 except OSError as exc:
-                    _append_log(task_dir, "warning", "runner",
+                    _append_log(task_dir, "warning", step.name,
                                 f"cache write failed: {exc!r} — continuing")
 
         near_done = (total_steps - 0.1) / total_steps
