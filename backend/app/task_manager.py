@@ -399,5 +399,80 @@ def recover_orphaned_tasks():
 def _read_status(task_dir: Path) -> dict:
     status_path = task_dir / "status.json"
     if not status_path.exists():
-        return {"status": "not_started", "progress": 0.0, "message": ""}
+        return {"status": "not_started", "progress": 0.0, "message": "",
+                "steps": [], "current_step": None, "total_steps": 0,
+                "experiments": {}}
     return json.loads(status_path.read_text())
+
+
+def _derive_flat_fields(experiments: dict) -> dict:
+    """Compute legacy flat steps[]/current_step/total_steps/progress from
+    the experiments map, preserving insertion (dispatch) order.
+
+    Aggregated progress = sum(completed sub-steps) / total_steps.
+    """
+    flat_steps: list[str] = []
+    completed = 0.0
+    current_step = None
+    for exp_key, exp in experiments.items():
+        steps = list(exp.get("steps") or [])
+        flat_steps.extend(steps)
+        completed += float(exp.get("progress") or 0.0) * len(steps)
+        if exp.get("status") == "running" and exp.get("current_step"):
+            current_step = exp["current_step"]
+    total = len(flat_steps)
+    progress = (completed / total) if total else 0.0
+    return {"steps": flat_steps, "current_step": current_step,
+            "total_steps": total, "progress": round(progress, 6)}
+
+
+def _write_status(task_dir: Path, **kwargs) -> dict:
+    """Atomic read-modify-write of status.json with experiments-aware merge."""
+    task_dir.mkdir(parents=True, exist_ok=True)
+    lock_path = task_dir / ".status_lock"
+    lock_path.touch()
+    lock_fd = os.open(str(lock_path), os.O_RDWR)
+
+    import time as _time
+    deadline = _time.monotonic() + 5.0
+    while True:
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            break
+        except BlockingIOError:
+            if _time.monotonic() >= deadline:
+                os.close(lock_fd)
+                raise TimeoutError(
+                    f"_write_status: could not acquire {lock_path} within 5s"
+                )
+            _time.sleep(0.01)
+
+    try:
+        status_path = task_dir / "status.json"
+        if status_path.exists():
+            current = json.loads(status_path.read_text())
+        else:
+            current = {}
+
+        incoming_experiments = kwargs.pop("experiments", None)
+        if incoming_experiments is not None:
+            merged_experiments = dict(current.get("experiments") or {})
+            for exp_key, exp_payload in incoming_experiments.items():
+                existing_slot = dict(merged_experiments.get(exp_key) or {})
+                existing_slot.update(exp_payload)
+                merged_experiments[exp_key] = existing_slot
+            current["experiments"] = merged_experiments
+        elif "experiments" not in current:
+            current["experiments"] = {}
+
+        current.update(kwargs)
+
+        current.update(_derive_flat_fields(current["experiments"]))
+
+        tmp_path = task_dir / "status.json.tmp"
+        tmp_path.write_text(json.dumps(current, indent=2))
+        os.replace(str(tmp_path), str(status_path))
+        return current
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        os.close(lock_fd)
