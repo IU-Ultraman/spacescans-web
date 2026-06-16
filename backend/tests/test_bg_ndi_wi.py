@@ -305,15 +305,21 @@ def test_merge_results_ndi_only(tmp_path):
 
 
 def test_merge_results_warns_on_low_match(tmp_path):
-    """When only a small fraction of input patients have NDI values, a warning
-    should be appended to logs.jsonl."""
+    """When only a small fraction of input patients have NDI values, a
+    structured ``merge_partial_low_match_pct`` warning should be appended to
+    logs.jsonl. Format updated in Sprint 3 T5: emit JSON events instead of a
+    human-readable substring (see app/experiments/_merge.py:_emit_log_warning)."""
     task_dir = _seed_task_for_merge(tmp_path, n_input=100, n_ndi=5, n_wi=0)
     merge_results(task_dir, variables=["ndi"])
 
-    log_text = (task_dir / "logs.jsonl").read_text()
-    assert "matched only" in log_text  # warning fired
+    log_lines = (task_dir / "logs.jsonl").read_text().splitlines()
+    events = [json.loads(line) for line in log_lines if line.strip()]
+    low = [e for e in events if e.get("event") == "merge_partial_low_match_pct"]
+    assert len(low) == 1
     # 5 / 100 = 5% match rate
-    assert "5.0%" in log_text
+    assert low[0]["match_pct"] == 5.0
+    assert low[0]["cohort_n"] == 100
+    assert low[0]["matched_n"] == 5
 
 
 from app.experiments.bg_ndi_wi import run
@@ -684,7 +690,7 @@ def test_merge_results_joins_on_pid_and_episode_id(tmp_path):
     pipeline_df = pd.DataFrame({
         "PATID": ["A", "A", "B"],
         "geoid": [0, 1, 2],
-        "NDI_quintile_v1": [3, 1, 5],
+        "ndi": [3, 1, 5],
     })
     pipeline_df.to_parquet(task_dir / "output" / "c4_ndi.parquet", index=False)
 
@@ -695,7 +701,7 @@ def test_merge_results_joins_on_pid_and_episode_id(tmp_path):
     assert len(out) == 3
     assert out["pid"].tolist() == ["A", "A", "B"]
     # Each row got its OWN exposure value, distinguishable per episode
-    assert out["NDI_quintile_v1"].tolist() == [3, 1, 5]
+    assert out["ndi"].tolist() == [3, 1, 5]
 
 
 def test_merge_results_missing_pipeline_row_fills_na(tmp_path):
@@ -720,7 +726,7 @@ def test_merge_results_missing_pipeline_row_fills_na(tmp_path):
     pipeline_df = pd.DataFrame({
         "PATID": ["A"],
         "geoid": [0],
-        "NDI_quintile_v1": [3],
+        "ndi": [3],
     })
     pipeline_df.to_parquet(task_dir / "output" / "c4_ndi.parquet", index=False)
 
@@ -730,5 +736,5 @@ def test_merge_results_missing_pipeline_row_fills_na(tmp_path):
     assert len(out) == 2  # both input rows preserved
     assert out["pid"].tolist() == ["A", "A"]
     # First row matched, second is NaN
-    assert out["NDI_quintile_v1"].tolist()[0] == 3
-    assert pd.isna(out["NDI_quintile_v1"].tolist()[1])
+    assert out["ndi"].tolist()[0] == 3
+    assert pd.isna(out["ndi"].tolist()[1])
