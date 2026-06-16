@@ -258,3 +258,70 @@ def test_e2e_cache_second_run_faster(task_with_5_patients, tmp_path):
     # Cache directory exists with one entry.
     parquets = list(cache_dir.glob("*.parquet"))
     assert len(parquets) >= 1
+
+
+@pytest.fixture
+def task_with_multi_episode_cohort(tmp_path):
+    """11-row cohort: 5 patients × 2 episodes + 1 single-episode patient.
+
+    Proves the Sprint 2 episode-dimension change: result.csv must have one
+    row per residential episode, not one per patient. Patients with 2
+    different residences should get 2 distinct NDI values."""
+    task_dir = tmp_path / "task-int-multi-ep"
+    task_dir.mkdir()
+    (task_dir / "output").mkdir()
+    shutil.copy(
+        Path(__file__).parent / "fixtures" / "patients_multi_episode.csv",
+        task_dir / "input.csv",
+    )
+    (task_dir / "config.json").write_text(json.dumps({
+        "experiment": "bg_ndi_wi",
+        "variables": ["ndi", "walkability"],
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+    }))
+    return task_dir
+
+
+@pytest.mark.integration
+def test_e2e_multi_episode_cohort(task_with_multi_episode_cohort):
+    """Sprint 2: pipeline emits per-(patient, episode) rows; the 5×2+1 cohort
+    must produce 11 result rows, not 6."""
+    cmd = [
+        str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
+        "-m", "app.experiments.bg_ndi_wi", "run", str(task_with_multi_episode_cohort),
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    assert proc.returncode == 0, f"runner failed: stdout={proc.stdout!r} stderr={proc.stderr!r}"
+
+    status = json.loads((task_with_multi_episode_cohort / "status.json").read_text())
+    assert status["status"] == "finished"
+
+    result_csv = task_with_multi_episode_cohort / "output" / "result.csv"
+    df = pd.read_csv(result_csv)
+
+    # CRITICAL: one row per residential episode, not per patient.
+    assert len(df) == 11, f"expected 11 rows (per-episode), got {len(df)}"
+
+    # Same pids as input (5 dups + 1 single), in input order.
+    assert df["pid"].tolist() == [
+        "PID0000001", "PID0000001",
+        "PID0000002", "PID0000002",
+        "PID0000003", "PID0000003",
+        "PID0000004", "PID0000004",
+        "PID0000005", "PID0000005",
+        "PID0000006",
+    ]
+
+    # For at least 2 patients, the two episodes must yield DIFFERENT NDI quintile
+    # values — this proves the episode dimension is actually preserved (and not
+    # just a duplicate of the patient-level value).
+    multi_episode_pids = ["PID0000001", "PID0000002", "PID0000003", "PID0000004", "PID0000005"]
+    distinct_ndi_count = 0
+    for pid in multi_episode_pids:
+        vals = df[df["pid"] == pid]["ndi"].dropna().tolist()
+        if len(vals) == 2 and vals[0] != vals[1]:
+            distinct_ndi_count += 1
+    assert distinct_ndi_count >= 2, (
+        f"expected ≥2 patients with distinct NDI across their 2 episodes; "
+        f"only {distinct_ndi_count} differed. Result df:\n{df}"
+    )
