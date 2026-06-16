@@ -58,7 +58,7 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
       <CardContent className="space-y-6">
         <p className="text-xs text-muted-foreground">
           The spacescans-pipeline computes a circular buffer (radius in meters) around each
-          patient's residence and overlays it with the chosen boundary layer. Set the radius
+          patient&apos;s residence and overlays it with the chosen boundary layer. Set the radius
           and rasterization resolution below.
         </p>
 
