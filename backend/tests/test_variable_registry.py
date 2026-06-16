@@ -340,3 +340,55 @@ def test_startup_probe_runs_once(monkeypatch):
     # No raise expected — second invocation must short-circuit.
     vr._assert_pipeline_version_compatible()
     assert vr._PROBE_DONE is True
+
+
+# ---------------------------------------------------------------------------
+# Sprint 6 T5 (H2): TIGER C4 server-boot pre-flight
+# ---------------------------------------------------------------------------
+
+
+def _make_tiger_tree(root: Path, years: range) -> Path:
+    """Build a fake {root}/data_full/TIGER/C4/tiger{year}_roads/ tree."""
+    c4 = root / "data_full" / "TIGER" / "C4"
+    c4.mkdir(parents=True, exist_ok=True)
+    for year in years:
+        (c4 / f"tiger{year}_roads").mkdir()
+    return c4
+
+
+def test_tiger_preflight_passes_when_all_years_present(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_tree(tmp_path, range(2013, 2020))  # 2013..2019 inclusive
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "variables" in payload
+
+
+def test_tiger_preflight_raises_on_missing_year(tmp_path, monkeypatch):
+    import shutil
+    from app import variable_registry as vr
+    from app.config import settings
+
+    c4 = _make_tiger_tree(tmp_path, range(2013, 2020))
+    shutil.rmtree(c4 / "tiger2017_roads")
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc_info:
+        vr.load_variables(force=True)
+    msg = str(exc_info.value)
+    assert "2017" in msg
+    assert "tiger2017_roads" in msg
+
+
+def test_tiger_preflight_skips_when_root_missing(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    # tmp_path has no data_full/TIGER/ tree at all
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # short-circuit, no raise
+    assert "variables" in payload
