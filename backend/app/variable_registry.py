@@ -69,6 +69,34 @@ def _discover_experiments() -> set[str]:
     }
 
 
+def _assert_tiger_data_present(payload: dict[str, Any]) -> None:
+    """Pre-flight: TIGER C4 tile subdirs exist for each coverage_year.
+
+    Raises MetadataSchemaError if a declared tiger_proximity variable's
+    coverage_years range names a year with no on-disk
+    {DATA_ROOT}/data_full/TIGER/C4/tiger{year}_roads/ subdir.
+
+    Short-circuits when the C4 root itself is absent — production startup
+    runs validate_pipeline_settings first, so this branch only fires under
+    test fixtures that bypass the data-dir gate.
+    """
+    from app.config import settings
+    root = settings.SPACESCANS_DATA_DIR / "data_full" / "TIGER" / "C4"
+    if not root.exists():
+        return
+    for key, m in payload["variables"].items():
+        if m.get("experiment") != "tiger_proximity":
+            continue
+        yr_lo, yr_hi = m["coverage_years"]
+        for year in range(yr_lo, yr_hi + 1):
+            subdir = root / f"tiger{year}_roads"
+            if not subdir.exists():
+                raise MetadataSchemaError(
+                    f"tiger_proximity variable {key!r} coverage_year "
+                    f"{year} missing data: {subdir}"
+                )
+
+
 def load_variables(*, force: bool = False) -> dict[str, Any]:
     _assert_pipeline_version_compatible()
     mtime = _METADATA_PATH.stat().st_mtime
@@ -95,6 +123,8 @@ def load_variables(*, force: bool = False) -> dict[str, Any]:
                 f"variable {key!r} references unknown experiment "
                 f"{m['experiment']!r} (known: {sorted(known_experiments)})"
             )
+
+    _assert_tiger_data_present(payload)
 
     _CACHE["mtime"] = mtime
     _CACHE["payload"] = payload
