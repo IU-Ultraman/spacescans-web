@@ -66,15 +66,21 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
         If any requested variable is not in variable_metadata.json (the
         exception args[0] is a comma-separated list of unknown keys).
     """
-    import pandas as pd  # noqa: PLC0415  — local import to keep cold-import light
+    import pandas as pd  # noqa: PLC0415
+    from app import variable_registry  # noqa: PLC0415
 
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
     input_csv = task_dir / "input.csv"
     if not input_csv.exists():
         raise FileNotFoundError("No input uploaded")
 
-    metadata = _load_variable_metadata()
-    unknown = [v for v in variable_keys if v not in metadata]
+    resolved: dict[str, dict] = {}
+    unknown: list[str] = []
+    for var in variable_keys:
+        try:
+            resolved[var] = variable_registry.get_variable(var)
+        except KeyError:
+            unknown.append(var)
     if unknown:
         raise KeyError(", ".join(unknown))
 
@@ -86,18 +92,19 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
     )
     n_total = len(df)
 
-    # Empty cohort: return zero coverage for every requested variable, no warnings.
     if n_total == 0:
         return {
             "row_count": 0,
             "variables": {
                 var: {
-                    "coverage_years": list(metadata[var]["coverage_years"]),
+                    "coverage_years": list(resolved[var]["coverage_years"]),
                     "patients_in_time_window": 0,
                     "patients_in_region": 0,
                     "patients_covered": 0,
                     "coverage_pct": 0.0,
                     "warnings": ["Cohort is empty — no patients to evaluate"],
+                    "boundary": resolved[var]["boundary"],
+                    "display_unit": resolved[var]["display_unit"],
                 }
                 for var in variable_keys
             },
@@ -105,7 +112,7 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
 
     out_vars: dict[str, dict] = {}
     for var in variable_keys:
-        m = metadata[var]
+        m = resolved[var]
         y0, y1 = m["coverage_years"]
         cov_start = pd.Timestamp(f"{y0}-01-01")
         cov_end = pd.Timestamp(f"{y1}-12-31")
@@ -140,6 +147,8 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
             "patients_covered": int(covered.sum()),
             "coverage_pct": round(100 * covered.sum() / n_total, 2),
             "warnings": warnings,
+            "boundary": m["boundary"],
+            "display_unit": m["display_unit"],
         }
 
     return {"row_count": n_total, "variables": out_vars}
@@ -150,6 +159,12 @@ class TaskBusyError(RuntimeError):
 
     def __init__(self):
         super().__init__("another task is already running")
+
+
+def _task_dir(task_id: str) -> Path:
+    """Resolve task_id to its on-disk directory under TASKS_DIR."""
+    return app.config.settings.TASKS_DIR / f"task-{task_id}"
+
 
 def create_task(user_id: int, task_name: str) -> dict:
     task_id = str(uuid.uuid4())
@@ -247,49 +262,22 @@ def save_config(task_id: str, config: dict):
     (task_dir / "config.json").write_text(json.dumps(config, indent=2))
 
 def start_task(task_id: str) -> dict:
-    """Spawn the experiment subprocess for a task.
+    """Sprint 3: Popen the supervisor and return its pid synchronously.
 
-    The subprocess itself acquires .run_lock for its lifetime; the kernel
-    releases the lock when the process exits. To surface TaskBusyError to
-    HTTP callers without spawning a doomed subprocess, we do a quick
-    pre-check here (acquire-then-release) before dispatch.
-
-    There is a microsecond TOCTOU window between the pre-check release and
-    the subprocess starting up: a concurrent caller could race in and grab
-    the lock first. In that case the loser's subprocess will fail its own
-    flock attempt and write status="error" — acceptable for v1.
+    Replaces the Sprint 2 single-runner spawn. The request thread now Popens
+    `python -m app.dispatcher run <task_id>` (in a new session) and returns
+    immediately with the supervisor pid. The supervisor sequentially spawns
+    each per-experiment runner.
     """
-    task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
+    task_dir = _task_dir(task_id)
     if not (task_dir / "config.json").exists():
-        raise ValueError("Task not configured — missing config.json")
-    if not (task_dir / "input.csv").exists():
-        raise ValueError("No input file uploaded")
+        raise FileNotFoundError(f"config.json missing for task {task_id}")
 
-    config = json.loads((task_dir / "config.json").read_text())
-    experiment = config.get("experiment", "bg_ndi_wi")
-
-    # Pre-check the lock; the real acquisition happens inside the subprocess.
-    lock_path = app.config.settings.DATA_DIR / ".run_lock"
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    lock_path.touch()
-    pre_fd = os.open(str(lock_path), os.O_RDWR)
-    try:
-        fcntl.flock(pre_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        os.close(pre_fd)
-        raise TaskBusyError()
-    # Release immediately — the subprocess re-acquires and holds it for life.
-    fcntl.flock(pre_fd, fcntl.LOCK_UN)
-    os.close(pre_fd)
-
-    if experiment == "bg_ndi_wi":
-        cmd = [
-            str(app.config.settings.SPACESCANS_PIPELINE_PYTHON),
-            "-m", "app.experiments.bg_ndi_wi", "run", str(task_dir),
-        ]
-    else:
-        cmd = [sys.executable, "-m", "mock_cli.cli", "run", str(task_dir)]
-
+    cmd = [
+        sys.executable,
+        "-m", "app.dispatcher",
+        "run", task_id,
+    ]
     proc = subprocess.Popen(
         cmd,
         cwd=str(app.config.settings.BASE_DIR),
@@ -297,41 +285,44 @@ def start_task(task_id: str) -> dict:
         stderr=subprocess.DEVNULL,
         start_new_session=True,
     )
+    _write_status(task_dir, pid=proc.pid)
     return {"pid": proc.pid, "task_id": task_id}
 
-def stop_task(task_id: str):
-    task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
-    status = _read_status(task_dir)
-    pid = status.get("pid")
-    if not pid:
-        raise ValueError("No running process found")
-    try:
-        # Send SIGTERM to the orchestrator's whole process group so the
-        # spacescans grandchild (in a new session via start_new_session=True)
-        # also receives it. Falls back to os.kill if the pid has no group.
+def stop_task(task_id: str) -> dict:
+    """Sprint 3: SIGTERM the supervisor AND any per-experiment runner pids
+    recorded under status.experiments[<exp_key>].pid by dispatcher.dispatch.
+
+    The supervisor uses start_new_session=True, so SIGTERM to its pid
+    normally takes down its child runners via the process group as well —
+    but the dispatcher also Popens each runner with start_new_session=True,
+    which puts each runner in its OWN session. We therefore walk the
+    experiments map and SIGTERM each runner pid explicitly to avoid orphans.
+    """
+    import os
+    import signal
+    task_dir = _task_dir(task_id)
+    status_path = task_dir / "status.json"
+    if not status_path.exists():
+        return {"status": "no-op", "reason": "no status.json"}
+    status = json.loads(status_path.read_text())
+
+    pids: list[int] = []
+    sup_pid = status.get("pid")
+    if isinstance(sup_pid, int):
+        pids.append(sup_pid)
+    for exp in (status.get("experiments") or {}).values():
+        exp_pid = exp.get("pid")
+        if isinstance(exp_pid, int) and exp.get("status") == "running":
+            pids.append(exp_pid)
+
+    sent: list[int] = []
+    for pid in pids:
         try:
-            pgid = os.getpgid(pid)
-            os.killpg(pgid, signal.SIGTERM)
-        except ProcessLookupError:
             os.kill(pid, signal.SIGTERM)
-        # Wait up to 10s for graceful exit
-        import time
-        for _ in range(100):
-            try:
-                os.kill(pid, 0)
-                time.sleep(0.1)
-            except OSError:
-                return
-        # Force kill the group
-        try:
-            os.killpg(os.getpgid(pid), signal.SIGKILL)
-        except OSError:
-            try:
-                os.kill(pid, signal.SIGKILL)
-            except OSError:
-                pass
-    except OSError:
-        pass
+            sent.append(pid)
+        except ProcessLookupError:
+            continue
+    return {"status": "stopping", "signalled_pids": sent}
 
 def get_status(task_id: str) -> dict:
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
@@ -390,5 +381,80 @@ def recover_orphaned_tasks():
 def _read_status(task_dir: Path) -> dict:
     status_path = task_dir / "status.json"
     if not status_path.exists():
-        return {"status": "not_started", "progress": 0.0, "message": ""}
+        return {"status": "not_started", "progress": 0.0, "message": "",
+                "steps": [], "current_step": None, "total_steps": 0,
+                "experiments": {}}
     return json.loads(status_path.read_text())
+
+
+def _derive_flat_fields(experiments: dict) -> dict:
+    """Compute legacy flat steps[]/current_step/total_steps/progress from
+    the experiments map, preserving insertion (dispatch) order.
+
+    Aggregated progress = sum(completed sub-steps) / total_steps.
+    """
+    flat_steps: list[str] = []
+    completed = 0.0
+    current_step = None
+    for exp_key, exp in experiments.items():
+        steps = list(exp.get("steps") or [])
+        flat_steps.extend(steps)
+        completed += float(exp.get("progress") or 0.0) * len(steps)
+        if exp.get("status") == "running" and exp.get("current_step"):
+            current_step = exp["current_step"]
+    total = len(flat_steps)
+    progress = (completed / total) if total else 0.0
+    return {"steps": flat_steps, "current_step": current_step,
+            "total_steps": total, "progress": round(progress, 6)}
+
+
+def _write_status(task_dir: Path, **kwargs) -> dict:
+    """Atomic read-modify-write of status.json with experiments-aware merge."""
+    task_dir.mkdir(parents=True, exist_ok=True)
+    lock_path = task_dir / ".status_lock"
+    lock_path.touch()
+    lock_fd = os.open(str(lock_path), os.O_RDWR)
+
+    import time as _time
+    deadline = _time.monotonic() + 5.0
+    while True:
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            break
+        except BlockingIOError:
+            if _time.monotonic() >= deadline:
+                os.close(lock_fd)
+                raise TimeoutError(
+                    f"_write_status: could not acquire {lock_path} within 5s"
+                )
+            _time.sleep(0.01)
+
+    try:
+        status_path = task_dir / "status.json"
+        if status_path.exists():
+            current = json.loads(status_path.read_text())
+        else:
+            current = {}
+
+        incoming_experiments = kwargs.pop("experiments", None)
+        if incoming_experiments is not None:
+            merged_experiments = dict(current.get("experiments") or {})
+            for exp_key, exp_payload in incoming_experiments.items():
+                existing_slot = dict(merged_experiments.get(exp_key) or {})
+                existing_slot.update(exp_payload)
+                merged_experiments[exp_key] = existing_slot
+            current["experiments"] = merged_experiments
+        elif "experiments" not in current:
+            current["experiments"] = {}
+
+        current.update(kwargs)
+
+        current.update(_derive_flat_fields(current["experiments"]))
+
+        tmp_path = task_dir / "status.json.tmp"
+        tmp_path.write_text(json.dumps(current, indent=2))
+        os.replace(str(tmp_path), str(status_path))
+        return current
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        os.close(lock_fd)

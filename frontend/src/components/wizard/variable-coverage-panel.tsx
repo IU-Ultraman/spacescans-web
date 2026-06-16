@@ -72,7 +72,7 @@ export function VariableCoveragePanel({
       <div className="mt-0.5 text-muted-foreground">
         {data.patients_covered.toLocaleString()} /{" "}
         {rowCount.toLocaleString()} within {data.coverage_years[0]}-
-        {data.coverage_years[1]} + coverage region
+        {data.coverage_years[1]} + {data.boundary} on CONUS
       </div>
       {data.warnings.map((w, i) => (
         <div key={i} className="mt-1">

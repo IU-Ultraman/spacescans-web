@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Pill } from "@/components/ui/chip";
 import { api, ApiError } from "@/lib/api";
+import { useVariableCatalog } from "@/lib/use-variable-catalog";
+import { groupByExperiment } from "@/lib/variable-grouping";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -64,21 +67,7 @@ export function ReviewStep({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [cpuCores, setCpuCores] = useState("4");
   const [memoryLimit, setMemoryLimit] = useState("8");
-  const [metadata, setMetadata] = useState<
-    Record<string, { id: string; label: string; definition: string }>
-  >({});
-
-  useEffect(() => {
-    fetch("/ontology/metadata.json")
-      .then((r) => r.json())
-      .then(setMetadata)
-      .catch(() => {});
-  }, []);
-
-  const getLabel = (id: string) => {
-    const meta = metadata[id];
-    return meta ? meta.label.replace(/_/g, " ") : id;
-  };
+  const { catalog } = useVariableCatalog();
 
   const handleStart = async () => {
     setStarting(true);
@@ -174,16 +163,32 @@ export function ReviewStep({
           icon={<Tags className="size-4" />}
           title={`Selected Variables (${selectedVariables.length})`}
         >
-          <div className="flex flex-wrap gap-1.5">
-            {selectedVariables.map((id) => (
-              <span
-                key={id}
-                className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
-              >
-                {getLabel(id)}
-              </span>
-            ))}
-          </div>
+          {catalog ? (
+            <div className="space-y-3">
+              {Object.entries(
+                groupByExperiment(selectedVariables, catalog),
+              ).map(([expKey, varKeys]) => (
+                <div key={expKey}>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">
+                    {expKey}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {varKeys.map((k) => (
+                      <Pill key={k}>
+                        {catalog.variables[k]?.label ?? k}
+                      </Pill>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {selectedVariables.map((id) => (
+                <Pill key={id}>{id}</Pill>
+              ))}
+            </div>
+          )}
         </SummarySection>
 
         {/* Advanced options */}

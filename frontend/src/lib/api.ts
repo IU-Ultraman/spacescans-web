@@ -100,6 +100,25 @@ export interface VarCoverage {
   patients_covered: number;
   coverage_pct: number;
   warnings: string[];
+  boundary: 'BG' | 'ZCTA5' | 'Tract' | 'County';
+  display_unit: string;
+}
+
+export interface VariableMetadata {
+  label: string;
+  description: string;
+  boundary: 'BG' | 'ZCTA5' | 'Tract' | 'County';
+  coverage_years: [number, number];
+  coverage_region: 'CONUS' | 'US' | 'AK_HI';
+  experiment: string;
+  variable_type: 'categorical' | 'continuous';
+  display_unit: string;
+  value_cols: string[];
+}
+
+export interface VariableCatalog {
+  schema_version: number;
+  variables: Record<string, VariableMetadata>;
 }
 
 export interface CoverageResponse {
@@ -158,7 +177,7 @@ export const api = {
   saveConfig: (id: string, config: Record<string, unknown>) =>
     request<Task>(`/api/tasks/${id}/config`, {
       method: "PUT",
-      body: JSON.stringify({ experiment: "bg_ndi_wi", ...config }),
+      body: JSON.stringify({ experiment: "auto", ...config }),
     }),
 
   startTask: (id: string) =>
@@ -184,4 +203,6 @@ export const api = {
     ),
 
   downloadResults: (id: string) => `${API_BASE}/api/tasks/${id}/results`,
+
+  listVariables: () => request<VariableCatalog>("/api/variables"),
 };

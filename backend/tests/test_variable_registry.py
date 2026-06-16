@@ -1,0 +1,224 @@
+"""Sprint 3 T2: variable_registry — load, validate, cache, query helpers."""
+from __future__ import annotations
+
+import json
+import time
+from collections import OrderedDict
+from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _reset_registry_cache():
+    """Force fresh load each test so mtime / payload state does not leak."""
+    from app import variable_registry as vr
+    vr._CACHE["mtime"] = None
+    vr._CACHE["payload"] = None
+    yield
+    vr._CACHE["mtime"] = None
+    vr._CACHE["payload"] = None
+
+
+def test_load_variables_passes_schema_validation():
+    from app import variable_registry as vr
+    payload = vr.load_variables()
+    assert payload["schema_version"] == 1
+    assert set(payload["variables"].keys()) >= {"ndi", "walkability", "cbp_zcta5"}
+
+
+def test_get_variable_returns_metadata_dict():
+    from app import variable_registry as vr
+    m = vr.get_variable("ndi")
+    assert m["experiment"] == "bg_ndi_wi"
+    assert m["boundary"] == "BG"
+    assert m["value_cols"] == ["ndi"]
+
+
+def test_get_variable_unknown_key_raises_keyerror():
+    from app import variable_registry as vr
+    with pytest.raises(KeyError):
+        vr.get_variable("does_not_exist")
+
+
+def test_missing_required_field_rejected(tmp_path, monkeypatch):
+    """A variable lacking a required field must fail jsonschema validation."""
+    from app import variable_registry as vr
+
+    bad = {
+        "schema_version": 1,
+        "variables": {
+            "ndi": {
+                # missing "label"
+                "description": "x",
+                "boundary": "BG",
+                "coverage_years": [2012, 2022],
+                "coverage_region": "CONUS",
+                "experiment": "bg_ndi_wi",
+                "variable_type": "continuous",
+                "display_unit": "z-score",
+                "value_cols": ["ndi"],
+            }
+        },
+    }
+    bad_path = tmp_path / "variable_metadata.json"
+    bad_path.write_text(json.dumps(bad))
+    monkeypatch.setattr(vr, "_METADATA_PATH", bad_path)
+
+    import jsonschema
+    with pytest.raises(jsonschema.ValidationError):
+        vr.load_variables(force=True)
+
+
+def test_unknown_experiment_rejected(tmp_path, monkeypatch):
+    """Variable referencing an experiment with no module in app/experiments/ must fail."""
+    from app import variable_registry as vr
+
+    bad = {
+        "schema_version": 1,
+        "variables": {
+            "ndi": {
+                "label": "NDI",
+                "description": "x",
+                "boundary": "BG",
+                "coverage_years": [2012, 2022],
+                "coverage_region": "CONUS",
+                "experiment": "ghost_runner",  # no such module
+                "variable_type": "continuous",
+                "display_unit": "z-score",
+                "value_cols": ["ndi"],
+            }
+        },
+    }
+    bad_path = tmp_path / "variable_metadata.json"
+    bad_path.write_text(json.dumps(bad))
+    monkeypatch.setattr(vr, "_METADATA_PATH", bad_path)
+
+    with pytest.raises(vr.MetadataSchemaError, match="unknown experiment"):
+        vr.load_variables(force=True)
+
+
+def test_schema_version_mismatch_rejected(tmp_path, monkeypatch):
+    """schema_version not in supported set raises MetadataSchemaError."""
+    from app import variable_registry as vr
+
+    bad_payload = tmp_path / "variable_metadata.json"
+    bad_schema = tmp_path / "variable_metadata.schema.json"
+    bad_payload.write_text(json.dumps({
+        "schema_version": 2,
+        "variables": {
+            "ndi": {
+                "label": "NDI",
+                "description": "x",
+                "boundary": "BG",
+                "coverage_years": [2012, 2022],
+                "coverage_region": "CONUS",
+                "experiment": "bg_ndi_wi",
+                "variable_type": "continuous",
+                "display_unit": "z-score",
+                "value_cols": ["ndi"],
+            }
+        },
+    }))
+    # Permissive schema so jsonschema.validate passes and the version gate fires.
+    bad_schema.write_text(json.dumps({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "required": ["schema_version", "variables"],
+    }))
+    monkeypatch.setattr(vr, "_METADATA_PATH", bad_payload)
+    monkeypatch.setattr(vr, "_SCHEMA_PATH", bad_schema)
+
+    with pytest.raises(vr.MetadataSchemaError, match="unsupported schema_version"):
+        vr.load_variables(force=True)
+
+
+def test_mtime_cache_reloads_on_file_change(tmp_path, monkeypatch):
+    """Touching the metadata file (new mtime) must trigger a reload."""
+    from app import variable_registry as vr
+
+    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
+    payload_path = tmp_path / "variable_metadata.json"
+
+    def write(label_for_ndi: str) -> None:
+        payload_path.write_text(json.dumps({
+            "schema_version": 1,
+            "variables": {
+                "ndi": {
+                    "label": label_for_ndi,
+                    "description": "x",
+                    "boundary": "BG",
+                    "coverage_years": [2012, 2022],
+                    "coverage_region": "CONUS",
+                    "experiment": "bg_ndi_wi",
+                    "variable_type": "continuous",
+                    "display_unit": "z-score",
+                    "value_cols": ["ndi"],
+                }
+            },
+        }))
+
+    write("first")
+    monkeypatch.setattr(vr, "_METADATA_PATH", payload_path)
+    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
+
+    first = vr.load_variables(force=True)
+    assert first["variables"]["ndi"]["label"] == "first"
+
+    # Ensure new mtime is distinct (filesystem mtime resolution >= 1s on some FSes).
+    time.sleep(1.1)
+    write("second")
+    second = vr.load_variables()  # no force — relies on mtime cache invalidation
+    assert second["variables"]["ndi"]["label"] == "second"
+
+
+def test_variables_by_experiment_preserves_file_order(tmp_path, monkeypatch):
+    """Reordering the JSON file inverts the OrderedDict iteration order."""
+    from app import variable_registry as vr
+
+    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
+
+    def variable(label: str, experiment: str, boundary: str) -> dict:
+        return {
+            "label": label, "description": "x",
+            "boundary": boundary, "coverage_years": [2012, 2022],
+            "coverage_region": "CONUS", "experiment": experiment,
+            "variable_type": "continuous", "display_unit": "u",
+            "value_cols": ["c"],
+        }
+
+    p = tmp_path / "variable_metadata.json"
+    monkeypatch.setattr(vr, "_METADATA_PATH", p)
+    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
+
+    # bg_ndi_wi first in file → first in dispatch
+    p.write_text(json.dumps({
+        "schema_version": 1,
+        "variables": {
+            "ndi": variable("NDI", "bg_ndi_wi", "BG"),
+            "cbp_zcta5": variable("CBP", "zcta5_cbp", "ZCTA5"),
+        },
+    }))
+    grouped = vr.variables_by_experiment(["ndi", "cbp_zcta5"])
+    assert isinstance(grouped, OrderedDict)
+    assert list(grouped.keys()) == ["bg_ndi_wi", "zcta5_cbp"]
+
+    # Invert order — must invert dispatch
+    time.sleep(1.1)
+    p.write_text(json.dumps({
+        "schema_version": 1,
+        "variables": {
+            "cbp_zcta5": variable("CBP", "zcta5_cbp", "ZCTA5"),
+            "ndi": variable("NDI", "bg_ndi_wi", "BG"),
+        },
+    }))
+    grouped = vr.variables_by_experiment(["ndi", "cbp_zcta5"])
+    assert list(grouped.keys()) == ["zcta5_cbp", "bg_ndi_wi"]
+
+
+def test_list_experiments_dedupes_in_file_order():
+    from app import variable_registry as vr
+    exps = vr.list_experiments()
+    # ndi + walkability both map to bg_ndi_wi; cbp_zcta5 → zcta5_cbp.
+    # bg_ndi_wi appears first because ndi is the first key in the JSON file.
+    assert exps == ["bg_ndi_wi", "zcta5_cbp"]

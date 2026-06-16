@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "variables": {
+    "ndi": {
+      "label": "Neighborhood Deprivation Index (NDI)",
+      "description": "Composite measure of neighborhood-level socioeconomic deprivation from US Census ACS variables.",
+      "boundary": "BG",
+      "coverage_years": [2012, 2022],
+      "coverage_region": "CONUS",
+      "experiment": "bg_ndi_wi",
+      "variable_type": "continuous",
+      "display_unit": "z-score",
+      "value_cols": ["ndi"]
+    },
+    "walkability": {
+      "label": "EPA Walkability Index",
+      "description": "EPA National Walkability Index ranking neighborhoods on walkability characteristics (intersection density, transit proximity, employment mix).",
+      "boundary": "BG",
+      "coverage_years": [2016, 2021],
+      "coverage_region": "CONUS",
+      "experiment": "bg_ndi_wi",
+      "variable_type": "continuous",
+      "display_unit": "1-20 index",
+      "value_cols": ["NatWalkInd"]
+    },
+    "cbp_zcta5": {
+      "label": "Community Organization Density (ZBP)",
+      "description": "Per-capita density of 10 community organization categories (religious, civic, business, political, professional, labor, bowling, recreational, golf, sports) at the ZIP Code Tabulation Area level from Census Zip Business Patterns.",
+      "boundary": "ZCTA5",
+      "coverage_years": [2013, 2019],
+      "coverage_region": "CONUS",
+      "experiment": "zcta5_cbp",
+      "variable_type": "continuous",
+      "display_unit": "establishments / 1k residents",
+      "value_cols": [
+        "r_religious", "r_civic", "r_business", "r_political",
+        "r_professional", "r_labor", "r_bowling", "r_recreational",
+        "r_golf", "r_sports"
+      ]
+    }
+  }
+}

@@ -4,6 +4,7 @@ from app.config import settings, validate_pipeline_settings
 from app.database import init_db
 from app.routers.auth import router as auth_router
 from app.routers.tasks import router as tasks_router
+from app.routers.variables import router as variables_router
 from app.task_manager import recover_orphaned_tasks
 
 
@@ -20,6 +21,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth_router)
     app.include_router(tasks_router)
+    app.include_router(variables_router)
 
     @app.on_event("startup")
     async def startup():
