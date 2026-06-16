@@ -172,3 +172,50 @@ To force a fresh run after Sprint 3 deployment (cache keys changed):
 
     rm -rf backend/data/c3_cache/
 
+
+## Sprint 5 — TIGER Road Proximity + precomputed_areal episode dispatch
+
+Pre-flight:
+- spacescans-pipeline editable install reflects Phase A
+  (`output_grouping` dispatch in `precomputed_areal_linkage.py`).
+  Verify with `python -c "from spacescans.linkage import
+  precomputed_areal_linkage; import inspect; print('episode' in
+  inspect.getsource(precomputed_areal_linkage))"` — expect True.
+- `data_full/TIGER/C4/tiger{2013,…,2019}_roads/` exists with per-county
+  zip files for at least one county.
+- `cache/C3/tiger_roads_filtered/` exists (first run on a fresh cache
+  takes longer).
+- `backend/app/data/variable_metadata.json` has 4 entries including
+  `tiger_proximity`.
+
+1. Variables-step renders 4 cards grouped by boundary:
+   - "Block Group" section: NDI, EPA Walkability Index, TIGER Road
+     Proximity
+   - "ZCTA5" section: Community Organization Density (ZBP)
+   Each card shows label, description, unit chip, year-range chip,
+   boundary chip. The TIGER card's unit chip reads "meters",
+   year-range "2013–2019", boundary "BG".
+2. Tick the TIGER card → coverage panel mounts inline; same shape
+   as Sprint 3 cards.
+3. Tick all 4 variables → Review step → Run. Watch status.json:
+   - `experiments` map shows bg_ndi_wi running first, zcta5_cbp
+     and tiger_proximity pending; then progresses through all three
+     in metadata-file order.
+   - logs.jsonl carries entries from all three runners.
+   - result.csv on completion carries
+     ndi + NatWalkInd + all 10 r_* + dist_pri + dist_sec + dist_prisec
+     columns.
+4. Repeat the same task; second run should hit the
+   `BG_TIGER` C3 cache (status.json shows c3_tiger_roads progresses
+   to 100% in < 1s for the cached cohort + buffer).
+5. Negative test: edit `configs/c4/tiger_roads_demo.yaml` to change
+   `output_grouping: episode` to an unknown value (e.g.
+   `output_grouping: foo`); run a fresh task. Expect a clear
+   ValueError in logs.jsonl from `precomputed_areal_linkage.py`:
+   `unsupported output_grouping: 'foo' (expected 'patient' or 'episode')`.
+   Restore the YAML. NOTE: do NOT test by *removing* the key —
+   `TimeConfig.output_grouping` defaults to `"patient"` at the
+   dataclass level (`src/spacescans/models/config.py:100`), so a
+   missing key silently falls back to patient-grouping instead of
+   raising. Catching that regression requires the explicit-typo
+   test, not an absent-field test.
