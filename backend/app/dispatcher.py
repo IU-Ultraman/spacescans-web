@@ -128,6 +128,7 @@ def dispatch(task_id_or_dir: str) -> dict:
 
     completed: list[str] = []
     exp_keys = list(by_exp.keys())
+    cancelled = False
     for i, exp_key in enumerate(exp_keys):
         exp_vars = by_exp[exp_key]
         cmd = [
@@ -152,8 +153,19 @@ def dispatch(task_id_or_dir: str) -> dict:
         _write_status(task_dir, experiments={exp_key: {"pid": proc.pid}})
         rc = proc.wait()
         if rc != 0:
-            # Mark this slot as errored; keep whatever progress the runner
-            # managed to write into its own slot before the failure.
+            if rc == 143:
+                # SIGTERM cancellation (Sprint 4 F1b). Preserve cancelled
+                # lineage end-to-end: this slot + all remaining slots get
+                # status='cancelled', and the post-loop top-level write
+                # branches on `cancelled` to write status='cancelled' /
+                # message='Task cancelled by user' instead of 'error'.
+                _mark_experiment(task_dir, exp_key, "cancelled", current_step=None)
+                for skipped in exp_keys[i + 1:]:
+                    _mark_experiment(task_dir, skipped, "cancelled",
+                                     current_step=None)
+                cancelled = True
+                break
+            # Generic non-zero rc — existing error + skipped cascade.
             _mark_experiment(task_dir, exp_key, "error", current_step=None)
             for skipped in exp_keys[i + 1:]:
                 _mark_experiment(task_dir, skipped, "skipped_due_to_prior_failure",
@@ -169,10 +181,15 @@ def dispatch(task_id_or_dir: str) -> dict:
 
     failed = [k for k in exp_keys if k not in completed]
 
-    if completed:
+    if completed and not cancelled:
         from app.experiments import _merge
         _merge.fan_in(task_dir, completed)
 
+    if cancelled:
+        _write_status(task_dir, status="cancelled",
+                      message="Task cancelled by user")
+        return {"task_id": task_dir.name, "completed": completed,
+                "failed": failed, "cancelled": True}
     if not completed:
         _write_status(task_dir, status="error", progress=0.0,
                       message=f"All experiments failed (first failure: {failed[0]})")
