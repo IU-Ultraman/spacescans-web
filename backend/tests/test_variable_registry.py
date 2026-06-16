@@ -219,11 +219,83 @@ def test_variables_by_experiment_preserves_file_order(tmp_path, monkeypatch):
 
 
 def test_list_experiments_dedupes_in_file_order():
+    """Post-B2 invariant; currently gated by the tiger_proximity module gap.
+
+    Sprint 5 B1 (transitional): the real variable_metadata.json now contains a
+    tiger_proximity entry whose experiment module does not yet exist, so
+    list_experiments() — which delegates to load_variables() — must raise
+    MetadataSchemaError(unknown experiment). B2 will flip this back to the
+    positive assertion exps == ["bg_ndi_wi", "zcta5_cbp", "tiger_proximity"].
+    """
     from app import variable_registry as vr
-    exps = vr.list_experiments()
-    # ndi + walkability both map to bg_ndi_wi; cbp_zcta5 → zcta5_cbp.
-    # bg_ndi_wi appears first because ndi is the first key in the JSON file.
-    assert exps == ["bg_ndi_wi", "zcta5_cbp"]
+    with pytest.raises(vr.MetadataSchemaError, match="unknown experiment"):
+        vr.list_experiments()
+
+
+def test_registry_accepts_tiger_proximity_entry(tmp_path, monkeypatch):
+    """Sprint 5 B1: tiger_proximity entry passes schema (3 value_cols, BG boundary,
+    2013-2019 coverage) once a tiger_proximity experiment module exists.
+
+    This test stubs the experiment discovery so it does NOT depend on B2's
+    runner module landing. It locks in the canonical entry shape from spec L570-582.
+    """
+    from app import variable_registry as vr
+
+    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
+    payload_path = tmp_path / "variable_metadata.json"
+    payload_path.write_text(json.dumps({
+        "schema_version": 1,
+        "variables": {
+            "tiger_proximity": {
+                "label": "TIGER Road Proximity",
+                "description": (
+                    "Per-block-group annual distance (meters) to the nearest "
+                    "TIGER/Line primary road (S1100), secondary road (S1200), "
+                    "and primary+secondary combined, from US Census TIGER/Line "
+                    "shapefiles."
+                ),
+                "boundary": "BG",
+                "coverage_years": [2013, 2019],
+                "coverage_region": "CONUS",
+                "experiment": "tiger_proximity",
+                "variable_type": "continuous",
+                "display_unit": "meters",
+                "value_cols": ["dist_pri", "dist_sec", "dist_prisec"],
+            }
+        },
+    }))
+
+    monkeypatch.setattr(vr, "_METADATA_PATH", payload_path)
+    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
+    # Pretend the tiger_proximity module exists so the whitelist passes — B2
+    # will make this real.
+    monkeypatch.setattr(
+        vr, "_discover_experiments",
+        lambda: {"bg_ndi_wi", "zcta5_cbp", "tiger_proximity"},
+    )
+
+    payload = vr.load_variables(force=True)
+    entry = payload["variables"]["tiger_proximity"]
+    assert entry["boundary"] == "BG"
+    assert entry["experiment"] == "tiger_proximity"
+    assert entry["coverage_years"] == [2013, 2019]
+    assert entry["display_unit"] == "meters"
+    assert entry["value_cols"] == ["dist_pri", "dist_sec", "dist_prisec"]
+    assert "US Census TIGER/Line shapefiles" in entry["description"]
+
+
+def test_real_metadata_file_contains_tiger_proximity_but_gates_on_missing_module():
+    """Loading the real, on-disk variable_metadata.json must raise
+    MetadataSchemaError(unknown experiment) until B2 lands
+    backend/app/experiments/tiger_proximity.py.
+
+    This is the spec's deliberate "half-landed" gate (L683-685): the JSON entry
+    is committed in B1, but the server refuses to boot until the runner module
+    is added in B2.
+    """
+    from app import variable_registry as vr
+    with pytest.raises(vr.MetadataSchemaError, match="unknown experiment"):
+        vr.load_variables(force=True)
 
 
 # ----- Sprint 4 F3: startup probe -----

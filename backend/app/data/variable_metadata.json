@@ -37,6 +37,17 @@
         "r_professional", "r_labor", "r_bowling", "r_recreational",
         "r_golf", "r_sports"
       ]
+    },
+    "tiger_proximity": {
+      "label": "TIGER Road Proximity",
+      "description": "Per-block-group annual distance (meters) to the nearest TIGER/Line primary road (S1100), secondary road (S1200), and primary+secondary combined, from US Census TIGER/Line shapefiles.",
+      "boundary": "BG",
+      "coverage_years": [2013, 2019],
+      "coverage_region": "CONUS",
+      "experiment": "tiger_proximity",
+      "variable_type": "continuous",
+      "display_unit": "meters",
+      "value_cols": ["dist_pri", "dist_sec", "dist_prisec"]
     }
   }
 }
