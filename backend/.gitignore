@@ -1,7 +1,6 @@
 venv/
 __pycache__/
 *.pyc
-data/
+/data/
 .env
-data/variable_metadata.json
-data/c3_cache/
+/data/c3_cache/
