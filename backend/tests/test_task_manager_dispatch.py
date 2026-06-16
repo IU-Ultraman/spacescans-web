@@ -277,3 +277,49 @@ def test_three_experiment_dispatch_preserves_metadata_order(
     fan_in.assert_called_once_with(
         task_dir_with_config, ["bg_ndi_wi", "zcta5_cbp", "tiger_proximity"]
     )
+
+
+def test_four_experiment_dispatch_preserves_metadata_order(
+    task_dir_with_config, monkeypatch
+):
+    """Sprint 7: 5 variables across 4 experiments dispatch in metadata-file order.
+
+    Dispatch order is JSON-file order of first experiment appearance —
+    bg_ndi_wi (ndi, walkability), zcta5_cbp (cbp_zcta5),
+    tiger_proximity (tiger_proximity), nhd_bluespace (nhd_bluespace), in
+    that order regardless of the variable selection order in config.json.
+    Pure mock — no subprocess, no status.json transitions beyond the
+    dispatcher's own writes.
+    """
+    import json as _json
+    from app import dispatcher
+
+    cfg_path = task_dir_with_config / "config.json"
+    cfg = _json.loads(cfg_path.read_text())
+    # Scramble the variable order — dispatcher must serialise to metadata-file
+    # order regardless.
+    cfg["variables"] = [
+        "nhd_bluespace", "tiger_proximity", "cbp_zcta5", "walkability", "ndi",
+    ]
+    cfg_path.write_text(_json.dumps(cfg))
+
+    _FakePopen.instances = []
+    monkeypatch.setattr(dispatcher.subprocess, "Popen",
+                        lambda cmd, **kw: _FakePopen(cmd, returncode=0, **kw))
+    fan_in = MagicMock()
+    monkeypatch.setattr("app.experiments._merge.fan_in", fan_in)
+
+    result = dispatcher.dispatch(str(task_dir_with_config))
+
+    assert len(_FakePopen.instances) == 4
+    assert "app.experiments.bg_ndi_wi" in _FakePopen.instances[0].cmd
+    assert "app.experiments.zcta5_cbp" in _FakePopen.instances[1].cmd
+    assert "app.experiments.tiger_proximity" in _FakePopen.instances[2].cmd
+    assert "app.experiments.nhd_bluespace" in _FakePopen.instances[3].cmd
+    assert result["completed"] == [
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+    ]
+    fan_in.assert_called_once_with(
+        task_dir_with_config,
+        ["bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace"],
+    )
