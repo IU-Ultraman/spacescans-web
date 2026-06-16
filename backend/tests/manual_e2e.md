@@ -136,3 +136,39 @@ Expected: 5 result rows — identical to v1 behaviour because each patient
 has one episode. The episode-dimension change is invisible on
 single-episode cohorts.
 
+## Sprint 3 — Variables-driven UI + ZCTA5×CBP
+
+Pre-flight:
+- `backend/app/data/variable_metadata.json` exists with `schema_version: 1` and 3 entries (`ndi`, `walkability`, `cbp_zcta5`).
+- `backend/app/data/variable_metadata.schema.json` exists.
+- `pyreadr` is importable in the spacescans env (Sprint 3 Risk R1).
+- The ZCTA5 buffer parquet exists at `output/python_v2/270m/ZCTA5_US/C3/buffer270mZCTA525m_demo100k.parquet` (Sprint 3 Risk R2).
+- The pipeline config exists at `spacescans-pipeline/configs/c4/zcta5_cbp_demo.yaml`.
+- Legacy `backend/data/variable_metadata.json` does NOT exist.
+
+Walk-through:
+
+1. **3-card variables-step render.** Reach the Variables step. Confirm 3 cards rendered, grouped by boundary:
+   - "Block Group" section: NDI, EPA Walkability Index.
+   - "ZIP Code Tabulation Area" section: Community Organization Density (ZBP).
+   Each card shows: label, description, unit chip, year-range chip, boundary chip.
+
+2. **Coverage panel mount.** Tick any single card. The coverage panel mounts inline and issues `GET /api/tasks/<id>/coverage?variables=<key>`. The response now includes the `boundary` chip.
+
+3. **schema_version=2 mismatch banner.** Temporarily edit `backend/app/data/variable_metadata.json` and set `"schema_version": 2`. Refresh the wizard. Expected: top-of-step banner reads "Catalog out of date" with a Refresh button; the cards do NOT render. Revert the file.
+
+4. **Multi-experiment run with `experiments` map progression.** Tick all 3 cards → Review → Run. On the task page, poll `/api/tasks/<id>/status`:
+   - First snapshot: `status.experiments == {"bg_ndi_wi": "running", "zcta5_cbp": "pending"}`.
+   - Mid-run snapshot: `status.experiments == {"bg_ndi_wi": "finished", "zcta5_cbp": "running"}`.
+   - Final snapshot: both `"finished"`; `status.status == "finished"`.
+
+5. **result.csv column set.** Download `result.csv`. Required columns:
+   - Keys: `pid`, `episode_id`.
+   - BG: `ndi`, `NatWalkInd`.
+   - ZCTA5: `r_religious`, `r_civic`, `r_business`, `r_political`, `r_professional`, `r_labor`, `r_bowling`, `r_recreational`, `r_golf`, `r_sports`.
+   Row count equals the BG row count from Sprint 2; ZCTA5 columns left-join cleanly.
+
+To force a fresh run after Sprint 3 deployment (cache keys changed):
+
+    rm -rf backend/data/c3_cache/
+
