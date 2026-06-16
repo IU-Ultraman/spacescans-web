@@ -43,6 +43,9 @@ _VARIABLE_TO_STEP = {
 
 _C3_STEP = PipelineStep(name="c3_bg", template_relpath="c3/bg_us_demo.yaml", is_c3=True)
 
+# Sprint 3 B15: per-runner boundary tag baked into the C3 cache key.
+_BOUNDARY = "BG"
+
 
 def plan(config: dict) -> list[PipelineStep]:
     """Compute the ordered pipeline steps for a task.
@@ -271,7 +274,7 @@ def _cache_key(input_parquet: Path, step: PipelineStep, user_config: dict) -> st
     Example: ``a8f3c2b1__BG__b270m__r25m``
     """
     sha = _hash_input_parquet(input_parquet)
-    boundary = "BG"  # Sprint 1: only BG. Sprint 3 will derive from step.
+    boundary = _BOUNDARY
     buf = user_config["buffer"]["size"]
     raster = user_config["buffer"]["raster_res_m"]
     return f"{sha[:8]}__{boundary}__b{buf}m__r{raster}m"

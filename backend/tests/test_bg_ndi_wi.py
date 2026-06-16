@@ -738,3 +738,22 @@ def test_merge_results_missing_pipeline_row_fills_na(tmp_path):
     # First row matched, second is NaN
     assert out["ndi"].tolist()[0] == 3
     assert pd.isna(out["ndi"].tolist()[1])
+
+
+def test_boundary_constant_is_BG():
+    """Sprint 3 B15: the per-runner boundary literal must be a module constant."""
+    from app.experiments import bg_ndi_wi
+    assert bg_ndi_wi._BOUNDARY == "BG"
+
+
+def test_cache_key_byte_identical_after_boundary_refactor(tmp_path):
+    """Refactoring 'BG' into _BOUNDARY must NOT change the emitted key bytes."""
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP, _hash_input_parquet
+
+    p = tmp_path / "in.parquet"
+    p.write_bytes(b"\x00" * 4096)
+    cfg = {"buffer": {"size": 270, "raster_res_m": 25}}
+
+    sha8 = _hash_input_parquet(p)[:8]
+    expected = f"{sha8}__BG__b270m__r25m"
+    assert _cache_key(p, _C3_STEP, cfg) == expected
