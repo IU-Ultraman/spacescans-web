@@ -264,16 +264,6 @@ def test_three_experiment_dispatch_preserves_metadata_order(
     _FakePopen.instances = []
     monkeypatch.setattr(dispatcher.subprocess, "Popen",
                         lambda cmd, **kw: _FakePopen(cmd, returncode=0, **kw))
-    # variables_by_experiment must return a dict ordered by metadata-file
-    # first-appearance: bg_ndi_wi, zcta5_cbp, tiger_proximity.
-    monkeypatch.setattr(
-        dispatcher.variable_registry, "variables_by_experiment",
-        lambda selected: {
-            "bg_ndi_wi": ["ndi", "walkability"],
-            "zcta5_cbp": ["cbp_zcta5"],
-            "tiger_proximity": ["tiger_proximity"],
-        },
-    )
     fan_in = MagicMock()
     monkeypatch.setattr("app.experiments._merge.fan_in", fan_in)
 
