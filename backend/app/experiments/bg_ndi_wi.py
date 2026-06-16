@@ -5,6 +5,7 @@ Spawned by app.task_manager.start_task as:
 """
 from __future__ import annotations
 
+import argparse
 import fcntl
 import hashlib
 import json
@@ -334,7 +335,7 @@ def _count_input_rows(input_csv: Path) -> int:
         return sum(1 for _ in f)
 
 
-def run(task_dir: Path) -> int:
+def run(task_dir: Path, variables: list[str] | None = None) -> int:
     """Main entry point for an experiment run.
 
     Holds .run_lock for the duration of the run so concurrent task spawns are
@@ -345,6 +346,11 @@ def run(task_dir: Path) -> int:
     Reads task_dir/config.json, drives the C3 + C4 pipeline steps, merges the
     per-variable outputs, and writes status.json + logs.jsonl + output/result.csv.
     Returns 0 on success, non-zero on any step failure.
+
+    When ``variables`` is provided (by the Sprint 3 dispatcher), it overrides
+    the config-file variables list so a multi-experiment dispatch routes only
+    this runner's subset here. This lets the dispatcher pass a config with
+    foreign variables (e.g. ``cbp_zcta5``) without ``plan()`` rejecting them.
     """
     # Install SIGTERM handler first — must be in place before any blocking work
     # so that stop_task can cleanly cancel us at any point during the run.
@@ -369,6 +375,8 @@ def run(task_dir: Path) -> int:
 
     try:
         config = json.loads((task_dir / "config.json").read_text())
+        if variables is not None:
+            config = {**config, "variables": list(variables)}
         steps = plan(config)
         total_steps = len(steps)
 
@@ -488,8 +496,17 @@ def run(task_dir: Path) -> int:
             _write_status(task_dir, status="error", message=f"merge failed: {exc}")
             return 1
 
-        _write_status(task_dir, status="finished", progress=1.0,
-                      message=f"Completed {total_steps} pipeline steps")
+        # When invoked by the Sprint 3 dispatcher (variables override supplied),
+        # leave the top-level ``status`` to the dispatcher: it must own the
+        # task-level lifecycle so a polling client doesn't observe a transient
+        # ``finished`` between the per-experiment runner finishing and the
+        # dispatcher's fan_in writing the merged result.csv.
+        if variables is None:
+            _write_status(task_dir, status="finished", progress=1.0,
+                          message=f"Completed {total_steps} pipeline steps")
+        else:
+            _write_status(task_dir, progress=1.0,
+                          message=f"Completed {total_steps} pipeline steps")
         return 0
     finally:
         # Kernel releases the lock on process exit, but be explicit on the
@@ -503,10 +520,20 @@ def run(task_dir: Path) -> int:
 
 
 def _cli_main(argv: list[str]) -> int:
-    if len(argv) < 3 or argv[1] != "run":
-        print("Usage: python -m app.experiments.bg_ndi_wi run <task_dir>", file=sys.stderr)
-        return 2
-    return run(Path(argv[2]))
+    parser = argparse.ArgumentParser(prog="bg_ndi_wi")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    p_run = sub.add_parser("run")
+    p_run.add_argument("task_dir", type=Path)
+    p_run.add_argument("--variables", type=str, default=None,
+                       help="comma-separated subset (overrides config.json)")
+    args = parser.parse_args(argv[1:])
+    if args.cmd != "run":
+        parser.error(f"unknown command: {args.cmd}")
+    variables = (
+        [v.strip() for v in args.variables.split(",") if v.strip()]
+        if args.variables else None
+    )
+    return run(args.task_dir, variables=variables)
 
 
 if __name__ == "__main__":

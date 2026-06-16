@@ -321,8 +321,17 @@ def run(task_dir: Path, variables: list[str] | None = None) -> int:
             _write_status(task_dir, status="error", message=f"merge failed: {exc}")
             return 1
 
-        _write_status(task_dir, status="finished", progress=1.0,
-                      message=f"Completed {total_steps} pipeline steps")
+        # When invoked by the Sprint 3 dispatcher (variables override supplied),
+        # leave the top-level ``status`` to the dispatcher: it must own the
+        # task-level lifecycle so a polling client doesn't observe a transient
+        # ``finished`` between the per-experiment runner finishing and the
+        # dispatcher's fan_in writing the merged result.csv.
+        if variables is None:
+            _write_status(task_dir, status="finished", progress=1.0,
+                          message=f"Completed {total_steps} pipeline steps")
+        else:
+            _write_status(task_dir, progress=1.0,
+                          message=f"Completed {total_steps} pipeline steps")
         return 0
     finally:
         try:

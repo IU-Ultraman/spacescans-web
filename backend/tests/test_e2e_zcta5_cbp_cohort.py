@@ -1,0 +1,99 @@
+"""Sprint 3 e2e: single-experiment ZCTA5×CBP via task_manager.start_task."""
+import json
+import shutil
+import time
+from pathlib import Path
+
+import pandas as pd
+import pytest
+
+import app.config
+
+
+_R_STAR_COLUMNS = [
+    "r_religious", "r_civic", "r_business", "r_political", "r_professional",
+    "r_labor", "r_bowling", "r_recreational", "r_golf", "r_sports",
+]
+
+
+def _integration_available() -> bool:
+    if not app.config.settings.SPACESCANS_DATA_DIR.exists():
+        return False
+    if not app.config.settings.SPACESCANS_PIPELINE_CLI.exists():
+        return False
+    if not (app.config.settings.SPACESCANS_DATA_DIR
+            / "data_full/BG_FL/C3/tiger2010_bg10_states").exists():
+        return False
+    try:
+        import pyreadr  # noqa: F401
+    except Exception:
+        return False
+    return True
+
+
+pytestmark = pytest.mark.skipif(
+    not _integration_available(),
+    reason="SPACESCANS_DATA_DIR / pipeline CLI / pyreadr not configured",
+)
+
+
+@pytest.fixture
+def task_with_zcta5_cohort(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("TASKS_DIR", str(tmp_path / "data" / "tasks"))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "data" / "test.db"))
+
+    import importlib
+    import app.config as _config
+    import app.task_manager as _tm
+    importlib.reload(_config)
+    importlib.reload(_tm)
+
+    from app.task_manager import create_task, save_config
+    meta = create_task(user_id=1, task_name="e2e-zcta5-cbp")
+    task_dir = _config.settings.TASKS_DIR / f"task-{meta['id']}"
+    task_dir.mkdir(parents=True, exist_ok=True)
+    (task_dir / "output").mkdir(exist_ok=True)
+    shutil.copy(
+        Path(__file__).parent / "fixtures" / "patients_5.csv",
+        task_dir / "input.csv",
+    )
+    save_config(meta["id"], {
+        "experiment": "auto",
+        "variables": ["cbp_zcta5"],
+        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+    })
+    return meta["id"], task_dir
+
+
+@pytest.mark.integration
+def test_e2e_zcta5_cbp_cohort(task_with_zcta5_cohort):
+    task_id, task_dir = task_with_zcta5_cohort
+
+    from app.task_manager import start_task
+    start_task(task_id)
+
+    deadline = time.monotonic() + 180.0
+    while time.monotonic() < deadline:
+        status = json.loads((task_dir / "status.json").read_text())
+        if status.get("status") in ("finished", "error", "partial", "cancelled"):
+            break
+        time.sleep(1.0)
+    else:
+        pytest.fail(f"task did not terminate within 180s; last status={status}")
+
+    assert status["status"] == "finished"
+    experiments = status.get("experiments", {})
+    assert "zcta5_cbp" in experiments
+    assert experiments["zcta5_cbp"]["status"] == "finished"
+
+    assert (task_dir / "output" / "result_zcta5_cbp.csv").exists()
+    result_csv = task_dir / "output" / "result.csv"
+    assert result_csv.exists()
+
+    input_df = pd.read_csv(task_dir / "input.csv")
+    df = pd.read_csv(result_csv)
+
+    assert len(df) == len(input_df)
+    missing = [c for c in _R_STAR_COLUMNS if c not in df.columns]
+    assert not missing, f"missing r_* columns: {missing}"
