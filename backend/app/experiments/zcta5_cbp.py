@@ -133,6 +133,19 @@ def _write_status(task_dir: Path, **fields) -> None:
     tm_write(task_dir, **fields)
 
 
+# Sprint 3 final-review fix: when invoked by the dispatcher (variables override),
+# this runner is exactly one slot in status.json["experiments"][_EXPERIMENT_KEY].
+# Its progress / current_step writes must land in that slot (not at the
+# top-level) so _derive_flat_fields can aggregate across all experiments.
+_EXPERIMENT_KEY = "zcta5_cbp"
+
+
+def _write_slot_status(task_dir: Path, **slot_fields) -> None:
+    """Write per-experiment-slot fields (progress / current_step / status / message)."""
+    from app.task_manager import _write_status as tm_write
+    tm_write(task_dir, experiments={_EXPERIMENT_KEY: slot_fields})
+
+
 def _hash_input_parquet(path: Path) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -207,38 +220,68 @@ def run(task_dir: Path, variables: list[str] | None = None) -> int:
 
     try:
         config = json.loads((task_dir / "config.json").read_text())
-        if variables is not None:
+        dispatcher_driven = variables is not None
+        if dispatcher_driven:
             config = {**config, "variables": list(variables)}
         steps = plan(config)
         total_steps = len(steps)
 
-        _write_status(
-            task_dir,
-            status="running",
-            progress=0.0,
-            message="Preparing input data",
-            started_at=datetime.now(timezone.utc).isoformat(),
-            pid=os.getpid(),
-            current_step="csv_to_parquet",
-            total_steps=total_steps,
-            steps=[s.name for s in steps],
-        )
+        if dispatcher_driven:
+            # Dispatcher already seeded experiments[zcta5_cbp].steps; we only
+            # update our own slot's status / current_step / progress.
+            _write_slot_status(
+                task_dir,
+                status="running",
+                progress=0.0,
+                current_step="csv_to_parquet",
+                steps=[s.name for s in steps],
+                pid=os.getpid(),
+                message="Preparing input data",
+            )
+        else:
+            _write_status(
+                task_dir,
+                status="running",
+                progress=0.0,
+                message="Preparing input data",
+                started_at=datetime.now(timezone.utc).isoformat(),
+                pid=os.getpid(),
+                experiments={_EXPERIMENT_KEY: {
+                    "status": "running",
+                    "progress": 0.0,
+                    "current_step": "csv_to_parquet",
+                    "steps": [s.name for s in steps],
+                }},
+            )
 
         try:
             csv_to_parquet(task_dir / "input.csv", task_dir / "input.parquet")
         except Exception as exc:
             _append_log(task_dir, "error", "runner", f"csv_to_parquet failed: {exc!r}")
-            _write_status(task_dir, status="error",
-                          message=f"input conversion failed: {exc}")
+            if dispatcher_driven:
+                _write_slot_status(task_dir, status="error",
+                                   message=f"input conversion failed: {exc}")
+            else:
+                _write_status(task_dir, status="error",
+                              message=f"input conversion failed: {exc}")
             return 1
 
         for idx, step in enumerate(steps):
-            _write_status(
-                task_dir,
-                current_step=step.name,
-                message=f"Running {step.name} ({idx+1}/{total_steps})",
-                progress=idx / total_steps,
-            )
+            step_progress = idx / total_steps
+            if dispatcher_driven:
+                _write_slot_status(
+                    task_dir,
+                    current_step=step.name,
+                    progress=step_progress,
+                    message=f"Running {step.name} ({idx+1}/{total_steps})",
+                )
+            else:
+                _write_status(
+                    task_dir,
+                    current_step=step.name,
+                    message=f"Running {step.name} ({idx+1}/{total_steps})",
+                    progress=step_progress,
+                )
             out_parquet = task_dir / "output" / f"{step.name}.parquet"
 
             cache_path: Path | None = None
@@ -251,12 +294,21 @@ def run(task_dir: Path, variables: list[str] | None = None) -> int:
                         shutil.copy(cache_path, out_parquet)
                         _append_log(task_dir, "info", "runner",
                                     f"cache hit: {cache_key} — skipping pipeline run")
-                        _write_status(
-                            task_dir,
-                            current_step=step.name,
-                            progress=(idx + 1) / total_steps,
-                            message=f"Reused cached {step.name}",
-                        )
+                        cached_progress = (idx + 1) / total_steps
+                        if dispatcher_driven:
+                            _write_slot_status(
+                                task_dir,
+                                current_step=step.name,
+                                progress=cached_progress,
+                                message=f"Reused cached {step.name}",
+                            )
+                        else:
+                            _write_status(
+                                task_dir,
+                                current_step=step.name,
+                                progress=cached_progress,
+                                message=f"Reused cached {step.name}",
+                            )
                         continue
                 except Exception as exc:
                     _append_log(task_dir, "warning", "runner",
@@ -268,27 +320,46 @@ def run(task_dir: Path, variables: list[str] | None = None) -> int:
             except Exception as exc:
                 _append_log(task_dir, "error", "runner",
                             f"render_yaml({step.name}) failed: {exc!r}")
-                _write_status(task_dir, status="error",
-                              message=f"render failed at {step.name}")
+                if dispatcher_driven:
+                    _write_slot_status(task_dir, status="error",
+                                       message=f"render failed at {step.name}")
+                else:
+                    _write_status(task_dir, status="error",
+                                  message=f"render failed at {step.name}")
                 return 1
 
-            def _on_step_progress(frac: float, idx=idx, step=step) -> None:
-                _write_status(
-                    task_dir,
-                    progress=(idx + frac) / total_steps,
-                    message=f"Running {step.name} ({idx+1}/{total_steps}) — {int(frac*100)}%",
-                )
+            def _on_step_progress(
+                frac: float,
+                idx=idx,
+                step=step,
+                dispatcher_driven=dispatcher_driven,
+            ) -> None:
+                slot_progress = (idx + frac) / total_steps
+                msg = (f"Running {step.name} ({idx+1}/{total_steps}) "
+                       f"— {int(frac*100)}%")
+                if dispatcher_driven:
+                    _write_slot_status(task_dir, progress=slot_progress, message=msg)
+                else:
+                    _write_status(task_dir, progress=slot_progress, message=msg)
 
             step_start = time.time()
             rc = run_pipeline_step(yaml_path, task_dir, step_name=step.name,
                                    on_progress=_on_step_progress)
             if rc != 0:
-                _write_status(task_dir, status="error",
-                              message=f"step {step.name} failed with exit code {rc}")
+                if dispatcher_driven:
+                    _write_slot_status(task_dir, status="error",
+                                       message=f"step {step.name} failed with exit code {rc}")
+                else:
+                    _write_status(task_dir, status="error",
+                                  message=f"step {step.name} failed with exit code {rc}")
                 return rc
             if not out_parquet.exists():
-                _write_status(task_dir, status="error",
-                              message=f"step {step.name} produced no output parquet")
+                if dispatcher_driven:
+                    _write_slot_status(task_dir, status="error",
+                                       message=f"step {step.name} produced no output parquet")
+                else:
+                    _write_status(task_dir, status="error",
+                                  message=f"step {step.name} produced no output parquet")
                 return 1
 
             if step.is_c3 and cache_path is not None:
@@ -311,27 +382,46 @@ def run(task_dir: Path, variables: list[str] | None = None) -> int:
                     _append_log(task_dir, "warning", "runner",
                                 f"cache write failed: {exc!r} — continuing")
 
-        _write_status(task_dir, current_step="merge",
-                      message="Merging variable outputs",
-                      progress=(total_steps - 0.1) / total_steps)
+        near_done = (total_steps - 0.1) / total_steps
+        if dispatcher_driven:
+            _write_slot_status(task_dir, current_step="merge",
+                               message="Merging variable outputs",
+                               progress=near_done)
+        else:
+            _write_status(task_dir, current_step="merge",
+                          message="Merging variable outputs",
+                          progress=near_done)
         try:
             merge_results(task_dir, variables=config["variables"])
         except Exception as exc:
             _append_log(task_dir, "error", "runner", f"merge_results failed: {exc!r}")
-            _write_status(task_dir, status="error", message=f"merge failed: {exc}")
+            if dispatcher_driven:
+                _write_slot_status(task_dir, status="error",
+                                   message=f"merge failed: {exc}")
+            else:
+                _write_status(task_dir, status="error",
+                              message=f"merge failed: {exc}")
             return 1
 
         # When invoked by the Sprint 3 dispatcher (variables override supplied),
         # leave the top-level ``status`` to the dispatcher: it must own the
         # task-level lifecycle so a polling client doesn't observe a transient
         # ``finished`` between the per-experiment runner finishing and the
-        # dispatcher's fan_in writing the merged result.csv.
-        if variables is None:
-            _write_status(task_dir, status="finished", progress=1.0,
-                          message=f"Completed {total_steps} pipeline steps")
+        # dispatcher's fan_in writing the merged result.csv. We DO populate our
+        # own slot's progress=1.0 + current_step=None so the atomic writer can
+        # aggregate a correct top-level progress + steps[] from the per-slot
+        # fields.
+        if dispatcher_driven:
+            _write_slot_status(task_dir, progress=1.0, current_step=None,
+                               message=f"Completed {total_steps} pipeline steps")
         else:
-            _write_status(task_dir, progress=1.0,
-                          message=f"Completed {total_steps} pipeline steps")
+            _write_status(task_dir, status="finished", progress=1.0,
+                          message=f"Completed {total_steps} pipeline steps",
+                          experiments={_EXPERIMENT_KEY: {
+                              "status": "finished",
+                              "progress": 1.0,
+                              "current_step": None,
+                          }})
         return 0
     finally:
         try:

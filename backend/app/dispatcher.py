@@ -4,6 +4,7 @@ Spawned by task_manager.start_task as: python -m app.dispatcher run <task_id>
 """
 from __future__ import annotations
 
+import importlib
 import json
 import logging
 import subprocess
@@ -26,8 +27,50 @@ def _write_status(task_dir: Path, **kwargs) -> None:
     tm_write(task_dir, **kwargs)
 
 
-def _mark_experiment(task_dir: Path, exp_key: str, status: str) -> None:
-    _write_status(task_dir, experiments={exp_key: {"status": status}})
+def _mark_experiment(task_dir: Path, exp_key: str, status: str, **extra) -> None:
+    payload = {"status": status, **extra}
+    _write_status(task_dir, experiments={exp_key: payload})
+
+
+def _runner_step_names(exp_key: str, exp_vars: list[str], config: dict) -> list[str]:
+    """Import the runner module and call its plan() to get this slot's step names.
+
+    Sprint 3 final-review fix (BLOCKER): _derive_flat_fields aggregates
+    top-level ``steps`` / ``progress`` from each ``experiments[exp_key]``
+    slot. The dispatcher used to seed only ``status`` / ``variables`` /
+    ``started_at``, leaving ``steps=[]`` and ``progress=0.0`` — which then
+    clobbered the top-level fields the runner had written. We now read the
+    runner's plan() output ahead of Popen and seed the slot's ``steps``.
+
+    Returns an empty list if the runner module / plan() is unavailable; the
+    caller treats that as "this experiment contributes 0 steps" and proceeds.
+    """
+    try:
+        module = importlib.import_module(f"app.experiments.{exp_key}")
+    except ImportError:
+        _log.warning("dispatcher: cannot import app.experiments.%s — slot steps will be empty",
+                     exp_key)
+        return []
+    plan_fn = getattr(module, "plan", None)
+    if plan_fn is None:
+        _log.warning("dispatcher: app.experiments.%s has no plan() — slot steps will be empty",
+                     exp_key)
+        return []
+    try:
+        steps = plan_fn({**config, "variables": list(exp_vars)})
+    except Exception as exc:
+        _log.warning("dispatcher: %s.plan() raised %r — slot steps will be empty",
+                     exp_key, exc)
+        return []
+    # plan() returns dataclass PipelineStep objects; project to their name.
+    names: list[str] = []
+    for s in steps:
+        name = getattr(s, "name", None)
+        if isinstance(name, str):
+            names.append(name)
+        elif isinstance(s, str):
+            names.append(s)
+    return names
 
 
 def dispatch(task_id_or_dir: str) -> dict:
@@ -59,16 +102,27 @@ def dispatch(task_id_or_dir: str) -> dict:
                       message="no variables selected")
         return {"task_id": task_dir.name, "failed": []}
 
+    # Seed each experiment slot with its plan()'s step names + progress=0.0
+    # so _derive_flat_fields produces a real top-level steps[] / progress.
+    # Sprint 3 final-review fix (BLOCKER): previously we wrote only
+    # status/variables/started_at, leaving steps=[] which then clobbered
+    # the top-level steps/progress written by the runner.
+    seeded_slots: dict[str, dict] = {}
+    for exp_key, vars_ in by_exp.items():
+        seeded_slots[exp_key] = {
+            "status": "pending",
+            "variables": list(vars_),
+            "started_at": None,
+            "progress": 0.0,
+            "current_step": None,
+            "steps": _runner_step_names(exp_key, list(vars_), config),
+        }
+
     _write_status(
         task_dir,
         status="running",
-        progress=0.0,
         message="Dispatching experiments",
-        experiments={
-            exp_key: {"status": "pending", "variables": list(vars_),
-                      "started_at": None}
-            for exp_key, vars_ in by_exp.items()
-        },
+        experiments=seeded_slots,
         started_at=datetime.now(timezone.utc).isoformat(),
     )
 
@@ -98,11 +152,19 @@ def dispatch(task_id_or_dir: str) -> dict:
         _write_status(task_dir, experiments={exp_key: {"pid": proc.pid}})
         rc = proc.wait()
         if rc != 0:
-            _mark_experiment(task_dir, exp_key, "error")
+            # Mark this slot as errored; keep whatever progress the runner
+            # managed to write into its own slot before the failure.
+            _mark_experiment(task_dir, exp_key, "error", current_step=None)
             for skipped in exp_keys[i + 1:]:
-                _mark_experiment(task_dir, skipped, "skipped_due_to_prior_failure")
+                _mark_experiment(task_dir, skipped, "skipped_due_to_prior_failure",
+                                 current_step=None)
             break
-        _mark_experiment(task_dir, exp_key, "finished")
+        # Runner succeeded — pin slot progress=1.0 (the runner already writes
+        # this, but we restate it here so a fast-finishing runner that didn't
+        # quite flush the final write still aggregates to top-level
+        # progress=1.0 once all slots succeed).
+        _mark_experiment(task_dir, exp_key, "finished",
+                         progress=1.0, current_step=None)
         completed.append(exp_key)
 
     failed = [k for k in exp_keys if k not in completed]

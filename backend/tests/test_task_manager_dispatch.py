@@ -92,7 +92,7 @@ def test_dispatch_partial_failure_marks_remaining(task_dir_with_config, monkeypa
     monkeypatch.setattr(dispatcher.subprocess, "Popen", popen_with_first_fail)
     marked = []
     monkeypatch.setattr(dispatcher, "_mark_experiment",
-                        lambda task_dir, key, status: marked.append((key, status)))
+                        lambda task_dir, key, status, **extra: marked.append((key, status)))
     fan_in = MagicMock()
     monkeypatch.setattr("app.experiments._merge.fan_in", fan_in)
 
@@ -148,6 +148,66 @@ def test_start_task_popens_dispatcher_and_returns_pid(task_dir_with_config, monk
     assert "run" in captured["cmd"]
     assert captured["kwargs"].get("start_new_session") is True
     assert isinstance(out["pid"], int)
+
+
+def test_dispatch_derives_top_level_progress_and_steps_from_slots(
+    task_dir_with_config, monkeypatch
+):
+    """Sprint 3 final-review (BLOCKER): dispatch must populate per-slot
+    ``steps`` + ``progress`` so the atomic writer's _derive_flat_fields
+    produces a real top-level ``progress=1.0`` + non-empty ``steps`` on
+    a successful all-experiments-finished run.
+
+    Pre-fix, status.json was always ``progress=0.0 / steps=[] / current_step=null``
+    for any dispatcher-driven run because the dispatcher never seeded per-slot
+    steps and the re-derivation clobbered the runner's top-level writes.
+    """
+    from app import dispatcher
+    from app.experiments import bg_ndi_wi as _bg
+    from app.experiments import zcta5_cbp as _zc
+
+    _FakePopen.instances = []
+    monkeypatch.setattr(dispatcher.subprocess, "Popen",
+                        lambda cmd, **kw: _FakePopen(cmd, returncode=0, **kw))
+    monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
+                        lambda selected: {
+                            "bg_ndi_wi": ["ndi"],
+                            "zcta5_cbp": ["cbp_zcta5"],
+                        })
+
+    class _Step:
+        def __init__(self, name): self.name = name
+
+    monkeypatch.setattr(_bg, "plan",
+                        lambda cfg: [_Step("c3_bg"), _Step("c4_ndi")])
+    monkeypatch.setattr(_zc, "plan",
+                        lambda cfg: [_Step("c3_zcta5"), _Step("c4_zcta5_cbp")])
+    monkeypatch.setattr("app.experiments._merge.fan_in", MagicMock())
+
+    dispatcher.dispatch(str(task_dir_with_config))
+
+    status = json.loads((task_dir_with_config / "status.json").read_text())
+
+    # Top-level fields must reflect a real, finished run.
+    assert status["status"] == "finished"
+    assert status["progress"] == 1.0, (
+        f"expected top-level progress=1.0; got {status['progress']}"
+    )
+    assert status["steps"] == [
+        "c3_bg", "c4_ndi", "c3_zcta5", "c4_zcta5_cbp"
+    ], f"top-level steps must concatenate per-slot steps in dispatch order; got {status['steps']}"
+    assert status["total_steps"] == 4
+    # No experiment slot is "running" on finish — current_step must be None.
+    assert status["current_step"] is None
+
+    # Per-slot fields must be populated (this is what _derive_flat_fields reads).
+    exp = status["experiments"]
+    assert exp["bg_ndi_wi"]["progress"] == 1.0
+    assert exp["bg_ndi_wi"]["steps"] == ["c3_bg", "c4_ndi"]
+    assert exp["bg_ndi_wi"]["status"] == "finished"
+    assert exp["zcta5_cbp"]["progress"] == 1.0
+    assert exp["zcta5_cbp"]["steps"] == ["c3_zcta5", "c4_zcta5_cbp"]
+    assert exp["zcta5_cbp"]["status"] == "finished"
 
 
 def test_legacy_experiment_field_logged_but_ignored(task_dir_with_config, monkeypatch):

@@ -84,10 +84,28 @@ def test_e2e_multi_experiment_cohort(task_with_multi_experiment):
 
     assert status["status"] == "finished"
 
+    # Sprint 3 final-review regression: top-level progress / steps / current_step
+    # were silently clobbered to 0.0 / [] / null on every finished run because the
+    # dispatcher never populated per-slot steps + progress and _write_status'
+    # _derive_flat_fields then re-derived them as zero.
+    assert status["progress"] == 1.0, (
+        f"top-level progress must be 1.0 on finished; got {status['progress']}"
+    )
+    assert len(status["steps"]) > 0, (
+        f"top-level steps must be non-empty; got {status.get('steps')}"
+    )
+    assert status["current_step"] is None or status["current_step"] in status["steps"], (
+        f"current_step={status['current_step']} must be None or in steps={status['steps']}"
+    )
+
     experiments = status.get("experiments", {})
     assert set(experiments.keys()) == {"bg_ndi_wi", "zcta5_cbp"}
     assert experiments["bg_ndi_wi"]["status"] == "finished"
     assert experiments["zcta5_cbp"]["status"] == "finished"
+    assert experiments["bg_ndi_wi"]["progress"] == 1.0
+    assert experiments["zcta5_cbp"]["progress"] == 1.0
+    assert experiments["bg_ndi_wi"]["steps"], "bg_ndi_wi slot steps must be populated"
+    assert experiments["zcta5_cbp"]["steps"], "zcta5_cbp slot steps must be populated"
 
     bg_start = experiments["bg_ndi_wi"]["started_at"]
     zc_start = experiments["zcta5_cbp"]["started_at"]
