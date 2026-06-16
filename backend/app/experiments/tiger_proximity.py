@@ -300,7 +300,7 @@ def run(task_dir: Path, variables: list[str] | None = None) -> int:
                     if _is_valid_cached_parquet(cache_path):
                         out_parquet.parent.mkdir(parents=True, exist_ok=True)
                         shutil.copy(cache_path, out_parquet)
-                        _append_log(task_dir, "info", "runner",
+                        _append_log(task_dir, "info", step.name,
                                     f"cache hit: {cache_key} — skipping pipeline run")
                         cached_progress = (idx + 1) / total_steps
                         if dispatcher_driven:
