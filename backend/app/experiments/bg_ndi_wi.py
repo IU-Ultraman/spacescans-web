@@ -230,21 +230,22 @@ _VARIABLE_PARQUET = {
 
 
 def merge_results(task_dir: Path, variables: list[str]) -> Path:
-    """Sprint 3: delegates to shared _merge.write_partial, then runs fan_in
-    inline as a safety net so result.csv still exists at run() completion.
+    """Delegate to shared _merge.write_partial; return the partial path.
 
-    T9 (dispatcher) will move the fan_in step to the dispatcher's post-experiment
-    loop and strip this inline call.
+    Sprint 4 F6: dropped the inline _merge.fan_in safety net. The dispatcher's
+    post-experiment loop (dispatcher.py:168-174) runs the final fan_in over the
+    completed experiment list, so result.csv is produced exactly once per task.
+    Both runners' merge_results are now symmetric (zcta5_cbp.merge_results
+    likewise returns write_partial's path).
     """
     from app.experiments import _merge
     parquet_map = {v: f"{_VARIABLE_TO_STEP[v].name}.parquet" for v in variables}
-    _merge.write_partial(
+    return _merge.write_partial(
         task_dir=task_dir,
         experiment_key="bg_ndi_wi",
         variables=variables,
         parquet_map=parquet_map,
     )
-    return _merge.fan_in(task_dir=task_dir, experiment_keys=["bg_ndi_wi"])
 
 
 def _write_status(task_dir: Path, **fields) -> None:

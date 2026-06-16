@@ -284,22 +284,27 @@ def test_merge_results_both_variables(tmp_path):
     task_dir = _seed_task_for_merge(tmp_path, n_input=5, n_ndi=4, n_wi=3)
     out = merge_results(task_dir, variables=["ndi", "walkability"])
 
-    assert out == task_dir / "output" / "result.csv"
+    # Sprint 4 F6: merge_results returns the partial result_bg_ndi_wi.csv
+    # (outer-merge of per-variable pipeline parquets on (pid, episode_id)).
+    # The dispatcher's post-experiment fan_in left-joins this partial against
+    # input.csv to produce result.csv — so input-anchored row count + NaN
+    # semantics are exercised end-to-end in the integration suite, not here.
+    assert out == task_dir / "output" / "result_bg_ndi_wi.csv"
     df = pd.read_csv(out)
-    assert len(df) == 5
     assert "pid" in df.columns
     assert "ndi" in df.columns
     assert "NatWalkInd" in df.columns
-    # First 3 patients matched both; pid #4 matched NDI only; pid #5 matched none.
-    assert df["ndi"].isna().sum() == 1
-    assert df["NatWalkInd"].isna().sum() == 2
+    # Outer-merge of NDI's 4 rows with WI's 3 rows (WI is a subset of NDI's
+    # keys): 4 rows total, all 4 have NDI, 1 row is missing NatWalkInd.
+    assert len(df) == 4
+    assert df["ndi"].isna().sum() == 0
+    assert df["NatWalkInd"].isna().sum() == 1
 
 
 def test_merge_results_ndi_only(tmp_path):
     task_dir = _seed_task_for_merge(tmp_path, n_input=3, n_ndi=3, n_wi=0)
     out = merge_results(task_dir, variables=["ndi"])
     df = pd.read_csv(out)
-    assert len(df) == 3
     assert "ndi" in df.columns
     assert "NatWalkInd" not in df.columns
 
@@ -353,9 +358,14 @@ def test_run_writes_status_file_on_completion(fake_template_dir, fake_cli_settin
     status = json.loads((task_dir / "status.json").read_text())
     assert status["status"] == "finished"
     assert status["total_steps"] == 2  # c3_bg + c4_ndi
-    assert (task_dir / "output" / "result.csv").exists()
-    df = pd.read_csv(task_dir / "output" / "result.csv")
-    assert len(df) == 2  # input rows preserved
+    # Sprint 4 F6: standalone run() emits only the per-runner partial
+    # result_bg_ndi_wi.csv (symmetric with zcta5_cbp.run()). The dispatcher's
+    # post-experiment fan_in is the sole producer of the consolidated
+    # result.csv — exercised end-to-end in the integration suite.
+    partial = task_dir / "output" / "result_bg_ndi_wi.csv"
+    assert partial.exists()
+    df = pd.read_csv(partial)
+    assert len(df) == 2  # one row per input patient (both matched in fake pipeline)
 
 
 def test_hash_input_parquet_is_deterministic(tmp_path):
@@ -696,7 +706,8 @@ def test_merge_results_joins_on_pid_and_episode_id(tmp_path):
 
     merge_results(task_dir, variables=["ndi"])
 
-    out = pd.read_csv(task_dir / "output" / "result.csv")
+    # Sprint 4 F6: assert against the partial (merge_results' output).
+    out = pd.read_csv(task_dir / "output" / "result_bg_ndi_wi.csv")
     # 3 rows out (one per residential episode), not 2 (one per patient)
     assert len(out) == 3
     assert out["pid"].tolist() == ["A", "A", "B"]
@@ -732,12 +743,14 @@ def test_merge_results_missing_pipeline_row_fills_na(tmp_path):
 
     merge_results(task_dir, variables=["ndi"])
 
-    out = pd.read_csv(task_dir / "output" / "result.csv")
-    assert len(out) == 2  # both input rows preserved
-    assert out["pid"].tolist() == ["A", "A"]
-    # First row matched, second is NaN
-    assert out["ndi"].tolist()[0] == 3
-    assert pd.isna(out["ndi"].tolist()[1])
+    # Sprint 4 F6: merge_results' partial only contains rows present in the
+    # pipeline parquet (no left-join against input.csv at this layer). The
+    # missing-row NaN semantics are exercised end-to-end in integration tests
+    # where the dispatcher's fan_in does the input-anchored left-join.
+    out = pd.read_csv(task_dir / "output" / "result_bg_ndi_wi.csv")
+    assert len(out) == 1  # only episode_id=0 present in pipeline parquet
+    assert out["pid"].tolist() == ["A"]
+    assert out["ndi"].tolist() == [3]
 
 
 def test_boundary_constant_is_BG():
