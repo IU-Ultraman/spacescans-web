@@ -268,10 +268,29 @@ def start_task(task_id: str) -> dict:
     `python -m app.dispatcher run <task_id>` (in a new session) and returns
     immediately with the supervisor pid. The supervisor sequentially spawns
     each per-experiment runner.
+
+    Sprint 4 F2: synchronously probe DATA_DIR/.run_lock before Popen. If
+    another task currently holds it, raise TaskBusyError so the router can
+    map to HTTP 409. The probe releases immediately — the runner will
+    re-acquire the lock for real inside its own process.
     """
     task_dir = _task_dir(task_id)
     if not (task_dir / "config.json").exists():
         raise FileNotFoundError(f"config.json missing for task {task_id}")
+
+    lock_path = app.config.settings.DATA_DIR / ".run_lock"
+    lock_path.touch(exist_ok=True)
+    probe_fd = os.open(str(lock_path), os.O_RDWR)
+    try:
+        try:
+            fcntl.flock(probe_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise TaskBusyError() from exc
+        finally:
+            # Release immediately — the runner will re-acquire.
+            fcntl.flock(probe_fd, fcntl.LOCK_UN)
+    finally:
+        os.close(probe_fd)
 
     cmd = [
         sys.executable,
