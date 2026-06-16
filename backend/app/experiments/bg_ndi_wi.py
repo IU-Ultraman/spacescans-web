@@ -8,6 +8,7 @@ from __future__ import annotations
 import fcntl
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -24,6 +25,8 @@ import pandas as pd
 import yaml
 
 import app.config
+
+_log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -71,6 +74,11 @@ def csv_to_parquet(src: Path, dst: Path) -> None:
       string to preserve leading zeros that the pipeline's GEOID joins need.
     - startDate / endDate are parsed to datetime64 so downstream code does not
       need to coerce them again.
+    - Adds a deterministic ``episode_id = range(len(df))`` column so the
+      pipeline's ``_adapt_demo_conus`` can use it as the per-row geoid and
+      ``merge_results`` can later reconstruct the same id to join back. If the
+      uploaded CSV already carries an ``episode_id`` column, it is overwritten
+      and a warning is logged.
     - No column renames here; the pipeline's `demo_conus` adapter performs
       renames at runtime (see spacescans/linkage/helpers.py:_adapt_demo_conus).
     """
@@ -86,6 +94,12 @@ def csv_to_parquet(src: Path, dst: Path) -> None:
     # instead of being silently coerced to NaT.
     df["startDate"] = pd.to_datetime(df["startDate"], format="%Y-%m-%d", errors="raise")
     df["endDate"] = pd.to_datetime(df["endDate"], format="%Y-%m-%d", errors="raise")
+    if "episode_id" in df.columns:
+        _log.warning(
+            "input.csv carried an episode_id column; overwriting with "
+            "deterministic row-index ids (Sprint 2 invariant)."
+        )
+    df["episode_id"] = range(len(df))
     dst.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(dst, index=False)
 
@@ -111,6 +125,8 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     cfg["buffer"]["buffer_m"] = user_config["buffer"]["size"]
     if step.is_c3:
         cfg["buffer"]["raster_res_m"] = user_config["buffer"]["raster_res_m"]
+    if "time" in cfg:
+        cfg["time"]["output_grouping"] = "episode"  # Sprint 2: keep per-episode rows; web pipes episode_id via _adapt_demo_conus
     cfg["output"]["path"] = str(task_dir / "output" / f"{step.name}.parquet")
 
     out = task_dir / "pipeline_configs" / f"{step.name}.yaml"
@@ -210,22 +226,40 @@ _VARIABLE_PARQUET = {
 
 
 def merge_results(task_dir: Path, variables: list[str]) -> Path:
-    """Left-join each per-variable parquet onto the original input CSV by PATID.
+    """Left-join each per-variable parquet onto the original input CSV by (pid, episode_id).
 
     Returns the path to the written result.csv. The input CSV is loaded as-is
     so all original metadata columns (startDate, endDate, lon/lat, FIPS) are
     preserved alongside the new exposure columns.
+
+    Sprint 2 invariant: the pipeline now emits one row per (PATID, episode_id)
+    via ``time.output_grouping=episode``; the per-episode key is carried in the
+    pipeline's ``geoid`` column (set by ``_adapt_demo_conus`` to equal the
+    input row's ``episode_id``). The merge therefore joins on BOTH ``pid`` and
+    ``episode_id`` so a patient with N residential episodes gets N result rows.
+
+    The left side is the original input.csv (so the result.csv mirrors the
+    user's upload column-for-column); the ``episode_id`` join key is derived
+    from row order — identical to the deterministic assignment in
+    ``csv_to_parquet`` (``range(len(df))``).
     """
     df = pd.read_csv(task_dir / "input.csv", dtype=str)
+    # Re-derive the deterministic per-row episode_id used as the merge key.
+    # csv_to_parquet writes the same range() into input.parquet; mirroring it
+    # here keeps merge_results independent of the parquet file's existence and
+    # avoids a second I/O round-trip just to fetch the column.
+    df["episode_id"] = range(len(df))
     for var in variables:
         parquet_name = _VARIABLE_PARQUET[var]
         var_df = pd.read_parquet(task_dir / "output" / parquet_name)
-        var_df = var_df.rename(columns={"PATID": "pid"})
-        df = df.merge(var_df, on="pid", how="left")
+        var_df = var_df.rename(columns={"PATID": "pid", "geoid": "episode_id"})
+        df = df.merge(var_df, on=["pid", "episode_id"], how="left")
 
-        # var_df was just left-merged into df; check how many input patients
+        # var_df was just left-merged into df; check how many input episodes
         # got a real value (i.e., how many input rows are NOT null in the new col).
-        value_col = next(c for c in var_df.columns if c != "pid")
+        value_col = next(
+            c for c in var_df.columns if c not in ("pid", "episode_id")
+        )
         match_pct = df[value_col].notna().mean() * 100
         if match_pct < 90.0:
             _append_log(task_dir, "warning", "runner",
