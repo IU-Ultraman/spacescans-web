@@ -125,6 +125,8 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     cfg["buffer"]["buffer_m"] = user_config["buffer"]["size"]
     if step.is_c3:
         cfg["buffer"]["raster_res_m"] = user_config["buffer"]["raster_res_m"]
+    if "time" in cfg:
+        cfg["time"]["output_grouping"] = "episode"  # Sprint 2: keep per-episode rows; web pipes episode_id via _adapt_demo_conus
     cfg["output"]["path"] = str(task_dir / "output" / f"{step.name}.parquet")
 
     out = task_dir / "pipeline_configs" / f"{step.name}.yaml"

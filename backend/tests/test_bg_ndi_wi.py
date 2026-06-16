@@ -106,6 +106,9 @@ def fake_template_dir(tmp_path, monkeypatch):
         "  patient_file: data_full/demo_patients_conus_fast_100000.parquet\n"
         "  patient_adapter: demo_conus\n"
         "  buffer_m: 270\n"
+        "time:\n"
+        "  years: [2017, 2018, 2019]\n"
+        "  temporal_resolution: yearly\n"
         "output:\n  path: output/bg_ndi_demo.parquet\n"
     )
 
@@ -618,3 +621,30 @@ def test_csv_to_parquet_overrides_user_episode_id_with_warn(tmp_path, caplog):
     assert df["episode_id"].tolist() == [0, 1]
     # Warning emitted
     assert any("episode_id" in r.message for r in caplog.records)
+
+
+def test_render_yaml_emits_episode_grouping(fake_template_dir, tmp_path):
+    """The emitted YAML must set time.output_grouping = 'episode' so the
+    pipeline keeps one output row per (PATID, episode) instead of collapsing
+    to one row per PATID."""
+    task_dir = tmp_path / "task-ep000001"
+    task_dir.mkdir()
+    step = _VARIABLE_TO_STEP["ndi"]
+    user_config = {"buffer": {"size": 270, "raster_res_m": 25}}
+
+    out = render_yaml(step, task_dir, user_config)
+    cfg = yaml.safe_load(out.read_text())
+    assert cfg["time"]["output_grouping"] == "episode"
+
+
+def test_render_yaml_preserves_other_time_fields(fake_template_dir, tmp_path):
+    """output_grouping is additive; existing time fields keep working."""
+    task_dir = tmp_path / "task-ep000002"
+    task_dir.mkdir()
+    step = _VARIABLE_TO_STEP["ndi"]
+    user_config = {"buffer": {"size": 270, "raster_res_m": 25}}
+
+    out = render_yaml(step, task_dir, user_config)
+    cfg = yaml.safe_load(out.read_text())
+    # whatever existing keys were already populated should still be there
+    assert "years" in cfg["time"] or "start_date" in cfg["time"]
