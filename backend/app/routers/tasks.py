@@ -1,7 +1,6 @@
 # backend/app/routers/tasks.py
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import FileResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from app.auth import get_current_user
 from app import task_manager
@@ -9,18 +8,6 @@ from app.task_manager import TaskBusyError
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
-# Lightweight auth gate for sibling routers (Sprint 3 T2/T3).
-# Returns 401 (not FastAPI's default 403) when the Authorization header is
-# absent. Sibling routers like /api/variables import this directly.
-_require_user_security = HTTPBearer(auto_error=False)
-
-
-def require_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(_require_user_security),
-) -> dict:
-    if credentials is None or not credentials.credentials:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    return {"token": credentials.credentials}
 
 class CreateTaskRequest(BaseModel):
     task_name: str

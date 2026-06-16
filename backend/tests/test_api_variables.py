@@ -5,12 +5,26 @@ Covers four cases from spec contract notes (lines 999-1018):
 - happy path → 200 with schema_version + 3-entry catalog
 - registry FileNotFoundError → 503 metadata_unavailable
 - registry MetadataSchemaError → 500 metadata_schema_invalid
+
+Sprint 4 F5: auth dependency swapped require_user → get_current_user; tests now
+mint a real JWT via create_access_token, and a negative test asserts garbage
+tokens are rejected with 401.
 """
+import os
+from pathlib import Path
 from unittest.mock import patch
+
+from dotenv import load_dotenv
+
+# Reload .env before importing app modules so SECRET_KEY/ALGORITHM are available
+_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
+if _ENV_PATH.exists():
+    load_dotenv(_ENV_PATH, override=True)
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.auth import create_access_token
 from app.main import app
 from app import variable_registry
 
@@ -20,9 +34,15 @@ def client():
     return TestClient(app)
 
 
+def _auth_headers() -> dict[str, str]:
+    """Mint a real JWT for tests so get_current_user accepts it."""
+    token = create_access_token({"sub": "1", "email": "test@example.com"})
+    return {"Authorization": f"Bearer {token}"}
+
+
 @pytest.fixture
 def auth_headers():
-    return {"Authorization": "Bearer test-token"}
+    return _auth_headers()
 
 
 def _fake_catalog():
@@ -66,9 +86,13 @@ def _fake_catalog():
     }
 
 
-def test_unauthenticated_returns_401(client):
+def test_unauthenticated_returns_403(client):
+    # Sprint 4 F5: get_current_user uses HTTPBearer(auto_error=True), so a
+    # missing Authorization header is rejected by FastAPI's security layer
+    # with 403 (not 401). 401 is reserved for invalid/expired tokens — see
+    # test_list_variables_rejects_invalid_jwt below.
     r = client.get("/api/variables")
-    assert r.status_code == 401
+    assert r.status_code == 403
 
 
 def test_authenticated_returns_catalog(client, auth_headers):
@@ -102,3 +126,10 @@ def test_metadata_schema_invalid_returns_500(client, auth_headers):
     assert r.status_code == 500
     assert r.json()["detail"]["error"] == "metadata_schema_invalid"
     assert "bogus" in r.json()["detail"]["message"]
+
+
+def test_list_variables_rejects_invalid_jwt(client):
+    """Garbage tokens must be rejected with 401 (was 200 under presence-only stub)."""
+    headers = {"Authorization": "Bearer not-a-real-jwt"}
+    response = client.get("/api/variables", headers=headers)
+    assert response.status_code == 401
