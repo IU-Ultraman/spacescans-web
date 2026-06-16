@@ -186,6 +186,12 @@ export default function TaskResultsPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Download the output files from your completed linkage task.
         </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          <span className="font-medium">Result shape:</span> one row per
+          residential episode. A patient with multiple residences during the
+          study window gets one row per residence; exposure values reflect
+          that specific residence.
+        </p>
         <Button onClick={handleDownload} className="mt-4 gap-2">
           <Download className="size-4" />
           Download result.csv
