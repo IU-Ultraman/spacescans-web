@@ -219,17 +219,13 @@ def test_variables_by_experiment_preserves_file_order(tmp_path, monkeypatch):
 
 
 def test_list_experiments_dedupes_in_file_order():
-    """Post-B2 invariant; currently gated by the tiger_proximity module gap.
-
-    Sprint 5 B1 (transitional): the real variable_metadata.json now contains a
-    tiger_proximity entry whose experiment module does not yet exist, so
-    list_experiments() — which delegates to load_variables() — must raise
-    MetadataSchemaError(unknown experiment). B2 will flip this back to the
-    positive assertion exps == ["bg_ndi_wi", "zcta5_cbp", "tiger_proximity"].
+    """Post-B2 invariant: with the tiger_proximity runner module now present
+    in app.experiments, list_experiments() returns the file-order de-duped
+    list of experiments referenced by variable_metadata.json.
     """
     from app import variable_registry as vr
-    with pytest.raises(vr.MetadataSchemaError, match="unknown experiment"):
-        vr.list_experiments()
+    exps = vr.list_experiments()
+    assert exps == ["bg_ndi_wi", "zcta5_cbp", "tiger_proximity"], exps
 
 
 def test_registry_accepts_tiger_proximity_entry(tmp_path, monkeypatch):
@@ -284,18 +280,21 @@ def test_registry_accepts_tiger_proximity_entry(tmp_path, monkeypatch):
     assert "US Census TIGER/Line shapefiles" in entry["description"]
 
 
-def test_real_metadata_file_contains_tiger_proximity_but_gates_on_missing_module():
-    """Loading the real, on-disk variable_metadata.json must raise
-    MetadataSchemaError(unknown experiment) until B2 lands
-    backend/app/experiments/tiger_proximity.py.
+def test_real_metadata_file_contains_tiger_proximity_with_runner_module():
+    """Post-B2: the real, on-disk variable_metadata.json loads cleanly and
+    exposes the tiger_proximity entry now that
+    backend/app/experiments/tiger_proximity.py exists.
 
-    This is the spec's deliberate "half-landed" gate (L683-685): the JSON entry
-    is committed in B1, but the server refuses to boot until the runner module
-    is added in B2.
+    Before B2 this test asserted MetadataSchemaError ("unknown experiment") —
+    the spec's deliberate half-landed gate (L683-685) — and was flipped to a
+    positive assertion the moment B2 landed the runner module.
     """
     from app import variable_registry as vr
-    with pytest.raises(vr.MetadataSchemaError, match="unknown experiment"):
-        vr.load_variables(force=True)
+    payload = vr.load_variables(force=True)
+    assert "tiger_proximity" in payload["variables"], sorted(payload["variables"].keys())
+    entry = payload["variables"]["tiger_proximity"]
+    assert entry["experiment"] == "tiger_proximity"
+    assert entry["boundary"] == "BG"
 
 
 # ----- Sprint 4 F3: startup probe -----
