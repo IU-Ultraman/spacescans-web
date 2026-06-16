@@ -195,3 +195,75 @@ def test_bg_ndi_wi_merge_results_delegates_to_write_partial(tmp_path):
     assert (task_dir / "output" / "result_bg_ndi_wi.csv").exists()
     df = pd.read_csv(task_dir / "output" / "result_bg_ndi_wi.csv")
     assert {"pid", "episode_id", "ndi", "NatWalkInd"}.issubset(df.columns)
+
+
+def test_fan_in_preserves_episode_pairs_with_partial_data(tmp_path):
+    """F4 (Sprint 4): lock (pid, episode_id) composite join key for fan_in.
+
+    Fixture: 10 input rows, 5 pids each appearing twice with two distinct
+    global episode_ids (A,B,C,D,E -> rows 0..9). Partial CSV drops episodes
+    1, 5, 9 (one missing episode for pids A, C, E). A mutation dropping
+    episode_id from the join key would either duplicate rows (cartesian on
+    pid) or place values on the wrong episode — both caught by the
+    assertions below.
+    """
+    from app.experiments import _merge
+
+    task_dir = tmp_path / "task-f4-fanin"
+    task_dir.mkdir(parents=True, exist_ok=True)
+
+    # 10 input rows: 5 pids (A..E), each twice. fan_in assigns
+    # episode_id = list(range(10)) in row order, so pairs are
+    # (A,0),(A,1),(B,2),(B,3),(C,4),(C,5),(D,6),(D,7),(E,8),(E,9).
+    pids = ["A", "A", "B", "B", "C", "C", "D", "D", "E", "E"]
+    pd.DataFrame({
+        "pid": pids,
+        "startDate": ["2017-01-01"] * 10,
+        "endDate": ["2017-12-31"] * 10,
+        "longitude": [-93.0] * 10,
+        "latitude": [45.0] * 10,
+    }).to_csv(task_dir / "input.csv", index=False)
+
+    # Partial CSV: 7 rows — drop episodes 1, 5, 9 (missing for A, C, E).
+    out_dir = task_dir / "output"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({
+        "pid": ["A", "B", "B", "C", "D", "D", "E"],
+        "episode_id": [0, 2, 3, 4, 6, 7, 8],
+        "value": [10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0],
+    }).to_csv(out_dir / "result_bg_ndi_wi.csv", index=False)
+
+    out = _merge.fan_in(task_dir=task_dir, experiment_keys=["bg_ndi_wi"])
+    df = pd.read_csv(out)
+
+    # (1) No row loss, no row duplication.
+    assert len(df) == 10, f"expected 10 rows, got {len(df)}"
+
+    # (2) Exactly 3 NaN rows in the value column.
+    nan_rows = df[df["value"].isna()]
+    assert nan_rows.shape[0] == 3, f"expected 3 NaN rows, got {nan_rows.shape[0]}"
+
+    # (3) NaN rows are exactly (A,1), (C,5), (E,9).
+    nan_pairs = set(
+        zip(nan_rows["pid"].tolist(), nan_rows["episode_id"].astype(int).tolist())
+    )
+    assert nan_pairs == {("A", 1), ("C", 5), ("E", 9)}, (
+        f"unexpected NaN pairs: {nan_pairs}"
+    )
+
+    # (4) Sorted by (pid, episode_id) matches input ordering — confirms
+    # the left-join preserves composite-key row order.
+    df["episode_id"] = df["episode_id"].astype(int)
+    sorted_pairs = list(
+        zip(
+            df.sort_values(["pid", "episode_id"])["pid"].tolist(),
+            df.sort_values(["pid", "episode_id"])["episode_id"].tolist(),
+        )
+    )
+    expected_pairs = [
+        ("A", 0), ("A", 1), ("B", 2), ("B", 3), ("C", 4),
+        ("C", 5), ("D", 6), ("D", 7), ("E", 8), ("E", 9),
+    ]
+    assert sorted_pairs == expected_pairs, (
+        f"composite-key ordering mismatch: {sorted_pairs}"
+    )
