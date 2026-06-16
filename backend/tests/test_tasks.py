@@ -164,6 +164,14 @@ def test_save_config_default_experiment_is_bg_ndi_wi(monkeypatch, tmp_path):
     assert saved["experiment"] == "bg_ndi_wi"
 
 
+@pytest.mark.skip(
+    reason="Sprint 3 T9: start_task no longer performs an in-process .run_lock "
+    "pre-check — it Popens the dispatcher unconditionally and returns the "
+    "supervisor pid. TaskBusyError-on-busy is no longer the contract. "
+    "Future work may reintroduce a supervisor-level mutex; for now the "
+    "behaviour under concurrent start is best-effort (loser supervisor "
+    "exits via its own per-runner failure handling)."
+)
 def test_start_lock_returns_409_when_busy(monkeypatch, tmp_path):
     """Acquire the lock from outside, then call start_task and expect TaskBusyError."""
     import io, importlib, fcntl, os, app.config, app.task_manager
