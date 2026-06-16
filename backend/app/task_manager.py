@@ -66,15 +66,21 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
         If any requested variable is not in variable_metadata.json (the
         exception args[0] is a comma-separated list of unknown keys).
     """
-    import pandas as pd  # noqa: PLC0415  — local import to keep cold-import light
+    import pandas as pd  # noqa: PLC0415
+    from app import variable_registry  # noqa: PLC0415
 
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
     input_csv = task_dir / "input.csv"
     if not input_csv.exists():
         raise FileNotFoundError("No input uploaded")
 
-    metadata = _load_variable_metadata()
-    unknown = [v for v in variable_keys if v not in metadata]
+    resolved: dict[str, dict] = {}
+    unknown: list[str] = []
+    for var in variable_keys:
+        try:
+            resolved[var] = variable_registry.get_variable(var)
+        except KeyError:
+            unknown.append(var)
     if unknown:
         raise KeyError(", ".join(unknown))
 
@@ -86,18 +92,19 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
     )
     n_total = len(df)
 
-    # Empty cohort: return zero coverage for every requested variable, no warnings.
     if n_total == 0:
         return {
             "row_count": 0,
             "variables": {
                 var: {
-                    "coverage_years": list(metadata[var]["coverage_years"]),
+                    "coverage_years": list(resolved[var]["coverage_years"]),
                     "patients_in_time_window": 0,
                     "patients_in_region": 0,
                     "patients_covered": 0,
                     "coverage_pct": 0.0,
                     "warnings": ["Cohort is empty — no patients to evaluate"],
+                    "boundary": resolved[var]["boundary"],
+                    "display_unit": resolved[var]["display_unit"],
                 }
                 for var in variable_keys
             },
@@ -105,7 +112,7 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
 
     out_vars: dict[str, dict] = {}
     for var in variable_keys:
-        m = metadata[var]
+        m = resolved[var]
         y0, y1 = m["coverage_years"]
         cov_start = pd.Timestamp(f"{y0}-01-01")
         cov_end = pd.Timestamp(f"{y1}-12-31")
@@ -140,6 +147,8 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
             "patients_covered": int(covered.sum()),
             "coverage_pct": round(100 * covered.sum() / n_total, 2),
             "warnings": warnings,
+            "boundary": m["boundary"],
+            "display_unit": m["display_unit"],
         }
 
     return {"row_count": n_total, "variables": out_vars}
