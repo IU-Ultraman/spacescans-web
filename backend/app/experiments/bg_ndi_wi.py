@@ -8,6 +8,7 @@ from __future__ import annotations
 import fcntl
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -24,6 +25,8 @@ import pandas as pd
 import yaml
 
 import app.config
+
+_log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -71,6 +74,11 @@ def csv_to_parquet(src: Path, dst: Path) -> None:
       string to preserve leading zeros that the pipeline's GEOID joins need.
     - startDate / endDate are parsed to datetime64 so downstream code does not
       need to coerce them again.
+    - Adds a deterministic ``episode_id = range(len(df))`` column so the
+      pipeline's ``_adapt_demo_conus`` can use it as the per-row geoid and
+      ``merge_results`` can later reconstruct the same id to join back. If the
+      uploaded CSV already carries an ``episode_id`` column, it is overwritten
+      and a warning is logged.
     - No column renames here; the pipeline's `demo_conus` adapter performs
       renames at runtime (see spacescans/linkage/helpers.py:_adapt_demo_conus).
     """
@@ -86,6 +94,12 @@ def csv_to_parquet(src: Path, dst: Path) -> None:
     # instead of being silently coerced to NaT.
     df["startDate"] = pd.to_datetime(df["startDate"], format="%Y-%m-%d", errors="raise")
     df["endDate"] = pd.to_datetime(df["endDate"], format="%Y-%m-%d", errors="raise")
+    if "episode_id" in df.columns:
+        _log.warning(
+            "input.csv carried an episode_id column; overwriting with "
+            "deterministic row-index ids (Sprint 2 invariant)."
+        )
+    df["episode_id"] = range(len(df))
     dst.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(dst, index=False)
 

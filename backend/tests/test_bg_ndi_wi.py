@@ -41,7 +41,8 @@ def test_csv_to_parquet_preserves_fips(tmp_path):
     csv_to_parquet(src, dst)
 
     df = pd.read_parquet(dst)
-    assert df.shape == (2, 9)
+    # 9 original columns + episode_id added by Sprint 2 B1 invariant.
+    assert df.shape == (2, 10)
     # pandas 2.x stores str as object; pandas 3.x infers `str` dtype by default.
     # Either is acceptable as long as values round-trip as strings with leading zeros.
     assert df["state_fips"].dtype == object or pd.api.types.is_string_dtype(df["state_fips"])
@@ -60,7 +61,8 @@ def test_csv_to_parquet_works_without_optional_fips(tmp_path):
     dst = tmp_path / "input.parquet"
     csv_to_parquet(src, dst)
     df = pd.read_parquet(dst)
-    assert df.shape == (1, 5)
+    # 5 original columns + episode_id added by Sprint 2 B1 invariant.
+    assert df.shape == (1, 6)
     assert pd.api.types.is_datetime64_any_dtype(df["startDate"])
 
 def test_csv_to_parquet_rejects_malformed_dates(tmp_path):
@@ -573,3 +575,46 @@ def test_cache_write_failure_does_not_break_task(
     assert rc == 0  # task still finishes
     status = json.loads((task_dir / "status.json").read_text())
     assert status["status"] == "finished"
+
+
+def test_csv_to_parquet_adds_episode_id(tmp_path):
+    """Every row gets episode_id = its row index, regardless of pid."""
+    from app.experiments.bg_ndi_wi import csv_to_parquet
+
+    src = tmp_path / "input.csv"
+    src.write_text(
+        "pid,startDate,endDate,longitude,latitude\n"
+        "PID0000001,2017-01-01,2017-12-31,-93.0,45.0\n"
+        "PID0000002,2017-01-01,2017-12-31,-95.0,30.0\n"
+        "PID0000001,2018-01-01,2018-12-31,-87.0,42.0\n"  # same pid as row 0
+    )
+    dst = tmp_path / "input.parquet"
+    csv_to_parquet(src, dst)
+
+    df = pd.read_parquet(dst)
+    assert "episode_id" in df.columns
+    assert df["episode_id"].tolist() == [0, 1, 2]
+
+
+def test_csv_to_parquet_overrides_user_episode_id_with_warn(tmp_path, caplog):
+    """If the input CSV already has an episode_id column, it's overwritten
+    deterministically and a warning is logged via standard logging."""
+    from app.experiments.bg_ndi_wi import csv_to_parquet
+
+    src = tmp_path / "input.csv"
+    src.write_text(
+        "pid,startDate,endDate,longitude,latitude,episode_id\n"
+        "PID0000001,2017-01-01,2017-12-31,-93.0,45.0,999\n"
+        "PID0000002,2017-01-01,2017-12-31,-95.0,30.0,888\n"
+    )
+    dst = tmp_path / "input.parquet"
+
+    import logging
+    with caplog.at_level(logging.WARNING, logger="app.experiments.bg_ndi_wi"):
+        csv_to_parquet(src, dst)
+
+    df = pd.read_parquet(dst)
+    # User values overwritten to deterministic row-index series
+    assert df["episode_id"].tolist() == [0, 1]
+    # Warning emitted
+    assert any("episode_id" in r.message for r in caplog.records)
