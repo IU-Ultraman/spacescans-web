@@ -195,6 +195,21 @@ def _flatten_status_into_meta(meta: dict, status: dict) -> None:
         meta["error_message"] = err
 
 
+def _attach_variables(meta: dict, task_dir: Path) -> None:
+    """Pull the selected variables list out of config.json (if present) so
+    the task list endpoint can surface it. Missing/invalid config → []."""
+    config_path = task_dir / "config.json"
+    if not config_path.exists():
+        meta["variables"] = []
+        return
+    try:
+        cfg = json.loads(config_path.read_text())
+        vars_ = cfg.get("variables") or []
+        meta["variables"] = [str(v) for v in vars_ if isinstance(v, str)]
+    except Exception:
+        meta["variables"] = []
+
+
 def list_tasks(user_id: int) -> list[dict]:
     tasks = []
     if not app.config.settings.TASKS_DIR.exists():
@@ -207,6 +222,7 @@ def list_tasks(user_id: int) -> list[dict]:
         if meta.get("user_id") != user_id:
             continue
         _flatten_status_into_meta(meta, _read_status(task_dir))
+        _attach_variables(meta, task_dir)
         tasks.append(meta)
     return tasks
 
@@ -217,6 +233,7 @@ def get_task(task_id: str) -> dict | None:
         return None
     meta = json.loads(meta_path.read_text())
     _flatten_status_into_meta(meta, _read_status(task_dir))
+    _attach_variables(meta, task_dir)
     return meta
 
 def delete_task(task_id: str):

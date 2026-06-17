@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api, type Task } from "@/lib/api";
+import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import { StatusBadge } from "@/components/status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -99,6 +101,11 @@ export function TaskList() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { catalog } = useVariableCatalog();
+
+  function variableLabel(key: string): string {
+    return catalog?.variables[key]?.label ?? key;
+  }
 
   async function handleDelete(task: Task) {
     setDeletingId(task.id);
@@ -240,10 +247,11 @@ export function TaskList() {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[35%] pl-6">Task Name</TableHead>
-              <TableHead className="w-[20%]">Created</TableHead>
-              <TableHead className="w-[25%]">Status</TableHead>
-              <TableHead className="w-[20%] text-right pr-6">Action</TableHead>
+              <TableHead className="w-[22%] pl-6">Task Name</TableHead>
+              <TableHead className="w-[25%]">Variables</TableHead>
+              <TableHead className="w-[15%]">Created</TableHead>
+              <TableHead className="w-[20%]">Status</TableHead>
+              <TableHead className="w-[18%] text-right pr-6">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -256,6 +264,21 @@ export function TaskList() {
                   <span className="font-medium text-foreground">
                     {task.task_name}
                   </span>
+                </TableCell>
+                <TableCell>
+                  {task.variables && task.variables.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {task.variables.map((v) => (
+                        <Chip key={v} className="text-[10px]">
+                          {variableLabel(v)}
+                        </Chip>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic">
+                      not configured
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {formatDate(task.created_at)}

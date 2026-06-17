@@ -54,6 +54,7 @@ export interface Task {
   progress?: number;
   created_at: string;
   error_message?: string;
+  variables?: string[];
 }
 
 /**
