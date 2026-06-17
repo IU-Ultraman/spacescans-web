@@ -200,6 +200,39 @@ def _assert_vnl_data_present(payload: dict[str, Any]) -> None:
             )
 
 
+def _assert_fara_data_present(payload: dict[str, Any]) -> None:
+    """Pre-flight: FARA C4 .Rda + label CSV exist for each fara_tract variable.
+
+    Raises MetadataSchemaError if a declared fara_tract variable's on-disk
+    product is missing — specifically
+    {DATA_ROOT}/data_full/FARA/C4/fara_nationwide_2010_2019_interpolated.Rda
+    and {DATA_ROOT}/data_full/FARA/C4/varnameCountRemoved.csv.
+
+    Short-circuits when the C4 root itself is absent — production startup
+    runs validate_pipeline_settings first, so this branch only fires under
+    test fixtures that bypass the data-dir gate. Mirrors
+    _assert_nhd_data_present / _assert_vnl_data_present (Sprint 8 I1 /
+    Sprint 10 T4 pattern).
+    """
+    from app.config import settings
+    root = settings.SPACESCANS_DATA_DIR / "data_full" / "FARA" / "C4"
+    if not root.exists():
+        return
+    for key, m in payload["variables"].items():
+        if m.get("experiment") != "fara_tract":
+            continue
+        rda = root / "fara_nationwide_2010_2019_interpolated.Rda"
+        csv = root / "varnameCountRemoved.csv"
+        if not rda.exists():
+            raise MetadataSchemaError(
+                f"fara_tract variable {key!r} missing data: {rda}"
+            )
+        if not csv.exists():
+            raise MetadataSchemaError(
+                f"fara_tract variable {key!r} missing label CSV: {csv}"
+            )
+
+
 def _assert_temis_data_present(payload: dict[str, Any]) -> None:
     """Pre-flight: TEMIS C4 raw-HDF subdirs exist for each temis variable.
 
@@ -263,6 +296,7 @@ def load_variables(*, force: bool = False) -> dict[str, Any]:
     _assert_noise_data_present(payload)
     _assert_vnl_data_present(payload)
     _assert_temis_data_present(payload)
+    _assert_fara_data_present(payload)
 
     _CACHE["mtime"] = mtime
     _CACHE["payload"] = payload
