@@ -97,6 +97,32 @@ def _assert_tiger_data_present(payload: dict[str, Any]) -> None:
                 )
 
 
+def _assert_nhd_data_present(payload: dict[str, Any]) -> None:
+    """Pre-flight: NHD C4 GDB exists for each nhd_bluespace variable.
+
+    Raises MetadataSchemaError if a declared nhd_bluespace variable's
+    on-disk product is missing — specifically
+    {DATA_ROOT}/data_full/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb.
+
+    Short-circuits when the C4 root itself is absent — production startup
+    runs validate_pipeline_settings first, so this branch only fires under
+    test fixtures that bypass the data-dir gate. Mirrors
+    _assert_tiger_data_present (Sprint 6 H2 pattern).
+    """
+    from app.config import settings
+    root = settings.SPACESCANS_DATA_DIR / "data_full" / "NHD" / "C4"
+    if not root.exists():
+        return
+    for key, m in payload["variables"].items():
+        if m.get("experiment") != "nhd_bluespace":
+            continue
+        gdb = root / "NHDPlus_H_National_Release_2_GDB.gdb"
+        if not gdb.exists():
+            raise MetadataSchemaError(
+                f"nhd_bluespace variable {key!r} missing data: {gdb}"
+            )
+
+
 def load_variables(*, force: bool = False) -> dict[str, Any]:
     _assert_pipeline_version_compatible()
     mtime = _METADATA_PATH.stat().st_mtime
@@ -125,6 +151,7 @@ def load_variables(*, force: bool = False) -> dict[str, Any]:
             )
 
     _assert_tiger_data_present(payload)
+    _assert_nhd_data_present(payload)
 
     _CACHE["mtime"] = mtime
     _CACHE["payload"] = payload
