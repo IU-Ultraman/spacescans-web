@@ -277,3 +277,65 @@ Pre-flight:
    pre-flight (`_assert_nhd_data_present` in `variable_registry.py`)
    with the GDB path in the message. Restore the GDB. No partial run,
    no orphan cache files.
+
+## Sprint 9 — Noise (static_areal episode dispatch)
+
+Pre-flight:
+
+- spacescans-pipeline editable install reflects Sprint 6 T6
+  (`output_grouping` / `resolve_output_grouping` dispatch in
+  `static_areal_linkage.py`). Verify with
+  `python -c "from spacescans.linkage import static_areal_linkage;
+  import inspect; print('output_grouping' in
+  inspect.getsource(static_areal_linkage))"` — expect True.
+- All three noise TIFs exist and are readable under
+  `data/Noise/C3/` (NOT `data_full/Noise/...` — noise predates the
+  `data_full/` convention):
+  - `CONUS_L50dBA_sumDay_exi.tif`
+  - `CONUS_sumDay_L50dBA_imp.tif`
+  - `CONUS_sumDay_L50dBA_nat.tif`
+- `backend/app/data/variable_metadata.json` has **6** entries including
+  `noise` (BG boundary, `coverage_years=[2020, 2020]`, 3 value_cols
+  `[l50dba_exi, l50dba_imp, l50dba_nat]`, unit `dBA`).
+
+1. Variables-step renders 6 cards grouped by boundary:
+   - "Block Group" section: NDI, EPA Walkability Index, TIGER Road
+     Proximity, NHD Bluespace (water-body distance), BTS Transportation
+     Noise (L50 dBA) — **5 cards**.
+   - "ZCTA5" section: Community Organization Density (ZBP) — **1 card**.
+   Each card shows label, description, unit chip, year-range chip,
+   boundary chip. The noise card's unit chip reads "dBA", year-range
+   "2020–2020", boundary "BG".
+2. Tick the noise card → coverage panel mounts inline; same shape as
+   prior cards. Confirm a non-trivial intersection for the configured
+   study county.
+3. Tick all 6 variables → Review step → Run. Watch status.json:
+   - `experiments` map shows runners spawning in metadata-file order:
+     bg_ndi_wi → zcta5_cbp → tiger_proximity → nhd_bluespace → noise.
+     All five `started_at` timestamps must be monotonic.
+   - logs.jsonl carries entries from all five runners.
+   - result.csv on completion carries
+     ndi + NatWalkInd + all 10 r_* + 3 TIGER dist_* +
+     5 NHD dist_*_m + 3 noise l50dba_* columns.
+4. Repeat the same task; second run should hit the `BG_NOISE` C3 cache
+   (status.json shows c3_noise progresses to 100% in <1s for the cached
+   cohort + buffer; logs.jsonl carries
+   `cache hit: <sha8>__BG_NOISE__b270m`).
+5. Negative test (unsupported output_grouping): edit
+   `configs/c4/noise_demo.yaml` to change the runner-injected
+   `output_grouping: episode` to an unknown value (e.g.
+   `output_grouping: foo`); render a task via the runner (web renders
+   C4 with `output_grouping=episode`, so to trip the pipeline error you
+   must point at the YAML directly via
+   `python -m spacescans.cli run configs/c4/noise_demo.yaml`).
+   Expect a clear ValueError from `static_areal_linkage.py`:
+   `unsupported output_grouping: 'foo' (expected 'patient' or 'episode')`.
+   Restore the YAML. Same caveat as Sprint 7 applies: do NOT test by
+   *removing* the key — `TimeConfig.output_grouping` defaults to
+   `patient` and would silently fall through.
+6. Negative test (missing TIF): rename
+   `data/Noise/C3/CONUS_L50dBA_sumDay_exi.tif` aside and restart the
+   server. Expect `MetadataSchemaError` during server-boot pre-flight
+   (`_assert_noise_data_present` in `variable_registry.py`) with the
+   TIF path in the message. Restore the TIF. No partial run, no orphan
+   cache files.
