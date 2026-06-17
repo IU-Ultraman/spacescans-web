@@ -153,6 +153,43 @@ def test_write_partial_value_cols_picks_3_tiger_columns_from_one_parquet(tmp_pat
     assert "dist_unused" not in df.columns
 
 
+def test_write_partial_value_cols_picks_5_nhd_columns_from_one_parquet(tmp_path):
+    """Sprint 7 B3: nhd_bluespace ships a single parquet carrying all five
+    NHD distance columns (dist_flow_m, dist_water_m, dist_area_m,
+    dist_coast_m, dist_blue_m). _merge.write_partial must pick exactly the
+    five from the registry — no extra/missing columns leaking through.
+    """
+    from app.experiments import _merge
+
+    nhd_cols = [
+        "dist_flow_m", "dist_water_m", "dist_area_m",
+        "dist_coast_m", "dist_blue_m",
+    ]
+
+    task_dir = tmp_path / "task-b3-nhd-merge"
+    _write_input_csv(task_dir, n=5)
+    _write_variable_parquet(
+        task_dir / "output", "c4_nhd_bluespace", n=5,
+        value_cols=[*nhd_cols, "dist_unused"],
+    )
+
+    with patch("app.variable_registry.get_variable",
+               return_value={"value_cols": nhd_cols}):
+        out = _merge.write_partial(
+            task_dir=task_dir,
+            experiment_key="nhd_bluespace",
+            variables=["nhd_bluespace"],
+            parquet_map={"nhd_bluespace": "c4_nhd_bluespace.parquet"},
+        )
+
+    assert out == task_dir / "output" / "result_nhd_bluespace.csv"
+    df = pd.read_csv(out)
+    assert set(nhd_cols).issubset(df.columns)
+    assert "dist_unused" not in df.columns
+    assert {"pid", "episode_id"}.issubset(df.columns)
+    assert len(df) == 5
+
+
 def test_fan_in_left_joins_two_partials_no_row_duplication(tmp_path):
     from app.experiments import _merge
 

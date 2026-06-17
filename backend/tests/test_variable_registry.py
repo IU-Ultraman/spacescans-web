@@ -219,13 +219,16 @@ def test_variables_by_experiment_preserves_file_order(tmp_path, monkeypatch):
 
 
 def test_list_experiments_dedupes_in_file_order():
-    """Post-B2 invariant: with the tiger_proximity runner module now present
-    in app.experiments, list_experiments() returns the file-order de-duped
-    list of experiments referenced by variable_metadata.json.
+    """Post-B2 invariant: with the tiger_proximity + nhd_bluespace runner
+    modules now present in app.experiments, list_experiments() returns the
+    file-order de-duped list of experiments referenced by
+    variable_metadata.json. Sprint 7 appends nhd_bluespace as the fourth slot.
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
-    assert exps == ["bg_ndi_wi", "zcta5_cbp", "tiger_proximity"], exps
+    assert exps == [
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+    ], exps
 
 
 def test_registry_accepts_tiger_proximity_entry(tmp_path, monkeypatch):
@@ -392,3 +395,101 @@ def test_tiger_preflight_skips_when_root_missing(tmp_path, monkeypatch):
 
     payload = vr.load_variables(force=True)  # short-circuit, no raise
     assert "variables" in payload
+
+
+# ---------------------------------------------------------------------------
+# Sprint 7 B1: nhd_bluespace metadata entry + registry-level guards
+# ---------------------------------------------------------------------------
+
+
+def test_registry_accepts_nhd_bluespace_entry(tmp_path, monkeypatch):
+    """Sprint 7 B1: nhd_bluespace entry passes schema (5 value_cols, BG boundary,
+    [2024, 2024] static-product coverage) once an nhd_bluespace experiment
+    module exists.
+
+    Mirrors test_registry_accepts_tiger_proximity_entry (Sprint 5 B1 pattern):
+    stubs _discover_experiments so it does NOT depend on B2's runner module
+    landing — locks in the canonical entry shape.
+    """
+    from app import variable_registry as vr
+
+    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
+    payload_path = tmp_path / "variable_metadata.json"
+    payload_path.write_text(json.dumps({
+        "schema_version": 1,
+        "variables": {
+            "nhd_bluespace": {
+                "label": "NHD Bluespace (water-body distance)",
+                "description": (
+                    "Per-block-group static distance (meters) to the nearest "
+                    "NHD flowline (dist_flow_m), waterbody (dist_water_m), "
+                    "area-feature (dist_area_m), coastline (dist_coast_m; "
+                    "99999 for inland addresses), and combined blue-feature "
+                    "(dist_blue_m), from NHDPlus_H National Release 2 GDB "
+                    "(US Census-aligned block group geography, static product, "
+                    "2024 vintage)."
+                ),
+                "boundary": "BG",
+                "coverage_years": [2024, 2024],
+                "coverage_region": "CONUS",
+                "experiment": "nhd_bluespace",
+                "variable_type": "continuous",
+                "display_unit": "meters",
+                "value_cols": [
+                    "dist_flow_m", "dist_water_m", "dist_area_m",
+                    "dist_coast_m", "dist_blue_m",
+                ],
+            }
+        },
+    }))
+
+    monkeypatch.setattr(vr, "_METADATA_PATH", payload_path)
+    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
+    monkeypatch.setattr(
+        vr, "_discover_experiments",
+        lambda: {"bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace"},
+    )
+
+    payload = vr.load_variables(force=True)
+    entry = payload["variables"]["nhd_bluespace"]
+    assert entry["boundary"] == "BG"
+    assert entry["experiment"] == "nhd_bluespace"
+    assert entry["coverage_years"] == [2024, 2024]
+    assert entry["display_unit"] == "meters"
+    assert entry["value_cols"] == [
+        "dist_flow_m", "dist_water_m", "dist_area_m",
+        "dist_coast_m", "dist_blue_m",
+    ]
+    assert "NHDPlus_H National Release 2 GDB" in entry["description"]
+    assert "US Census" in entry["description"]
+
+
+def test_real_metadata_file_contains_nhd_bluespace_with_runner_module():
+    """Post-B2: the real, on-disk variable_metadata.json loads cleanly and
+    exposes the nhd_bluespace entry now that
+    backend/app/experiments/nhd_bluespace.py exists.
+
+    Before B2 this test fails with MetadataSchemaError ("unknown experiment
+    'nhd_bluespace'") — the spec's deliberate half-landed gate (L920) — and
+    flips GREEN the moment B2 lands the runner module.
+    """
+    from app import variable_registry as vr
+    payload = vr.load_variables(force=True)
+    assert "nhd_bluespace" in payload["variables"], sorted(payload["variables"].keys())
+    entry = payload["variables"]["nhd_bluespace"]
+    assert entry["experiment"] == "nhd_bluespace"
+    assert entry["boundary"] == "BG"
+    assert entry["coverage_years"] == [2024, 2024]
+
+
+def test_list_experiments_after_nhd_bluespace_added():
+    """Post-B2: list_experiments returns the 4-experiment metadata-file order.
+
+    Sprint 5 baseline was [bg_ndi_wi, zcta5_cbp, tiger_proximity]; Sprint 7
+    appends nhd_bluespace as the fourth slot.
+    """
+    from app import variable_registry as vr
+    exps = vr.list_experiments()
+    assert exps == [
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+    ], exps

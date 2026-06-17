@@ -219,3 +219,61 @@ Pre-flight:
    missing key silently falls back to patient-grouping instead of
    raising. Catching that regression requires the explicit-typo
    test, not an absent-field test.
+
+## Sprint 7 — NHD Bluespace (precomputed_static episode dispatch)
+
+Pre-flight:
+- spacescans-pipeline editable install reflects Phase A
+  (`output_grouping` / `resolve_output_grouping` dispatch in
+  `precomputed_static_linkage.py`). Verify with
+  `python -c "from spacescans.linkage import precomputed_static_linkage;
+  import inspect; print('output_grouping' in
+  inspect.getsource(precomputed_static_linkage))"` — expect True.
+- `data_full/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb` exists and is
+  readable (61 GB NHDPlus National Release 2 product).
+- `cache/C3/nhd_features/` exists or will be created on first run (per-tile
+  blue-feature cache is cohort-independent).
+- `backend/app/data/variable_metadata.json` has **5** entries including
+  `nhd_bluespace` (BG boundary, `coverage_years=[2024, 2024]`, 5 value_cols
+  `[dist_flow_m, dist_water_m, dist_area_m, dist_coast_m, dist_blue_m]`).
+
+1. Variables-step renders 5 cards grouped by boundary:
+   - "Block Group" section: NDI, EPA Walkability Index, TIGER Road
+     Proximity, NHD Bluespace (water-body distance) — **4 cards**.
+   - "ZCTA5" section: Community Organization Density (ZBP) — **1 card**.
+   Each card shows label, description, unit chip, year-range chip,
+   boundary chip. The NHD card's unit chip reads "meters", year-range
+   "2024–2024", boundary "BG".
+2. Tick the NHD card → coverage panel mounts inline; same shape as
+   Sprint 3 cards. Confirm a non-trivial intersection for the configured
+   study county.
+3. Tick all 5 variables → Review step → Run. Watch status.json:
+   - `experiments` map shows runners spawning in metadata-file order:
+     bg_ndi_wi → zcta5_cbp → tiger_proximity → nhd_bluespace. All four
+     `started_at` timestamps must be monotonic.
+   - logs.jsonl carries entries from all four runners.
+   - result.csv on completion carries
+     ndi + NatWalkInd + all 10 r_* + 3 TIGER dist_* +
+     5 NHD dist_*_m (dist_flow_m, dist_water_m, dist_area_m,
+     dist_coast_m, dist_blue_m) columns.
+4. Repeat the same task; second run should hit the `BG_NHD` C3 cache
+   (status.json shows c3_nhd_bluespace progresses to 100% in <1s for the
+   cached cohort + buffer; logs.jsonl carries
+   `cache hit: <sha8>__BG_NHD__b270m`).
+5. Negative test (unsupported output_grouping): edit
+   `configs/c4/nhd_bluespace_demo.yaml` to change `output_grouping: patient`
+   to an unknown value (e.g. `output_grouping: foo`); render a task via
+   the runner (web renders C4 with `output_grouping=episode`, so to trip
+   the pipeline error you must point at the YAML directly via
+   `python -m spacescans.cli run configs/c4/nhd_bluespace_demo.yaml`).
+   Expect a clear ValueError from `precomputed_static_linkage.py`:
+   `unsupported output_grouping: 'foo' (expected 'patient' or 'episode')`.
+   Restore the YAML. Same caveat as Sprint 5 applies: do NOT test by
+   *removing* the key — `TimeConfig.output_grouping` defaults to
+   `"patient"` and would silently fall through.
+6. Negative test (missing GDB): rename
+   `data_full/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb` aside and
+   restart the server. Expect `MetadataSchemaError` during server-boot
+   pre-flight (`_assert_nhd_data_present` in `variable_registry.py`)
+   with the GDB path in the message. Restore the GDB. No partial run,
+   no orphan cache files.
