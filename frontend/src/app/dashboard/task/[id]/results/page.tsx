@@ -21,6 +21,7 @@ import {
   FileText,
   CheckCircle2,
   Table as TableIcon,
+  BarChart3,
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -122,6 +123,15 @@ export default function TaskResultsPage() {
     }
     const s = String(value);
     return s.length > 30 ? s.slice(0, 27) + "…" : s;
+  }
+
+  function formatNum(v: number | null): string {
+    if (v === null) return "—";
+    if (Number.isInteger(v)) return v.toLocaleString();
+    if (Math.abs(v) < 0.001 || Math.abs(v) >= 1e6) {
+      return v.toExponential(2);
+    }
+    return v.toFixed(4);
   }
 
   function handleDownload() {
@@ -266,6 +276,96 @@ export default function TaskResultsPage() {
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm text-amber-700 dark:text-amber-400">
           Preview unavailable: {previewError}. The full CSV is still
           downloadable below.
+        </div>
+      )}
+
+      {/* Summary stats section */}
+      {preview && preview.summary && preview.summary.length > 0 && (
+        <div className="rounded-lg border bg-card p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <BarChart3 className="size-4" />
+            Column Summary
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Stats computed over all {preview.total_rows.toLocaleString()} rows.
+            NaN coverage shown as a bar (green = non-null, gray = null).
+          </p>
+          <div className="mt-3 overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs font-medium">Column</TableHead>
+                  <TableHead className="text-xs font-medium">Type</TableHead>
+                  <TableHead className="text-xs font-medium">Coverage</TableHead>
+                  <TableHead className="text-xs font-medium text-right">Nulls</TableHead>
+                  <TableHead className="text-xs font-medium text-right">Min</TableHead>
+                  <TableHead className="text-xs font-medium text-right">Mean</TableHead>
+                  <TableHead className="text-xs font-medium text-right">Max</TableHead>
+                  <TableHead className="text-xs font-medium text-right">Unique</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {preview.summary.map((col) => {
+                  const total = col.non_null + col.null_count;
+                  const pct = total > 0 ? (col.non_null / total) * 100 : 0;
+                  return (
+                    <TableRow key={col.name}>
+                      <TableCell className="font-mono text-xs">{col.name}</TableCell>
+                      <TableCell>
+                        <span
+                          className={
+                            "inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium " +
+                            (col.dtype === "numeric"
+                              ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                              : "bg-purple-500/10 text-purple-700 dark:text-purple-300")
+                          }
+                        >
+                          {col.dtype}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="relative h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className={
+                                "absolute inset-y-0 left-0 " +
+                                (pct >= 95
+                                  ? "bg-emerald-500"
+                                  : pct >= 60
+                                  ? "bg-amber-500"
+                                  : "bg-red-500")
+                              }
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
+                            {pct.toFixed(0)}%
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
+                        {col.null_count.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">
+                        {col.dtype === "numeric" ? formatNum(col.min) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">
+                        {col.dtype === "numeric" ? formatNum(col.mean) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">
+                        {col.dtype === "numeric" ? formatNum(col.max) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">
+                        {col.dtype === "categorical" && col.unique !== null
+                          ? col.unique.toLocaleString()
+                          : "—"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
 

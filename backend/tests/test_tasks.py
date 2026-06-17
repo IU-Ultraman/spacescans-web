@@ -309,3 +309,34 @@ def test_results_preview(monkeypatch, tmp_path):
     assert resp.status_code == 422
     resp = client.get(f"/api/tasks/{task_id}/results/preview?limit=500", headers=auth)
     assert resp.status_code == 422
+
+    # Summary stats present (computed over ALL 26 rows, not just the preview limit)
+    resp = client.get(f"/api/tasks/{task_id}/results/preview", headers=auth)
+    body = resp.json()
+    assert "summary" in body
+    summary = {col["name"]: col for col in body["summary"]}
+    assert set(summary) == {"pid", "episode_id", "ndi", "note"}
+
+    # pid: categorical, 26 unique values, no nulls
+    assert summary["pid"]["dtype"] == "categorical"
+    assert summary["pid"]["non_null"] == 26
+    assert summary["pid"]["null_count"] == 0
+    assert summary["pid"]["unique"] == 26
+    assert summary["pid"]["min"] is None  # categorical → no min/max
+
+    # episode_id: numeric, range 0..99 across 26 rows, mean ≈ avg of [0..24, 99]
+    assert summary["episode_id"]["dtype"] == "numeric"
+    assert summary["episode_id"]["non_null"] == 26
+    assert summary["episode_id"]["min"] == 0
+    assert summary["episode_id"]["max"] == 99
+
+    # ndi: numeric, 25 non-null + 1 null
+    assert summary["ndi"]["dtype"] == "numeric"
+    assert summary["ndi"]["non_null"] == 25
+    assert summary["ndi"]["null_count"] == 1
+    assert summary["ndi"]["min"] == 0.0
+    assert summary["ndi"]["max"] == 2.4
+
+    # note: categorical, 2 unique values ("sample", "missing")
+    assert summary["note"]["dtype"] == "categorical"
+    assert summary["note"]["unique"] == 2

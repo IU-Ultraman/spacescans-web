@@ -139,26 +139,78 @@ def preview_results(
     limit: int = Query(20, ge=1, le=200),
     user: dict = Depends(get_current_user),
 ):
-    """Return the first N rows of result.csv as JSON for in-browser preview.
+    """Return first N rows of result.csv + per-column summary stats as JSON.
 
-    Response: {columns: [...], rows: [[...], ...], total_rows: int, has_more: bool}
-    NaN values are serialized as null. Used by the results page table widget.
+    Response shape:
+      {
+        columns: [str, ...],
+        rows: [[...], ...],          # first N rows; NaN serialized as null
+        total_rows: int,
+        has_more: bool,
+        summary: [
+          {
+            name: str,
+            dtype: "numeric" | "categorical",
+            non_null: int,
+            null_count: int,
+            unique: int | null,      # only for categorical
+            min: number | null,      # only for numeric
+            max: number | null,
+            mean: number | null,     # rounded to 6 decimals
+          }, ...
+        ]
+      }
     """
     _verify_ownership(task_id, user)
     result_path = task_manager.get_result_path(task_id)
     if result_path is None or not result_path.exists():
         raise HTTPException(status_code=404, detail="Results not ready")
+    import math
     import pandas as pd  # local import — pandas is heavy; defer until needed
-    total_rows = sum(1 for _ in open(result_path)) - 1  # excl header
-    df = pd.read_csv(result_path, nrows=limit)
+
+    df_full = pd.read_csv(result_path)
+    total_rows = len(df_full)
+    df = df_full.head(limit)
     # Cast to object dtype before substituting None, otherwise float columns
     # silently convert None back to NaN (which is not JSON-compliant).
     rows = df.astype(object).where(df.notna(), None).values.tolist()
+
+    def _finite(v: float) -> float | None:
+        if v is None or (isinstance(v, float) and not math.isfinite(v)):
+            return None
+        return round(float(v), 6)
+
+    summary = []
+    for col in df_full.columns:
+        series = df_full[col]
+        non_null = int(series.notna().sum())
+        null_count = total_rows - non_null
+        is_numeric = pd.api.types.is_numeric_dtype(series)
+        entry: dict = {
+            "name": col,
+            "dtype": "numeric" if is_numeric else "categorical",
+            "non_null": non_null,
+            "null_count": null_count,
+            "unique": None,
+            "min": None,
+            "max": None,
+            "mean": None,
+        }
+        if is_numeric and non_null > 0:
+            entry["min"] = _finite(series.min())
+            entry["max"] = _finite(series.max())
+            entry["mean"] = _finite(series.mean())
+        elif not is_numeric:
+            # Unique non-null values for categorical columns.
+            entry["unique"] = int(series.nunique(dropna=True))
+        summary.append(entry)
+
     return {
         "columns": list(df.columns),
         "rows": rows,
         "total_rows": max(total_rows, 0),
         "has_more": total_rows > len(rows),
+        "summary": summary,
     }
 
 @router.get("/{task_id}/coverage")

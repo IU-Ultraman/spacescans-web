@@ -121,11 +121,23 @@ export interface VariableCatalog {
   variables: Record<string, VariableMetadata>;
 }
 
+export interface ColumnSummary {
+  name: string;
+  dtype: "numeric" | "categorical";
+  non_null: number;
+  null_count: number;
+  unique: number | null;
+  min: number | null;
+  max: number | null;
+  mean: number | null;
+}
+
 export interface ResultsPreview {
   columns: string[];
   rows: (string | number | null)[][];
   total_rows: number;
   has_more: boolean;
+  summary: ColumnSummary[];
 }
 
 export interface CoverageResponse {
