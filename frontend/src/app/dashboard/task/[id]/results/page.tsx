@@ -91,7 +91,7 @@ export default function TaskResultsPage() {
         // Load preview only if task is finished (result.csv exists)
         if (t.status === "finished") {
           try {
-            const p = await api.getResultsPreview(id, 20);
+            const p = await api.getResultsPreview(id, 10);
             if (!cancelled) setPreview(p);
           } catch (err) {
             if (!cancelled) {
@@ -148,7 +148,7 @@ export default function TaskResultsPage() {
 
   if (error || !task) {
     return (
-      <div className="mx-auto max-w-2xl py-12 text-center">
+      <div className="mx-auto max-w-5xl py-12 text-center">
         <p className="text-sm text-muted-foreground">
           {error || "Task not found"}
         </p>
@@ -170,7 +170,7 @@ export default function TaskResultsPage() {
   const intermediates = intermediatesForStatus(taskStatus);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
