@@ -141,6 +141,29 @@ export interface ResultsPreview {
   summary: ColumnSummary[];
 }
 
+export interface HistogramData {
+  name: string;
+  bins: number[];
+  counts: number[];
+  min: number | null;
+  max: number | null;
+  sample_size: number;
+}
+
+export interface HistogramResponse {
+  histograms: HistogramData[];
+}
+
+export interface StateGeoBucket {
+  state_fips: string;
+  count: number;
+  mean: number | null;
+}
+
+export interface GeoResponse {
+  by_state: StateGeoBucket[];
+}
+
 export interface CoverageResponse {
   row_count: number;
   variables: Record<string, VarCoverage>;
@@ -226,6 +249,14 @@ export const api = {
     ),
 
   downloadResults: (id: string) => `${API_BASE}/api/tasks/${id}/results`,
+
+  getResultsHistogram: (id: string, bins = 20) =>
+    request<HistogramResponse>(`/api/tasks/${id}/results/histogram?bins=${bins}`),
+
+  getResultsGeo: (id: string, value_col: string) =>
+    request<GeoResponse>(
+      `/api/tasks/${id}/results/geo?value_col=${encodeURIComponent(value_col)}`,
+    ),
 
   listVariables: () => request<VariableCatalog>("/api/variables"),
 };

@@ -340,3 +340,156 @@ def test_results_preview(monkeypatch, tmp_path):
     # note: categorical, 2 unique values ("sample", "missing")
     assert summary["note"]["dtype"] == "categorical"
     assert summary["note"]["unique"] == 2
+
+
+def test_results_histogram(monkeypatch, tmp_path):
+    """GET /results/histogram returns one entry per numeric exposure col."""
+    import importlib, app.config, app.task_manager
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("TASKS_DIR", str(tmp_path / "tasks"))
+    importlib.reload(app.config)
+    importlib.reload(app.task_manager)
+    import app.main
+    importlib.reload(app.main)
+
+    from app.main import create_app
+    from app.database import init_db
+    from fastapi.testclient import TestClient
+
+    init_db()
+    client = TestClient(create_app())
+
+    resp = client.post("/api/auth/signup", json={
+        "email": "hi@h.com", "password": "pw123", "first_name": "H", "last_name": "I"
+    })
+    token = resp.json()["access_token"]
+    auth = {"Authorization": f"Bearer {token}"}
+
+    resp = client.post("/api/tasks", json={"task_name": "hist"}, headers=auth)
+    task_id = resp.json()["id"]
+    task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
+    (task_dir / "output").mkdir(parents=True, exist_ok=True)
+
+    # 404 before result.csv exists
+    resp = client.get(f"/api/tasks/{task_id}/results/histogram", headers=auth)
+    assert resp.status_code == 404
+
+    # Build result.csv: 1 input col (pid), 1 string col (note),
+    # 2 numeric exposure cols (ndi, walkability).
+    rows = ["pid,note,ndi,walkability"]
+    for i in range(30):
+        rows.append(f"PID{i:04d},sample,{0.1 * i:.4f},{(i % 5) * 1.5:.2f}")
+    (task_dir / "output" / "result.csv").write_text("\n".join(rows) + "\n")
+
+    # Happy path — default bins=20
+    resp = client.get(f"/api/tasks/{task_id}/results/histogram", headers=auth)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "histograms" in body
+    by_name = {h["name"]: h for h in body["histograms"]}
+    # Exactly the two numeric exposure columns — pid (input) and note (string) skipped.
+    assert set(by_name.keys()) == {"ndi", "walkability"}
+    ndi = by_name["ndi"]
+    # np.histogram returns bins+1 edges and `bins` counts
+    assert len(ndi["bins"]) == 21
+    assert len(ndi["counts"]) == 20
+    assert ndi["sample_size"] == 30
+    assert ndi["min"] == 0.0
+    assert ndi["max"] == round(0.1 * 29, 6)
+    assert sum(ndi["counts"]) == 30
+
+    # bins=10 respected
+    resp = client.get(
+        f"/api/tasks/{task_id}/results/histogram?bins=10", headers=auth
+    )
+    body = resp.json()
+    by_name = {h["name"]: h for h in body["histograms"]}
+    assert len(by_name["ndi"]["counts"]) == 10
+    assert len(by_name["ndi"]["bins"]) == 11
+
+    # Out-of-range bins rejected
+    resp = client.get(
+        f"/api/tasks/{task_id}/results/histogram?bins=2", headers=auth
+    )
+    assert resp.status_code == 422
+    resp = client.get(
+        f"/api/tasks/{task_id}/results/histogram?bins=100", headers=auth
+    )
+    assert resp.status_code == 422
+
+
+def test_results_geo(monkeypatch, tmp_path):
+    """GET /results/geo groups rows by state_fips for one exposure col."""
+    import importlib, app.config, app.task_manager
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("TASKS_DIR", str(tmp_path / "tasks"))
+    importlib.reload(app.config)
+    importlib.reload(app.task_manager)
+    import app.main
+    importlib.reload(app.main)
+
+    from app.main import create_app
+    from app.database import init_db
+    from fastapi.testclient import TestClient
+
+    init_db()
+    client = TestClient(create_app())
+
+    resp = client.post("/api/auth/signup", json={
+        "email": "g@g.com", "password": "pw123", "first_name": "G", "last_name": "E"
+    })
+    token = resp.json()["access_token"]
+    auth = {"Authorization": f"Bearer {token}"}
+
+    resp = client.post("/api/tasks", json={"task_name": "geo"}, headers=auth)
+    task_id = resp.json()["id"]
+    task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
+    (task_dir / "output").mkdir(parents=True, exist_ok=True)
+
+    # 404 before result.csv exists
+    resp = client.get(
+        f"/api/tasks/{task_id}/results/geo?value_col=ndi", headers=auth
+    )
+    assert resp.status_code == 404
+
+    # Write result.csv with `state_fips` written as ints (Alabama=1, Florida=12)
+    # plus a NaN in the value_col for one Florida row.
+    csv = (
+        "pid,state_fips,ndi\n"
+        "P1,1,0.5\n"
+        "P2,12,1.0\n"
+        "P3,12,2.0\n"
+        "P4,12,\n"
+    )
+    (task_dir / "output" / "result.csv").write_text(csv)
+
+    # Missing value_col → 400
+    resp = client.get(f"/api/tasks/{task_id}/results/geo", headers=auth)
+    assert resp.status_code == 400
+
+    # Unknown column → 400
+    resp = client.get(
+        f"/api/tasks/{task_id}/results/geo?value_col=nope", headers=auth
+    )
+    assert resp.status_code == 400
+
+    # Input column rejected → 400
+    resp = client.get(
+        f"/api/tasks/{task_id}/results/geo?value_col=pid", headers=auth
+    )
+    assert resp.status_code == 400
+
+    # Happy path — Alabama "01" zero-padded; Florida has 2 non-null rows.
+    resp = client.get(
+        f"/api/tasks/{task_id}/results/geo?value_col=ndi", headers=auth
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    by_state = {b["state_fips"]: b for b in body["by_state"]}
+    assert set(by_state.keys()) == {"01", "12"}
+    assert by_state["01"]["count"] == 1
+    assert by_state["01"]["mean"] == 0.5
+    assert by_state["12"]["count"] == 2
+    assert by_state["12"]["mean"] == 1.5

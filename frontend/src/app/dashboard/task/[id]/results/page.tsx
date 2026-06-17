@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, type Task, type TaskStatus, type ResultsPreview } from "@/lib/api";
+import { INPUT_COLUMNS } from "@/lib/result-columns";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
+import { HistogramsCard } from "@/components/results/histograms-card";
+import { StateMapCard } from "@/components/results/state-map-card";
 import {
   Table,
   TableBody,
@@ -134,21 +137,8 @@ export default function TaskResultsPage() {
     return v.toFixed(4);
   }
 
-  // Input-cohort columns carried through to result.csv (user upload, not
-  // exposure values). Excluded entirely from Column Summary since their
-  // stats aren't analysis results.
-  const INPUT_COLUMNS = new Set([
-    "pid",
-    "episode_id",
-    "startDate",
-    "endDate",
-    "longitude",
-    "latitude",
-    "state_fips",
-    "county_fips",
-    "tract_geoid",
-    "bg_geoid",
-  ]);
+  // INPUT_COLUMNS imported from @/lib/result-columns (shared with backend
+  // task_manager.INPUT_COLS via convention).
 
   function handleDownload() {
     window.open(api.downloadResults(id), "_blank");
@@ -383,6 +373,14 @@ export default function TaskResultsPage() {
         </div>
         );
       })()}
+
+      {/* Exposure histograms */}
+      {task.status === "finished" && <HistogramsCard taskId={id} />}
+
+      {/* US state choropleth */}
+      {task.status === "finished" && (
+        <StateMapCard taskId={id} preview={preview} />
+      )}
 
       {/* Download section */}
       <div className="rounded-lg border bg-card p-6 shadow-sm">
