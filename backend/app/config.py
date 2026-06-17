@@ -12,7 +12,17 @@ class Settings(BaseSettings):
     TASKS_DIR: Path = DATA_DIR / "tasks"
     C3_CACHE_DIR: Path = DATA_DIR / "c3_cache"
     DB_PATH: Path = DATA_DIR / "spacescans.db"
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    # Next.js dev server drifts to 3001/3002/... when 3000 is already taken
+    # (e.g. a stale dev server still running). Allow the common range so a
+    # port-drifted frontend isn't silently CORS-blocked on login.
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3002",
+    ]
     MAX_UPLOAD_SIZE_MB: int = 100
 
     # spacescans-pipeline integration
