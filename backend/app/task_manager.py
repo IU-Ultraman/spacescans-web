@@ -14,6 +14,23 @@ from datetime import datetime, timezone
 import app.config
 
 
+# Columns produced by the cohort upload or by geocoding — never an "exposure".
+# Shared by /results/{preview,histogram,geo} so all three endpoints agree on
+# what counts as input (cohort/geocode) vs. exposure (variable output) columns.
+INPUT_COLS: frozenset[str] = frozenset({
+    "pid",
+    "episode_id",
+    "startDate",
+    "endDate",
+    "longitude",
+    "latitude",
+    "state_fips",
+    "county_fips",
+    "tract_geoid",
+    "bg_geoid",
+})
+
+
 # Module-level cache for variable_metadata.json (mtime-invalidated).
 _VARIABLE_METADATA_CACHE: dict | None = None
 _VARIABLE_METADATA_MTIME: float | None = None

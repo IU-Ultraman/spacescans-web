@@ -213,6 +213,140 @@ def preview_results(
         "summary": summary,
     }
 
+@router.get("/{task_id}/results/histogram")
+def results_histogram(
+    task_id: str,
+    bins: int = Query(20, ge=5, le=50),
+    user: dict = Depends(get_current_user),
+):
+    """Per-column histograms for every numeric exposure column in result.csv.
+
+    Skips columns listed in `task_manager.INPUT_COLS` (cohort + geocode fields)
+    and any non-numeric columns. For each remaining column, returns:
+      - bins: list of `bins+1` edge values (np.histogram convention)
+      - counts: list of `bins` integer counts
+      - min / max / sample_size: descriptors over the non-null subset
+    Columns whose dropna() series is empty are silently skipped.
+    """
+    _verify_ownership(task_id, user)
+    result_path = task_manager.get_result_path(task_id)
+    if result_path is None or not result_path.exists():
+        raise HTTPException(status_code=404, detail="Results not ready")
+
+    import math
+    import numpy as np  # noqa: PLC0415
+    import pandas as pd  # noqa: PLC0415
+
+    df = pd.read_csv(
+        result_path,
+        dtype={"state_fips": "string", "county_fips": "string",
+               "tract_geoid": "string", "bg_geoid": "string"},
+    )
+
+    def _finite(v: float) -> float | None:
+        if v is None or (isinstance(v, float) and not math.isfinite(v)):
+            return None
+        return round(float(v), 6)
+
+    histograms: list[dict] = []
+    for col in df.columns:
+        if col in task_manager.INPUT_COLS:
+            continue
+        series = df[col]
+        if not pd.api.types.is_numeric_dtype(series):
+            continue
+        clean = series.dropna()
+        if clean.empty:
+            continue
+        counts, edges = np.histogram(clean.values, bins=bins)
+        histograms.append({
+            "name": col,
+            "bins": [_finite(float(e)) for e in edges.tolist()],
+            "counts": [int(c) for c in counts.tolist()],
+            "min": _finite(float(clean.min())),
+            "max": _finite(float(clean.max())),
+            "sample_size": int(len(clean)),
+        })
+
+    return {"histograms": histograms}
+
+
+@router.get("/{task_id}/results/geo")
+def results_geo(
+    task_id: str,
+    value_col: str = Query("", description="Numeric exposure column to aggregate"),
+    user: dict = Depends(get_current_user),
+):
+    """Per-state count + mean of one numeric exposure column.
+
+    Groups rows of result.csv by `state_fips` (cast to 2-digit zero-padded
+    string) and returns count of non-null `value_col` rows + their mean.
+    Returns 400 if `value_col` is missing, unknown, an input column, or
+    non-numeric.
+    """
+    _verify_ownership(task_id, user)
+    result_path = task_manager.get_result_path(task_id)
+    if result_path is None or not result_path.exists():
+        raise HTTPException(status_code=404, detail="Results not ready")
+
+    if not value_col:
+        raise HTTPException(status_code=400, detail="value_col query is required")
+
+    import math
+    import pandas as pd  # noqa: PLC0415
+
+    df = pd.read_csv(
+        result_path,
+        dtype={"state_fips": "string", "county_fips": "string",
+               "tract_geoid": "string", "bg_geoid": "string"},
+    )
+    if value_col not in df.columns:
+        raise HTTPException(status_code=400, detail=f"Unknown column: {value_col}")
+    if value_col in task_manager.INPUT_COLS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Column is input, not exposure: {value_col}",
+        )
+    if not pd.api.types.is_numeric_dtype(df[value_col]):
+        raise HTTPException(status_code=400, detail=f"Column is not numeric: {value_col}")
+
+    if "state_fips" not in df.columns:
+        return {"by_state": []}
+
+    # Defensive zfill — protects against int-coerced FIPS upstream.
+    sub = df[["state_fips", value_col]].copy()
+    sub = sub[sub["state_fips"].notna()]
+    sub["state_fips"] = sub["state_fips"].astype("string").str.zfill(2)
+    sub = sub.dropna(subset=[value_col])
+
+    def _finite(v: float) -> float | None:
+        if v is None or (isinstance(v, float) and not math.isfinite(v)):
+            return None
+        return round(float(v), 6)
+
+    if sub.empty:
+        return {"by_state": []}
+
+    grouped = (
+        sub.groupby("state_fips", dropna=True)[value_col]
+        .agg(["size", "mean"])
+        .reset_index()
+        .rename(columns={"size": "n", "mean": "avg"})
+        .sort_values("state_fips")
+    )
+
+    by_state = [
+        {
+            "state_fips": str(row.state_fips),
+            "count": int(row.n),
+            "mean": _finite(float(row.avg)),
+        }
+        for row in grouped.itertuples(index=False)
+    ]
+
+    return {"by_state": by_state}
+
+
 @router.get("/{task_id}/coverage")
 def get_coverage(
     task_id: str,
