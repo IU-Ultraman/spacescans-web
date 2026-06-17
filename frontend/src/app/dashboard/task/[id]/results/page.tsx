@@ -134,6 +134,22 @@ export default function TaskResultsPage() {
     return v.toFixed(4);
   }
 
+  // Input-cohort columns carried through to result.csv — min/mean/max/unique
+  // of these (pid, lat/long, FIPS codes, etc.) are not analytically meaningful,
+  // so blank those cells in the summary. Coverage + null count still shown.
+  const INPUT_COLUMNS = new Set([
+    "pid",
+    "episode_id",
+    "startDate",
+    "endDate",
+    "longitude",
+    "latitude",
+    "state_fips",
+    "county_fips",
+    "tract_geoid",
+    "bg_geoid",
+  ]);
+
   function handleDownload() {
     window.open(api.downloadResults(id), "_blank");
   }
@@ -308,9 +324,17 @@ export default function TaskResultsPage() {
                 {preview.summary.map((col) => {
                   const total = col.non_null + col.null_count;
                   const pct = total > 0 ? (col.non_null / total) * 100 : 0;
+                  const isInput = INPUT_COLUMNS.has(col.name);
                   return (
                     <TableRow key={col.name}>
-                      <TableCell className="font-mono text-xs">{col.name}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {col.name}
+                        {isInput && (
+                          <span className="ml-1.5 text-[9px] uppercase tracking-wide text-muted-foreground">
+                            input
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <span
                           className={
@@ -347,16 +371,16 @@ export default function TaskResultsPage() {
                         {col.null_count.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums">
-                        {col.dtype === "numeric" ? formatNum(col.min) : "—"}
+                        {!isInput && col.dtype === "numeric" ? formatNum(col.min) : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums">
-                        {col.dtype === "numeric" ? formatNum(col.mean) : "—"}
+                        {!isInput && col.dtype === "numeric" ? formatNum(col.mean) : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums">
-                        {col.dtype === "numeric" ? formatNum(col.max) : "—"}
+                        {!isInput && col.dtype === "numeric" ? formatNum(col.max) : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums">
-                        {col.dtype === "categorical" && col.unique !== null
+                        {!isInput && col.dtype === "categorical" && col.unique !== null
                           ? col.unique.toLocaleString()
                           : "—"}
                       </TableCell>
