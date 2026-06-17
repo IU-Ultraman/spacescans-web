@@ -70,6 +70,28 @@
       "variable_type": "continuous",
       "display_unit": "dBA",
       "value_cols": ["l50dba_exi", "l50dba_imp", "l50dba_nat"]
+    },
+    "vnl": {
+      "label": "VIIRS Night-time Lights (VNL)",
+      "description": "Per-block-group annual mean radiance from NOAA VIIRS Day/Night Band Nighttime Lights global v21 product (270 m grid, gridded raster linkage). Single value column 'value' carries the annual masked composite radiance in nanowatts/cm^2/sr.",
+      "boundary": "BG",
+      "coverage_years": [2013, 2019],
+      "coverage_region": "CONUS",
+      "experiment": "vnl",
+      "variable_type": "continuous",
+      "display_unit": "radiance",
+      "value_cols": ["value"]
+    },
+    "temis": {
+      "label": "TEMIS UV Exposure",
+      "description": "Per-block-group annual mean daily UV exposure from KNMI TEMIS UV products (270 m grid, daily raster, gridded linkage). Four value columns: uvddc (daily DNA-damage UV dose), uvdec (daily erythemal UV dose), uvdvc (daily vitamin-D UV dose), uvief (UV index at noon).",
+      "boundary": "BG",
+      "coverage_years": [2013, 2019],
+      "coverage_region": "CONUS",
+      "experiment": "temis",
+      "variable_type": "continuous",
+      "display_unit": "UV index",
+      "value_cols": ["uvddc", "uvdec", "uvdvc", "uvief"]
     }
   }
 }

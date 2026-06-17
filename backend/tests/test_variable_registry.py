@@ -219,15 +219,17 @@ def test_variables_by_experiment_preserves_file_order(tmp_path, monkeypatch):
 
 
 def test_list_experiments_dedupes_in_file_order():
-    """Post-B2 invariant: with the tiger_proximity + nhd_bluespace + noise
-    runner modules now present in app.experiments, list_experiments() returns
-    the file-order de-duped list of experiments referenced by
-    variable_metadata.json. Sprint 9 appends noise as the fifth slot.
+    """Post-B2 invariant: with the tiger_proximity + nhd_bluespace + noise +
+    vnl + temis runner modules now present in app.experiments,
+    list_experiments() returns the file-order de-duped list of experiments
+    referenced by variable_metadata.json. Sprint 10 appends vnl + temis as
+    the sixth and seventh slots.
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
     assert exps == [
-        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace", "noise",
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+        "noise", "vnl", "temis",
     ], exps
 
 
@@ -531,16 +533,17 @@ def test_real_metadata_file_contains_nhd_bluespace_with_runner_module():
 
 
 def test_list_experiments_after_nhd_bluespace_added():
-    """Post-B2: list_experiments returns the 5-experiment metadata-file order.
+    """Post-B2: list_experiments returns the metadata-file order list.
 
     Sprint 5 baseline was [bg_ndi_wi, zcta5_cbp, tiger_proximity]; Sprint 7
-    appended nhd_bluespace as the fourth slot; Sprint 9 appends noise as
-    the fifth.
+    appended nhd_bluespace; Sprint 9 appended noise; Sprint 10 appends
+    vnl + temis as the sixth and seventh slots.
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
     assert exps == [
-        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace", "noise",
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+        "noise", "vnl", "temis",
     ], exps
 
 
@@ -672,3 +675,49 @@ def test_noise_preflight_raises_when_tif_missing(tmp_path, monkeypatch):
     msg = str(exc_info.value)
     assert "noise" in msg
     assert "CONUS_L50dBA_sumDay_exi.tif" in msg
+
+
+# ---------------------------------------------------------------------------
+# Sprint 10 T1: vnl + temis metadata entries + registry-level guards
+# ---------------------------------------------------------------------------
+
+
+def test_real_metadata_file_contains_vnl_with_runner_module():
+    """Post-Sprint-10-B3: real metadata loads cleanly + exposes vnl entry now
+    that backend/app/experiments/vnl.py exists. Pre-runner this fails with
+    MetadataSchemaError ('unknown experiment vnl') — the half-landed gate.
+    """
+    from app import variable_registry as vr
+    payload = vr.load_variables(force=True)
+    assert "vnl" in payload["variables"], sorted(payload["variables"].keys())
+    entry = payload["variables"]["vnl"]
+    assert entry["experiment"] == "vnl"
+    assert entry["boundary"] == "BG"
+    assert entry["coverage_years"] == [2013, 2019]
+    assert entry["value_cols"] == ["value"]
+
+
+def test_real_metadata_file_contains_temis_with_runner_module():
+    """Post-Sprint-10-B3: real metadata loads cleanly + exposes temis entry
+    once backend/app/experiments/temis.py exists.
+    """
+    from app import variable_registry as vr
+    payload = vr.load_variables(force=True)
+    assert "temis" in payload["variables"], sorted(payload["variables"].keys())
+    entry = payload["variables"]["temis"]
+    assert entry["experiment"] == "temis"
+    assert entry["boundary"] == "BG"
+    assert entry["coverage_years"] == [2013, 2019]
+    assert entry["value_cols"] == ["uvddc", "uvdec", "uvdvc", "uvief"]
+
+
+def test_list_experiments_after_vnl_and_temis_added():
+    """Sprint 10: list_experiments now contains seven entries in file order.
+    bg_ndi_wi -> zcta5_cbp -> tiger_proximity -> nhd_bluespace -> noise -> vnl -> temis.
+    """
+    from app import variable_registry as vr
+    exps = vr.list_experiments()
+    assert exps == [
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+        "noise", "vnl", "temis",
+    ], exps
