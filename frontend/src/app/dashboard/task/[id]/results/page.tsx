@@ -134,9 +134,9 @@ export default function TaskResultsPage() {
     return v.toFixed(4);
   }
 
-  // Input-cohort columns carried through to result.csv — min/mean/max/unique
-  // of these (pid, lat/long, FIPS codes, etc.) are not analytically meaningful,
-  // so blank those cells in the summary. Coverage + null count still shown.
+  // Input-cohort columns carried through to result.csv (user upload, not
+  // exposure values). Excluded entirely from Column Summary since their
+  // stats aren't analysis results.
   const INPUT_COLUMNS = new Set([
     "pid",
     "episode_id",
@@ -295,16 +295,20 @@ export default function TaskResultsPage() {
         </div>
       )}
 
-      {/* Summary stats section */}
-      {preview && preview.summary && preview.summary.length > 0 && (
+      {/* Summary stats section — exposure columns only */}
+      {(() => {
+        const exposureCols = preview?.summary?.filter((c) => !INPUT_COLUMNS.has(c.name)) ?? [];
+        if (!preview || exposureCols.length === 0) return null;
+        return (
         <div className="rounded-lg border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <BarChart3 className="size-4" />
             Column Summary
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Stats computed over all {preview.total_rows.toLocaleString()} rows.
-            NaN coverage shown as a bar (green = non-null, gray = null).
+            Stats for {exposureCols.length} exposure column
+            {exposureCols.length === 1 ? "" : "s"} (input cohort columns
+            hidden), computed over all {preview.total_rows.toLocaleString()} rows.
           </p>
           <div className="mt-3 overflow-x-auto rounded-md border">
             <Table>
@@ -320,20 +324,12 @@ export default function TaskResultsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {preview.summary.map((col) => {
+                {exposureCols.map((col) => {
                   const total = col.non_null + col.null_count;
                   const pct = total > 0 ? (col.non_null / total) * 100 : 0;
-                  const isInput = INPUT_COLUMNS.has(col.name);
                   return (
                     <TableRow key={col.name}>
-                      <TableCell className="font-mono text-xs">
-                        {col.name}
-                        {isInput && (
-                          <span className="ml-1.5 text-[9px] uppercase tracking-wide text-muted-foreground">
-                            input
-                          </span>
-                        )}
-                      </TableCell>
+                      <TableCell className="font-mono text-xs">{col.name}</TableCell>
                       <TableCell>
                         <span
                           className={
@@ -370,13 +366,13 @@ export default function TaskResultsPage() {
                         {col.null_count.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums">
-                        {!isInput && col.dtype === "numeric" ? formatNum(col.min) : "—"}
+                        {col.dtype === "numeric" ? formatNum(col.min) : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums">
-                        {!isInput && col.dtype === "numeric" ? formatNum(col.mean) : "—"}
+                        {col.dtype === "numeric" ? formatNum(col.mean) : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums">
-                        {!isInput && col.dtype === "numeric" ? formatNum(col.max) : "—"}
+                        {col.dtype === "numeric" ? formatNum(col.max) : "—"}
                       </TableCell>
                     </TableRow>
                   );
@@ -385,7 +381,8 @@ export default function TaskResultsPage() {
             </Table>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Download section */}
       <div className="rounded-lg border bg-card p-6 shadow-sm">
