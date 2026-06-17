@@ -157,7 +157,7 @@ export const api = {
   getTask: (id: string) => request<Task>(`/api/tasks/${id}`),
 
   deleteTask: (id: string) =>
-    request<{ message: string }>(`/api/tasks/${id}`, {
+    request<{ status: string }>(`/api/tasks/${id}`, {
       method: "DELETE",
     }),
 

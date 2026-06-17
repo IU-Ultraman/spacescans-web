@@ -8,6 +8,14 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -22,6 +30,7 @@ import {
   AlertCircle,
   Activity,
   Inbox,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -86,7 +95,26 @@ export function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Task | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  async function handleDelete(task: Task) {
+    setDeletingId(task.id);
+    setDeleteError(null);
+    try {
+      await api.deleteTask(task.id);
+      setTasks((prev) => prev.filter((t) => t.id !== task.id));
+      setConfirmDelete(null);
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to delete task"
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -247,13 +275,83 @@ export function TaskList() {
                   </div>
                 </TableCell>
                 <TableCell className="text-right pr-6">
-                  <ActionButton task={task} />
+                  <div className="inline-flex items-center gap-1.5">
+                    <ActionButton task={task} />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setDeleteError(null);
+                        setConfirmDelete(task);
+                      }}
+                      title="Delete task"
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
+
+      <Dialog
+        open={confirmDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmDelete(null);
+            setDeleteError(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete task</DialogTitle>
+            <DialogDescription>
+              {confirmDelete?.status === "running" ? (
+                <>
+                  Task <span className="font-medium">{confirmDelete?.task_name}</span> is
+                  currently running. Deleting will stop the pipeline and remove all
+                  task files. This cannot be undone.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to delete{" "}
+                  <span className="font-medium">{confirmDelete?.task_name}</span>?
+                  All task files (input, output, logs) will be permanently removed.
+                  This cannot be undone.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {deleteError && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {deleteError}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setConfirmDelete(null);
+                setDeleteError(null);
+              }}
+              disabled={deletingId !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => confirmDelete && handleDelete(confirmDelete)}
+              disabled={deletingId !== null}
+            >
+              {deletingId !== null ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -42,6 +42,14 @@ def get_task(task_id: str, user: dict = Depends(get_current_user)):
 @router.delete("/{task_id}")
 def delete_task(task_id: str, user: dict = Depends(get_current_user)):
     _verify_ownership(task_id, user)
+    # Stop any running subprocess + release locks before removing the task dir
+    # so we don't orphan a dispatcher / runner holding .run_lock.
+    try:
+        status = task_manager._read_status(task_manager._task_dir(task_id))
+        if status.get("status") == "running":
+            task_manager.stop_task(task_id)
+    except Exception:
+        pass  # best-effort; proceed with deletion even if status unreadable
     task_manager.delete_task(task_id)
     return {"status": "deleted"}
 
