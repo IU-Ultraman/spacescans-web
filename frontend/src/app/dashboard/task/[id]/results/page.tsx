@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { HistogramsCard } from "@/components/results/histograms-card";
 import { StateMapCard } from "@/components/results/state-map-card";
+import { VizErrorBoundary } from "@/components/results/viz-error-boundary";
 import {
   Table,
   TableBody,
@@ -375,11 +376,17 @@ export default function TaskResultsPage() {
       })()}
 
       {/* Exposure histograms */}
-      {task.status === "finished" && <HistogramsCard taskId={id} />}
+      {task.status === "finished" && (
+        <VizErrorBoundary label="Exposure Histograms">
+          <HistogramsCard taskId={id} />
+        </VizErrorBoundary>
+      )}
 
       {/* US state choropleth */}
       {task.status === "finished" && (
-        <StateMapCard taskId={id} preview={preview} />
+        <VizErrorBoundary label="Geographic Distribution">
+          <StateMapCard taskId={id} preview={preview} />
+        </VizErrorBoundary>
       )}
 
       {/* Download section */}
