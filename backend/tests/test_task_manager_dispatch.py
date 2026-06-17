@@ -323,3 +323,65 @@ def test_four_experiment_dispatch_preserves_metadata_order(
         task_dir_with_config,
         ["bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace"],
     )
+
+
+def test_dispatch_writes_pid_and_running_status_atomically(
+    task_dir_with_config, monkeypatch
+):
+    """Sprint 12 G1: close TOCTOU race in dispatcher.
+
+    Before this fix, dispatcher wrote `status='running'` to a slot
+    BEFORE subprocess.Popen, then wrote `pid` in a SEPARATE
+    _write_status call after Popen. stop_task's predicate requires
+    (pid present AND status=='running') for a slot to be a runner
+    target — so a stop_task call landing in the inter-write window
+    saw zero runner pids and fell back to SIGTERMing the supervisor,
+    killing the dispatcher before proc.wait() could observe rc=143
+    (breaking Sprint 4 F1b cancellation observability).
+
+    Invariant: the per-slot _write_status call that flips status to
+    'running' MUST carry the pid in the same write — i.e. status.json
+    is never observable in a (status='running', pid=missing) state.
+    """
+    from app import dispatcher
+
+    _FakePopen.instances = []
+    captured_writes: list[dict] = []
+
+    def capture_write(task_dir, **kwargs):
+        # Snapshot every write keyed by the experiments dict it carries.
+        captured_writes.append(kwargs)
+
+    monkeypatch.setattr(dispatcher, "_write_status", capture_write)
+    monkeypatch.setattr(dispatcher.subprocess, "Popen",
+                        lambda cmd, **kw: _FakePopen(cmd, returncode=0, **kw))
+    monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
+                        lambda selected: {"bg_ndi_wi": ["ndi"]})
+    monkeypatch.setattr("app.experiments._merge.fan_in", MagicMock())
+
+    dispatcher.dispatch(str(task_dir_with_config))
+
+    # Locate the per-slot 'running' write — the one that stamps the
+    # slot from 'pending' to 'running'.
+    running_writes = [
+        w for w in captured_writes
+        if "experiments" in w
+        and isinstance(w["experiments"].get("bg_ndi_wi"), dict)
+        and w["experiments"]["bg_ndi_wi"].get("status") == "running"
+    ]
+    assert running_writes, (
+        "expected at least one per-slot write flipping status -> 'running'"
+    )
+    # G1 invariant: the running-status write MUST carry the pid in the
+    # same snapshot. Pre-fix, pid landed in a separate subsequent write.
+    running_slot = running_writes[0]["experiments"]["bg_ndi_wi"]
+    assert "pid" in running_slot, (
+        "TOCTOU regression: status='running' write must include pid atomically"
+    )
+    assert isinstance(running_slot["pid"], int)
+    # And no write should land status='running' without pid:
+    for w in running_writes:
+        slot = w["experiments"]["bg_ndi_wi"]
+        assert slot.get("pid") is not None, (
+            f"status='running' slot without pid: {slot!r}"
+        )
