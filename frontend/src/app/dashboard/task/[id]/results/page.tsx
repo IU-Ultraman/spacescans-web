@@ -317,7 +317,6 @@ export default function TaskResultsPage() {
                   <TableHead className="text-xs font-medium text-right">Min</TableHead>
                   <TableHead className="text-xs font-medium text-right">Mean</TableHead>
                   <TableHead className="text-xs font-medium text-right">Max</TableHead>
-                  <TableHead className="text-xs font-medium text-right">Unique</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -378,11 +377,6 @@ export default function TaskResultsPage() {
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums">
                         {!isInput && col.dtype === "numeric" ? formatNum(col.max) : "—"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-xs tabular-nums">
-                        {!isInput && col.dtype === "categorical" && col.unique !== null
-                          ? col.unique.toLocaleString()
-                          : "—"}
                       </TableCell>
                     </TableRow>
                   );
