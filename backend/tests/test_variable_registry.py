@@ -398,6 +398,54 @@ def test_tiger_preflight_skips_when_root_missing(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# Sprint 8 I1: NHD C4 server-boot pre-flight (mirror of TIGER H2 pattern)
+# ---------------------------------------------------------------------------
+
+
+def _make_nhd_tree(root: Path, *, with_gdb: bool = True) -> Path:
+    """Build a fake {root}/data_full/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb/
+    tree. with_gdb=False creates only the C4 parent so the GDB-missing
+    branch can be exercised.
+    """
+    c4 = root / "data_full" / "NHD" / "C4"
+    c4.mkdir(parents=True, exist_ok=True)
+    if with_gdb:
+        (c4 / "NHDPlus_H_National_Release_2_GDB.gdb").mkdir()
+    return c4
+
+
+def test_nhd_preflight_passes_when_gdb_present(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    # Both pre-flights run on the real metadata payload — provision
+    # both the TIGER tree and the NHD GDB so neither short-circuits.
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "variables" in payload
+    assert "nhd_bluespace" in payload["variables"]
+
+
+def test_nhd_preflight_raises_when_gdb_missing(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    # C4 root exists (no short-circuit) but the GDB subdir does not.
+    _make_nhd_tree(tmp_path, with_gdb=False)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc_info:
+        vr.load_variables(force=True)
+    msg = str(exc_info.value)
+    assert "nhd_bluespace" in msg
+    assert "NHDPlus_H_National_Release_2_GDB.gdb" in msg
+
+
+# ---------------------------------------------------------------------------
 # Sprint 7 B1: nhd_bluespace metadata entry + registry-level guards
 # ---------------------------------------------------------------------------
 
