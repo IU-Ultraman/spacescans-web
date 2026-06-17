@@ -165,6 +165,72 @@ def _assert_noise_data_present(payload: dict[str, Any]) -> None:
                 )
 
 
+# Canonical TEMIS C4 raw-HDF subdirs the temis reader plugin requires
+# (one per UV variable). Mirrors spacescans.plugins.readers.temis.
+_TEMIS_UV_SUBDIRS = ("uvddc", "uvdec", "uvdvc", "uvief")
+
+
+def _assert_vnl_data_present(payload: dict[str, Any]) -> None:
+    """Pre-flight: VNL C3 TIFs exist for each vnl variable.
+
+    Raises MetadataSchemaError if a declared vnl variable's on-disk
+    product is missing — specifically at least one ``VNL_v21_*.tif`` under
+    {DATA_ROOT}/data_full/VNL/C3/.
+
+    Short-circuits when the C3 root itself is absent — production startup
+    runs validate_pipeline_settings first, so this branch only fires under
+    test fixtures that bypass the data-dir gate. Mirrors
+    _assert_noise_data_present (Sprint 9 T4 pattern).
+    """
+    from app.config import settings
+    root = settings.SPACESCANS_DATA_DIR / "data_full" / "VNL" / "C3"
+    if not root.exists():
+        return
+    for key, m in payload["variables"].items():
+        if m.get("experiment") != "vnl":
+            continue
+        # gridded linkage needs at least one annual TIF — the C4 yaml's
+        # exposure.file resolves to this directory, and the vnl reader
+        # plugin filters by VNL_v21_*.tif filenames.
+        matches = list(root.glob("VNL_v21_*.tif"))
+        if not matches:
+            raise MetadataSchemaError(
+                f"vnl variable {key!r} missing data: no VNL_v21_*.tif "
+                f"under {root}"
+            )
+
+
+def _assert_temis_data_present(payload: dict[str, Any]) -> None:
+    """Pre-flight: TEMIS C4 raw-HDF subdirs exist for each temis variable.
+
+    Raises MetadataSchemaError if a declared temis variable's on-disk
+    product is missing — specifically at least one of the four UV-variable
+    subdirs (uvddc / uvdec / uvdvc / uvief) under
+    {DATA_ROOT}/data_full/TEMIS/C4/raw/.
+
+    Short-circuits when the C4 raw root itself is absent — production
+    startup runs validate_pipeline_settings first, so this branch only
+    fires under test fixtures that bypass the data-dir gate. Mirrors
+    _assert_noise_data_present / _assert_vnl_data_present (Sprint 9 T4 /
+    Sprint 10 T4 pattern).
+    """
+    from app.config import settings
+    root = settings.SPACESCANS_DATA_DIR / "data_full" / "TEMIS" / "C4" / "raw"
+    if not root.exists():
+        return
+    for key, m in payload["variables"].items():
+        if m.get("experiment") != "temis":
+            continue
+        # gridded linkage needs at least one of the four UV subdirs — the
+        # temis reader plugin walks each UV var subdir under exposure.file.
+        present = [name for name in _TEMIS_UV_SUBDIRS if (root / name).is_dir()]
+        if not present:
+            raise MetadataSchemaError(
+                f"temis variable {key!r} missing data: no UV subdir "
+                f"(expected one of {list(_TEMIS_UV_SUBDIRS)}) under {root}"
+            )
+
+
 def load_variables(*, force: bool = False) -> dict[str, Any]:
     _assert_pipeline_version_compatible()
     mtime = _METADATA_PATH.stat().st_mtime
@@ -195,6 +261,8 @@ def load_variables(*, force: bool = False) -> dict[str, Any]:
     _assert_tiger_data_present(payload)
     _assert_nhd_data_present(payload)
     _assert_noise_data_present(payload)
+    _assert_vnl_data_present(payload)
+    _assert_temis_data_present(payload)
 
     _CACHE["mtime"] = mtime
     _CACHE["payload"] = payload

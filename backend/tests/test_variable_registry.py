@@ -721,3 +721,100 @@ def test_list_experiments_after_vnl_and_temis_added():
         "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
         "noise", "vnl", "temis",
     ], exps
+
+
+# ---------------------------------------------------------------------------
+# Sprint 10 T5: VNL + TEMIS server-boot pre-flight (mirror of Noise T4)
+# ---------------------------------------------------------------------------
+
+
+def _make_vnl_tree(root: Path, *, with_tif: bool = True) -> Path:
+    """Build a fake {root}/data_full/VNL/C3/ tree. with_tif=False creates
+    only the C3 parent so the TIF-missing branch can be exercised.
+    """
+    c3 = root / "data_full" / "VNL" / "C3"
+    c3.mkdir(parents=True, exist_ok=True)
+    if with_tif:
+        (c3 / "VNL_v21_npp_2013_global_vcmcfg_c202205302300.average_masked.dat.tif").write_bytes(b"\x00")
+    return c3
+
+
+def _make_temis_tree(root: Path, *, with_subdir: bool = True) -> Path:
+    """Build a fake {root}/data_full/TEMIS/C4/raw/ tree. with_subdir=False
+    creates only the raw parent so the missing-UV-subdir branch can be
+    exercised.
+    """
+    raw = root / "data_full" / "TEMIS" / "C4" / "raw"
+    raw.mkdir(parents=True, exist_ok=True)
+    if with_subdir:
+        (raw / "uvief").mkdir(exist_ok=True)
+    return raw
+
+
+def test_vnl_preflight_passes_when_tif_present(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    # Provision all five trees so no pre-flight short-circuits and none raise.
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    _make_vnl_tree(tmp_path, with_tif=True)
+    _make_temis_tree(tmp_path, with_subdir=True)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "vnl" in payload["variables"]
+
+
+def test_vnl_preflight_raises_when_tif_missing(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    # VNL C3 root exists (no short-circuit) but no VNL_v21_*.tif files.
+    _make_vnl_tree(tmp_path, with_tif=False)
+    _make_temis_tree(tmp_path, with_subdir=True)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc_info:
+        vr.load_variables(force=True)
+    msg = str(exc_info.value)
+    assert "vnl" in msg
+    assert "VNL_v21_*.tif" in msg
+
+
+def test_temis_preflight_passes_when_subdir_present(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    _make_vnl_tree(tmp_path, with_tif=True)
+    _make_temis_tree(tmp_path, with_subdir=True)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "temis" in payload["variables"]
+
+
+def test_temis_preflight_raises_when_no_uv_subdir(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    _make_vnl_tree(tmp_path, with_tif=True)
+    # TEMIS C4 raw root exists (no short-circuit) but no UV subdirs.
+    _make_temis_tree(tmp_path, with_subdir=False)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc_info:
+        vr.load_variables(force=True)
+    msg = str(exc_info.value)
+    assert "temis" in msg
+    assert "uvief" in msg or "uvddc" in msg or "uvdec" in msg or "uvdvc" in msg
