@@ -336,3 +336,62 @@ def test_fan_in_preserves_episode_pairs_with_partial_data(tmp_path):
     assert sorted_pairs == expected_pairs, (
         f"composite-key ordering mismatch: {sorted_pairs}"
     )
+
+
+def test_fan_in_missing_pipeline_row_fills_na(tmp_path):
+    """Sprint 12 G3: input-anchored NaN-fill invariant on _merge.fan_in.
+
+    Sprint 4 F6 dropped the inline _merge.fan_in safety net from
+    bg_ndi_wi.merge_results; the matching unit assertion in
+    test_merge_results_missing_pipeline_row_fills_na was weakened to
+    `len(out) == 1` (write_partial level only), leaving no unit-level
+    guard on the dispatcher-level fan_in NaN-fill behavior.
+
+    This test restores parity: N input rows, a partial CSV missing some
+    of them, fan_in output preserves all N input rows with NaN for the
+    missing ones. Complements F4's composite-key coverage in
+    test_fan_in_preserves_episode_pairs_with_partial_data by focusing
+    purely on the NaN-fill contract.
+    """
+    from app.experiments import _merge
+
+    task_dir = tmp_path / "task-g3-nafill"
+    task_dir.mkdir(parents=True, exist_ok=True)
+
+    # 5 input rows, distinct pids.
+    pd.DataFrame({
+        "pid": ["P1", "P2", "P3", "P4", "P5"],
+        "startDate": ["2017-01-01"] * 5,
+        "endDate": ["2017-12-31"] * 5,
+        "longitude": [-93.0] * 5,
+        "latitude": [45.0] * 5,
+    }).to_csv(task_dir / "input.csv", index=False)
+
+    # Partial CSV: only 3 of 5 episodes present (P2 and P4 dropped).
+    out_dir = task_dir / "output"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({
+        "pid": ["P1", "P3", "P5"],
+        "episode_id": [0, 2, 4],
+        "ndi": [0.1, 0.3, 0.5],
+    }).to_csv(out_dir / "result_bg_ndi_wi.csv", index=False)
+
+    out = _merge.fan_in(task_dir=task_dir, experiment_keys=["bg_ndi_wi"])
+    df = pd.read_csv(out)
+
+    # Invariant 1: output row count == input row count.
+    assert len(df) == 5, f"expected 5 rows, got {len(df)}"
+
+    # Invariant 2: rows for dropped pids carry NaN in the value column.
+    df["episode_id"] = df["episode_id"].astype(int)
+    by_pid = {row["pid"]: row for _, row in df.iterrows()}
+    assert pd.isna(by_pid["P2"]["ndi"]), "P2 should have NaN ndi"
+    assert pd.isna(by_pid["P4"]["ndi"]), "P4 should have NaN ndi"
+
+    # Invariant 3: present rows retain their values.
+    assert by_pid["P1"]["ndi"] == 0.1
+    assert by_pid["P3"]["ndi"] == 0.3
+    assert by_pid["P5"]["ndi"] == 0.5
+
+    # Invariant 4: all input pids preserved (no row loss).
+    assert set(df["pid"].tolist()) == {"P1", "P2", "P3", "P4", "P5"}

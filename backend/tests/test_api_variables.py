@@ -86,13 +86,12 @@ def _fake_catalog():
     }
 
 
-def test_unauthenticated_returns_403(client):
-    # Sprint 4 F5: get_current_user uses HTTPBearer(auto_error=True), so a
-    # missing Authorization header is rejected by FastAPI's security layer
-    # with 403 (not 401). 401 is reserved for invalid/expired tokens — see
-    # test_list_variables_rejects_invalid_jwt below.
+def test_unauthenticated_returns_401(client):
+    # Sprint 12 G2: standardized on 401 across the API. HTTPBearer is configured
+    # with auto_error=False; get_current_user raises 401 when no credentials
+    # are present — matching /api/tasks/* and the rest of the auth contract.
     r = client.get("/api/variables")
-    assert r.status_code == 403
+    assert r.status_code == 401
 
 
 def test_authenticated_returns_catalog(client, auth_headers):
@@ -133,3 +132,12 @@ def test_list_variables_rejects_invalid_jwt(client):
     headers = {"Authorization": "Bearer not-a-real-jwt"}
     response = client.get("/api/variables", headers=headers)
     assert response.status_code == 401
+
+
+def test_unauthenticated_status_is_consistent_across_endpoints(client):
+    """Sprint 12 G2 cross-product invariant: every authenticated endpoint must
+    return 401 (NOT 403) for missing credentials, so the FE can branch on a
+    single status code. Previously /api/variables returned 403 (HTTPBearer
+    default) while /api/tasks/* returned 401."""
+    assert client.get("/api/variables").status_code == 401
+    assert client.get("/api/tasks").status_code == 401

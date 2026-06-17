@@ -488,3 +488,27 @@ Pre-flight:
    server. Expect `MetadataSchemaError` mentioning `fara_tract` and
    `varnameCountRemoved.csv`. Restore the file. No partial run, no
    orphan cache files for either failure.
+
+## Sprint 12 G4 — Standalone runner CLI is deprecated
+
+Invoking a per-experiment runner directly outside the dispatcher, e.g.
+
+```bash
+python -m app.experiments.bg_ndi_wi run <task_dir>
+```
+
+produces only `output/result_<experiment_key>.csv` (the per-experiment
+partial), NOT the canonical `output/result.csv`. This is by design —
+Sprint 4 F6 moved the input-anchored fan-in to the dispatcher's
+post-experiment step (`app.experiments._merge.fan_in`), which the
+standalone path bypasses.
+
+The supported e2e flow is `task_manager.start_task(task_id)` (Popens
+the dispatcher), which produces both files. The standalone CLI is
+useful for unit-style debugging of a single experiment's pipeline path
+but should NOT be relied on by downstream consumers expecting
+`result.csv`.
+
+If you genuinely need the canonical `result.csv` from a standalone
+script, call `app.experiments._merge.fan_in(task_dir, [experiment_key])`
+explicitly after the runner returns.

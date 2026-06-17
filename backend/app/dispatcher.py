@@ -137,10 +137,21 @@ def dispatch(task_id_or_dir: str) -> dict:
             "run", str(task_dir),
             "--variables", ",".join(exp_vars),
         ]
-        _write_status(task_dir, experiments={exp_key: {
-            "status": "running",
-            "started_at": datetime.now(timezone.utc).isoformat(),
-        }})
+        # Sprint 12 G1: close TOCTOU window between status='running' and
+        # pid being recorded. Previously, status='running' was stamped
+        # BEFORE Popen and pid AFTER, so if stop_task fired in that window
+        # the (pid present AND status=='running') predicate matched no
+        # runner slot — stop_task fell back to SIGTERMing the supervisor,
+        # killing the dispatcher before proc.wait() could observe rc=143
+        # (breaking Sprint 4 F1b cancellation observability).
+        #
+        # Fix: keep the slot at status='pending' (seeded above) until AFTER
+        # Popen returns, then write {pid, status='running', started_at}
+        # atomically as one _write_status call. stop_task's lookup now
+        # either sees the slot pre-Popen as 'pending' (so it correctly
+        # falls back to the supervisor only when no runner exists yet) or
+        # sees the slot post-Popen with both pid and status='running' set
+        # in the same status.json snapshot.
         proc = subprocess.Popen(
             cmd,
             cwd=str(app.config.settings.BASE_DIR),
@@ -148,12 +159,21 @@ def dispatch(task_id_or_dir: str) -> dict:
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
-        # Record the runner pid into the experiments map so stop_task (and
-        # any external supervisor) can walk it to send SIGTERM directly.
-        _write_status(task_dir, experiments={exp_key: {"pid": proc.pid}})
+        _write_status(task_dir, experiments={exp_key: {
+            "status": "running",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "pid": proc.pid,
+        }})
         rc = proc.wait()
         if rc != 0:
-            if rc == 143:
+            # Sprint 12 G6: discriminate user-intent cancellation from
+            # external SIGTERM (OOM killer / sysadmin kill -15 / container
+            # eviction) via the .cancelled sentinel that stop_task writes
+            # before SIGTERMing. Without the sentinel, rc=143 always
+            # routed to the 'cancelled' branch — a false positive on user
+            # intent.  Sentinel present + rc=143 -> user cancellation;
+            # sentinel absent (rc=143 or any other non-zero) -> 'error'.
+            if rc == 143 and (task_dir / ".cancelled").exists():
                 # SIGTERM cancellation (Sprint 4 F1b). Preserve cancelled
                 # lineage end-to-end: this slot + all remaining slots get
                 # status='cancelled', and the post-loop top-level write
