@@ -92,6 +92,17 @@
       "variable_type": "continuous",
       "display_unit": "UV index",
       "value_cols": ["uvddc", "uvdec", "uvdvc", "uvief"]
+    },
+    "fara_tract": {
+      "label": "FARA Food Access (Tract)",
+      "description": "Per-tract annual USDA FARA food-access indicators (binary flags + share variables, interpolated 2013-2019). Headline value_cols: LILATracts_1And10 (low-income+low-access urban-1mi/rural-10mi), LATracts1 (low-access 1 mile), HUNVFlag (low-vehicle-access), LowIncomeTracts. Full label set in varnameCountRemoved.csv.",
+      "boundary": "Tract",
+      "coverage_years": [2013, 2019],
+      "coverage_region": "CONUS",
+      "experiment": "fara_tract",
+      "variable_type": "categorical",
+      "display_unit": "binary flags",
+      "value_cols": ["LILATracts_1And10", "LATracts1", "HUNVFlag", "LowIncomeTracts"]
     }
   }
 }

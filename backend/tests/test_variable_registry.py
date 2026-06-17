@@ -220,16 +220,16 @@ def test_variables_by_experiment_preserves_file_order(tmp_path, monkeypatch):
 
 def test_list_experiments_dedupes_in_file_order():
     """Post-B2 invariant: with the tiger_proximity + nhd_bluespace + noise +
-    vnl + temis runner modules now present in app.experiments,
+    vnl + temis + fara_tract runner modules now present in app.experiments,
     list_experiments() returns the file-order de-duped list of experiments
-    referenced by variable_metadata.json. Sprint 10 appends vnl + temis as
-    the sixth and seventh slots.
+    referenced by variable_metadata.json. Sprint 11 appends fara_tract as
+    the eighth slot.
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
     assert exps == [
         "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
-        "noise", "vnl", "temis",
+        "noise", "vnl", "temis", "fara_tract",
     ], exps
 
 
@@ -536,14 +536,14 @@ def test_list_experiments_after_nhd_bluespace_added():
     """Post-B2: list_experiments returns the metadata-file order list.
 
     Sprint 5 baseline was [bg_ndi_wi, zcta5_cbp, tiger_proximity]; Sprint 7
-    appended nhd_bluespace; Sprint 9 appended noise; Sprint 10 appends
-    vnl + temis as the sixth and seventh slots.
+    appended nhd_bluespace; Sprint 9 appended noise; Sprint 10 appended
+    vnl + temis; Sprint 11 appends fara_tract as the eighth slot.
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
     assert exps == [
         "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
-        "noise", "vnl", "temis",
+        "noise", "vnl", "temis", "fara_tract",
     ], exps
 
 
@@ -712,14 +712,18 @@ def test_real_metadata_file_contains_temis_with_runner_module():
 
 
 def test_list_experiments_after_vnl_and_temis_added():
-    """Sprint 10: list_experiments now contains seven entries in file order.
-    bg_ndi_wi -> zcta5_cbp -> tiger_proximity -> nhd_bluespace -> noise -> vnl -> temis.
+    """Sprint 11: list_experiments now contains eight entries in file order.
+    bg_ndi_wi -> zcta5_cbp -> tiger_proximity -> nhd_bluespace -> noise
+        -> vnl -> temis -> fara_tract.
+
+    (Renamed from the Sprint-10 seven-entry version; the fara_tract slot
+    landed at the tail when Sprint 11 added FARA at Tract boundary.)
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
     assert exps == [
         "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
-        "noise", "vnl", "temis",
+        "noise", "vnl", "temis", "fara_tract",
     ], exps
 
 
@@ -818,3 +822,143 @@ def test_temis_preflight_raises_when_no_uv_subdir(tmp_path, monkeypatch):
     msg = str(exc_info.value)
     assert "temis" in msg
     assert "uvief" in msg or "uvddc" in msg or "uvdec" in msg or "uvdvc" in msg
+
+
+# ---------------------------------------------------------------------------
+# Sprint 11 B1: fara_tract metadata entry + registry-level guards
+# ---------------------------------------------------------------------------
+
+
+def _make_fara_tree(root: Path, *, with_files: bool = True) -> Path:
+    """Build a fake {root}/data_full/FARA/C4/ tree. with_files=False creates
+    only the C4 parent so the data-missing branch can be exercised.
+    """
+    c4 = root / "data_full" / "FARA" / "C4"
+    c4.mkdir(parents=True, exist_ok=True)
+    if with_files:
+        (c4 / "fara_nationwide_2010_2019_interpolated.Rda").write_bytes(b"\x00")
+        (c4 / "varnameCountRemoved.csv").write_text("var,label\n")
+    return c4
+
+
+def test_registry_accepts_fara_tract_entry(tmp_path, monkeypatch):
+    """Sprint 11 B1: fara_tract entry passes schema (4 value_cols, Tract
+    boundary, [2013, 2019] coverage) once a fara_tract experiment module
+    exists.
+
+    Mirrors test_registry_accepts_temis_entry / Sprint-10 T1 pattern: stubs
+    _discover_experiments so it does NOT depend on B2's runner module
+    landing — locks in the canonical entry shape.
+    """
+    from app import variable_registry as vr
+
+    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
+    payload_path = tmp_path / "variable_metadata.json"
+    payload_path.write_text(json.dumps({
+        "schema_version": 1,
+        "variables": {
+            "fara_tract": {
+                "label": "FARA Food Access (Tract)",
+                "description": (
+                    "Per-tract annual USDA Food Access Research Atlas "
+                    "indicators (binary flags + share variables, "
+                    "interpolated to annual 2013-2019)."
+                ),
+                "boundary": "Tract",
+                "coverage_years": [2013, 2019],
+                "coverage_region": "CONUS",
+                "experiment": "fara_tract",
+                "variable_type": "categorical",
+                "display_unit": "binary flags",
+                "value_cols": ["LILATracts_1And10", "LATracts1", "HUNVFlag", "LowIncomeTracts"],
+            }
+        },
+    }))
+
+    monkeypatch.setattr(vr, "_METADATA_PATH", payload_path)
+    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
+    monkeypatch.setattr(
+        vr, "_discover_experiments",
+        lambda: {
+            "bg_ndi_wi", "zcta5_cbp", "tiger_proximity",
+            "nhd_bluespace", "noise", "vnl", "temis", "fara_tract",
+        },
+    )
+
+    payload = vr.load_variables(force=True)
+    entry = payload["variables"]["fara_tract"]
+    assert entry["boundary"] == "Tract"
+    assert entry["experiment"] == "fara_tract"
+    assert entry["coverage_years"] == [2013, 2019]
+    assert entry["display_unit"] == "binary flags"
+    assert entry["value_cols"] == [
+        "LILATracts_1And10", "LATracts1", "HUNVFlag", "LowIncomeTracts",
+    ]
+
+
+def test_real_metadata_file_contains_fara_tract_with_runner_module():
+    """Post-Sprint-11-B2: real metadata loads cleanly + exposes fara_tract
+    entry once backend/app/experiments/fara_tract.py exists.
+    """
+    from app import variable_registry as vr
+    payload = vr.load_variables(force=True)
+    assert "fara_tract" in payload["variables"], sorted(payload["variables"].keys())
+    entry = payload["variables"]["fara_tract"]
+    assert entry["experiment"] == "fara_tract"
+    assert entry["boundary"] == "Tract"
+    assert entry["coverage_years"] == [2013, 2019]
+
+
+def test_list_experiments_after_fara_tract_added():
+    """Sprint 11: list_experiments now contains eight entries in file order.
+    bg_ndi_wi -> zcta5_cbp -> tiger_proximity -> nhd_bluespace -> noise
+        -> vnl -> temis -> fara_tract.
+    """
+    from app import variable_registry as vr
+    exps = vr.list_experiments()
+    assert exps == [
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+        "noise", "vnl", "temis", "fara_tract",
+    ], exps
+
+
+# ---------------------------------------------------------------------------
+# Sprint 11 B4: FARA C4 server-boot pre-flight (mirror of TEMIS T4 pattern)
+# ---------------------------------------------------------------------------
+
+
+def test_fara_preflight_passes_when_files_present(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    # Provision all six trees so no pre-flight short-circuits and none raise.
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    _make_vnl_tree(tmp_path, with_tif=True)
+    _make_temis_tree(tmp_path, with_subdir=True)
+    _make_fara_tree(tmp_path, with_files=True)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "fara_tract" in payload["variables"]
+
+
+def test_fara_preflight_raises_when_rda_missing(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    _make_vnl_tree(tmp_path, with_tif=True)
+    _make_temis_tree(tmp_path, with_subdir=True)
+    # FARA C4 root exists (no short-circuit) but no .Rda / label CSV.
+    _make_fara_tree(tmp_path, with_files=False)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc_info:
+        vr.load_variables(force=True)
+    msg = str(exc_info.value)
+    assert "fara_tract" in msg
+    assert "fara_nationwide_2010_2019_interpolated.Rda" in msg
