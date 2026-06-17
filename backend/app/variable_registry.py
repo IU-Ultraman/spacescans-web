@@ -123,6 +123,48 @@ def _assert_nhd_data_present(payload: dict[str, Any]) -> None:
             )
 
 
+# Canonical static TIFs the noise reader plugin requires (kept in sync with
+# spacescans.plugins.readers.noise._TIF_NAMES).
+_NOISE_TIFS = (
+    "CONUS_L50dBA_sumDay_exi.tif",
+    "CONUS_sumDay_L50dBA_imp.tif",
+    "CONUS_sumDay_L50dBA_nat.tif",
+)
+
+
+def _assert_noise_data_present(payload: dict[str, Any]) -> None:
+    """Pre-flight: Noise C3 TIFs exist for each noise variable.
+
+    Raises MetadataSchemaError if a declared noise variable's on-disk
+    product is missing — specifically the three TIFs under
+    {DATA_ROOT}/data/Noise/C3/ that the noise reader plugin requires.
+
+    Short-circuits when the C3 root itself is absent — production startup
+    runs validate_pipeline_settings first, so this branch only fires under
+    test fixtures that bypass the data-dir gate. Mirrors
+    _assert_tiger_data_present / _assert_nhd_data_present (Sprint 6 H2 /
+    Sprint 8 I1 pattern).
+
+    Note: noise TIFs live under data/Noise/C3/ (NOT data_full/Noise/...) —
+    they predate the data_full/ subtree convention. The noise plugin
+    resolves sibling TIFs relative to the primary exposure.file path in the
+    YAML, so we only need to verify all three siblings exist.
+    """
+    from app.config import settings
+    root = settings.SPACESCANS_DATA_DIR / "data" / "Noise" / "C3"
+    if not root.exists():
+        return
+    for key, m in payload["variables"].items():
+        if m.get("experiment") != "noise":
+            continue
+        for tif_name in _NOISE_TIFS:
+            tif = root / tif_name
+            if not tif.exists():
+                raise MetadataSchemaError(
+                    f"noise variable {key!r} missing data: {tif}"
+                )
+
+
 def load_variables(*, force: bool = False) -> dict[str, Any]:
     _assert_pipeline_version_compatible()
     mtime = _METADATA_PATH.stat().st_mtime
@@ -152,6 +194,7 @@ def load_variables(*, force: bool = False) -> dict[str, Any]:
 
     _assert_tiger_data_present(payload)
     _assert_nhd_data_present(payload)
+    _assert_noise_data_present(payload)
 
     _CACHE["mtime"] = mtime
     _CACHE["payload"] = payload

@@ -618,3 +618,57 @@ def test_real_metadata_file_contains_noise_with_runner_module():
     assert entry["experiment"] == "noise"
     assert entry["boundary"] == "BG"
     assert entry["coverage_years"] == [2020, 2020]
+
+
+# ---------------------------------------------------------------------------
+# Sprint 9 T4: Noise C3 server-boot pre-flight (mirror of TIGER H2 / NHD I1)
+# ---------------------------------------------------------------------------
+
+
+def _make_noise_tree(root: Path, *, with_tifs: bool = True) -> Path:
+    """Build a fake {root}/data/Noise/C3/ tree. with_tifs=False creates only
+    the C3 parent so the TIF-missing branch can be exercised.
+    """
+    c3 = root / "data" / "Noise" / "C3"
+    c3.mkdir(parents=True, exist_ok=True)
+    if with_tifs:
+        for tif in (
+            "CONUS_L50dBA_sumDay_exi.tif",
+            "CONUS_sumDay_L50dBA_imp.tif",
+            "CONUS_sumDay_L50dBA_nat.tif",
+        ):
+            (c3 / tif).write_bytes(b"\x00")  # empty file is enough for exists() check
+    return c3
+
+
+def test_noise_preflight_passes_when_all_tifs_present(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    # All pre-flights run on the real metadata payload — provision TIGER,
+    # NHD, AND noise trees so none short-circuit and none raise.
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "variables" in payload
+    assert "noise" in payload["variables"]
+
+
+def test_noise_preflight_raises_when_tif_missing(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    # C3 root exists (no short-circuit) but the TIF files do not.
+    _make_noise_tree(tmp_path, with_tifs=False)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc_info:
+        vr.load_variables(force=True)
+    msg = str(exc_info.value)
+    assert "noise" in msg
+    assert "CONUS_L50dBA_sumDay_exi.tif" in msg
