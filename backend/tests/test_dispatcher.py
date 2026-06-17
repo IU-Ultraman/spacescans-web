@@ -36,7 +36,8 @@ class _FakePopen:
 def test_dispatcher_cancellation_preserves_cancelled_status(
     task_dir_with_config, monkeypatch
 ):
-    """First runner exits rc=143 (SIGTERM). Expect:
+    """First runner exits rc=143 (SIGTERM) AND the .cancelled sentinel is
+    present (Sprint 12 G6: stop_task writes it before SIGTERMing). Expect:
       - slot 1 status='cancelled' (NOT 'error')
       - slot 2 status='cancelled' (NOT 'skipped_due_to_prior_failure')
       - top-level status='cancelled', message='Task cancelled by user'
@@ -52,6 +53,10 @@ def test_dispatcher_cancellation_preserves_cancelled_status(
 
     def popen_first_sigterm(cmd, **kw):
         idx = len(_FakePopen.instances)
+        # Sprint 12 G6: simulate stop_task — write the .cancelled sentinel
+        # immediately before the SIGTERMed runner returns.
+        if idx == 0:
+            (task_dir_with_config / ".cancelled").touch()
         return _FakePopen(cmd, returncode=(143 if idx == 0 else 0), **kw)
 
     monkeypatch.setattr(dispatcher.subprocess, "Popen", popen_first_sigterm)
@@ -82,4 +87,55 @@ def test_dispatcher_cancellation_preserves_cancelled_status(
     assert exp["zcta5_cbp"]["status"] == "cancelled", (
         f"remaining slot must cascade as 'cancelled', NOT 'skipped_due_to_prior_failure'; "
         f"got {exp['zcta5_cbp']['status']}"
+    )
+
+
+def test_dispatcher_external_sigterm_without_sentinel_routes_to_error(
+    task_dir_with_config, monkeypatch
+):
+    """Sprint 12 G6: rc==143 WITHOUT the .cancelled sentinel must NOT be
+    mis-attributed to user cancellation.
+
+    Disambiguates user-intent cancellation (stop_task wrote .cancelled
+    before SIGTERM) from external SIGTERM (OOM killer / sysadmin
+    `kill -15` / container eviction — sentinel absent).
+
+    Expectations on rc==143 with NO sentinel:
+      - slot 1 status='error' (NOT 'cancelled')
+      - slot 2 status='skipped_due_to_prior_failure' (NOT 'cancelled')
+      - top-level status='error', NOT 'cancelled'
+    """
+    from app import dispatcher
+
+    _FakePopen.instances = []
+    monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
+                        lambda selected: {
+                            "bg_ndi_wi": ["ndi"],
+                            "zcta5_cbp": ["cbp_zcta5"],
+                        })
+
+    def popen_first_sigterm(cmd, **kw):
+        idx = len(_FakePopen.instances)
+        # NO .cancelled sentinel written — simulates external SIGTERM.
+        return _FakePopen(cmd, returncode=(143 if idx == 0 else 0), **kw)
+
+    monkeypatch.setattr(dispatcher.subprocess, "Popen", popen_first_sigterm)
+    monkeypatch.setattr("app.experiments._merge.fan_in", MagicMock())
+
+    dispatcher.dispatch(str(task_dir_with_config))
+
+    status = json.loads((task_dir_with_config / "status.json").read_text())
+
+    assert status["status"] == "error", (
+        f"external SIGTERM (sentinel absent) must route to 'error'; "
+        f"got {status['status']}"
+    )
+    exp = status["experiments"]
+    assert exp["bg_ndi_wi"]["status"] == "error", (
+        f"slot 1 status must be 'error' on rc==143 without sentinel; "
+        f"got {exp['bg_ndi_wi']['status']}"
+    )
+    assert exp["zcta5_cbp"]["status"] == "skipped_due_to_prior_failure", (
+        f"remaining slot must cascade as 'skipped_due_to_prior_failure', "
+        f"NOT 'cancelled'; got {exp['zcta5_cbp']['status']}"
     )

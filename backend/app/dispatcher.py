@@ -166,7 +166,14 @@ def dispatch(task_id_or_dir: str) -> dict:
         }})
         rc = proc.wait()
         if rc != 0:
-            if rc == 143:
+            # Sprint 12 G6: discriminate user-intent cancellation from
+            # external SIGTERM (OOM killer / sysadmin kill -15 / container
+            # eviction) via the .cancelled sentinel that stop_task writes
+            # before SIGTERMing. Without the sentinel, rc=143 always
+            # routed to the 'cancelled' branch — a false positive on user
+            # intent.  Sentinel present + rc=143 -> user cancellation;
+            # sentinel absent (rc=143 or any other non-zero) -> 'error'.
+            if rc == 143 and (task_dir / ".cancelled").exists():
                 # SIGTERM cancellation (Sprint 4 F1b). Preserve cancelled
                 # lineage end-to-end: this slot + all remaining slots get
                 # status='cancelled', and the post-loop top-level write

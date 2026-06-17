@@ -342,6 +342,22 @@ def stop_task(task_id: str) -> dict:
         if isinstance(sup_pid, int):
             pids_to_signal.append(sup_pid)
 
+    # Sprint 12 G6: write a .cancelled sentinel BEFORE SIGTERMing so the
+    # dispatcher's rc==143 branch can distinguish user-intent cancellation
+    # from external SIGTERM (OOM killer, sysadmin kill -15, container
+    # eviction). Without the sentinel, any external SIGTERM that yields
+    # rc=143 would be misreported as cancelled — a false positive on user
+    # intent. The sentinel is created unconditionally on the stop_task
+    # path, including the supervisor-fallback case, so an early-cancel
+    # still records "user-intent" lineage.
+    try:
+        (task_dir / ".cancelled").touch()
+    except OSError:
+        # Best-effort sentinel — if the task_dir is unwritable we still
+        # send SIGTERM and accept the legacy "rc=143 -> cancelled"
+        # interpretation as a degraded fallback.
+        pass
+
     sent: list[int] = []
     for pid in pids_to_signal:
         try:
