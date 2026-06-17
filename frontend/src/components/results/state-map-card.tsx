@@ -7,9 +7,11 @@ import { api, type ResultsPreview, type StateGeoBucket } from "@/lib/api";
 import { isInputColumn } from "@/lib/result-columns";
 import { Map as MapIcon } from "lucide-react";
 
-// us-atlas ships pre-projected Albers topojson (Alaska/Hawaii positioned).
-// Use null projection so ComposableMap renders the coordinates as-is.
-import statesAlbers from "us-atlas/states-albers-10m.json";
+// Raw lng/lat states topojson. We let react-simple-maps' geoAlbersUsa
+// projection do the composite US layout (incl. AK/HI insets) + auto-fit,
+// rather than the pre-projected albers file (which double-translates under
+// ComposableMap's centering and clips the map to the NW corner).
+import statesGeo from "us-atlas/states-10m.json";
 
 interface StateMapCardProps {
   taskId: string;
@@ -91,7 +93,7 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
   // The `id` on each feature is the 2-digit state FIPS.
   const stateFeatures = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const topo = statesAlbers as any;
+    const topo = statesGeo as any;
     const fc = topojson.feature(topo, topo.objects.states) as unknown as {
       features: Array<{
         id?: string | number;
@@ -180,8 +182,8 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
       {/* Map + legend */}
       <div className="relative mt-4">
         <ComposableMap
-          projection="geoIdentity"
-          projectionConfig={{ scale: 1 }}
+          projection="geoAlbersUsa"
+          projectionConfig={{ scale: 1070 }}
           width={975}
           height={610}
           style={{ width: "100%", height: "auto" }}
