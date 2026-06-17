@@ -339,3 +339,74 @@ Pre-flight:
    (`_assert_noise_data_present` in `variable_registry.py`) with the
    TIF path in the message. Restore the TIF. No partial run, no orphan
    cache files.
+
+## Sprint 10 — VNL + TEMIS (gridded episode dispatch)
+
+Pre-flight:
+
+- spacescans-pipeline editable install reflects Sprint 10 A1
+  (`output_grouping` / `resolve_output_grouping` dispatch in
+  `gridded_linkage.py`). Verify with
+  `python -c "from spacescans.linkage import gridded_linkage;
+  import inspect; print('output_grouping' in
+  inspect.getsource(gridded_linkage))"` — expect True.
+- VNL annual TIFs (`VNL_v21_*.tif`) exist and are readable under
+  `data_full/VNL/C3/` (at least one file per coverage year 2013-2019).
+- TEMIS C4 raw HDFs exist and are readable under
+  `data_full/TEMIS/C4/raw/<uv-var>/<year>/` for at least one of the
+  four UV variables (`uvddc`, `uvdec`, `uvdvc`, `uvief`).
+- `backend/app/data/variable_metadata.json` has **8** entries including
+  `vnl` (BG boundary, `coverage_years=[2013, 2019]`, 1 value_col
+  `[value]`, unit `radiance`) and `temis` (BG boundary,
+  `coverage_years=[2013, 2019]`, 4 value_cols
+  `[uvddc, uvdec, uvdvc, uvief]`, unit `UV index`).
+
+1. Variables-step renders 8 cards grouped by boundary:
+   - "Block Group" section: NDI, EPA Walkability Index, TIGER Road
+     Proximity, NHD Bluespace, BTS Transportation Noise (L50 dBA),
+     VIIRS Night-time Lights (VNL), TEMIS UV Exposure — **7 cards**.
+   - "ZCTA5" section: Community Organization Density (ZBP) — **1 card**.
+   Each card shows label, description, unit chip, year-range chip,
+   boundary chip. The VNL card's unit chip reads "radiance", year-range
+   "2013–2019", boundary "BG". The TEMIS card's unit chip reads "UV
+   index", year-range "2013–2019", boundary "BG".
+2. Tick the VNL or TEMIS card → coverage panel mounts inline; same
+   shape as prior cards. Confirm a non-trivial intersection for the
+   configured study county.
+3. Tick all 8 variables → Review step → Run. Watch status.json:
+   - `experiments` map shows runners spawning in metadata-file order:
+     bg_ndi_wi → zcta5_cbp → tiger_proximity → nhd_bluespace → noise →
+     vnl → temis. All seven `started_at` timestamps must be monotonic.
+   - logs.jsonl carries entries from all seven runners.
+   - result.csv on completion carries
+     ndi + NatWalkInd + all 10 r_* + 3 TIGER dist_* +
+     5 NHD dist_*_m + 3 noise l50dba_* + 1 VNL value +
+     4 TEMIS uv* columns.
+4. Repeat the same task; second run should hit the `BG_VNL` and
+   `BG_TEMIS` C3 caches (status.json shows c3_vnl + c3_temis progress
+   to 100% in <1s for the cached cohort + buffer; logs.jsonl carries
+   `cache hit: <sha8>__BG_VNL__b270m` and
+   `cache hit: <sha8>__BG_TEMIS__b270m`).
+5. Negative test (unsupported output_grouping): edit
+   `configs/c4/vnl_demo.yaml` (or `configs/c4/temis_demo.yaml`) to
+   change the shipped `output_grouping: patient` to an unknown value
+   (e.g. `output_grouping: foo`); render a task via the runner (web
+   renders C4 with `output_grouping=episode`, so to trip the pipeline
+   error you must point at the YAML directly via
+   `python -m spacescans.cli run configs/c4/vnl_demo.yaml`).
+   Expect a clear ValueError from `gridded_linkage.py`:
+   `unsupported output_grouping: 'foo' (expected 'patient' or 'episode')`.
+   Restore the YAML. Same caveat as Sprint 5/7/9 applies: do NOT test
+   by *removing* the key — `TimeConfig.output_grouping` defaults to
+   `patient` and would silently fall through.
+6. Negative test (missing VNL data): rename
+   `data_full/VNL/C3/` aside or remove all `VNL_v21_*.tif` files and
+   restart the server. Expect `MetadataSchemaError` during server-boot
+   pre-flight (`_assert_vnl_data_present` in `variable_registry.py`)
+   with `VNL_v21_*.tif` in the message. Restore the directory.
+7. Negative test (missing TEMIS data): remove every UV-variable subdir
+   under `data_full/TEMIS/C4/raw/` and restart the server. Expect
+   `MetadataSchemaError` during server-boot pre-flight
+   (`_assert_temis_data_present` in `variable_registry.py`) mentioning
+   `temis` and the UV-variable subdir names. Restore the directories.
+   No partial run, no orphan cache files for either failure.

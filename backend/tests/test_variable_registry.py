@@ -219,15 +219,17 @@ def test_variables_by_experiment_preserves_file_order(tmp_path, monkeypatch):
 
 
 def test_list_experiments_dedupes_in_file_order():
-    """Post-B2 invariant: with the tiger_proximity + nhd_bluespace + noise
-    runner modules now present in app.experiments, list_experiments() returns
-    the file-order de-duped list of experiments referenced by
-    variable_metadata.json. Sprint 9 appends noise as the fifth slot.
+    """Post-B2 invariant: with the tiger_proximity + nhd_bluespace + noise +
+    vnl + temis runner modules now present in app.experiments,
+    list_experiments() returns the file-order de-duped list of experiments
+    referenced by variable_metadata.json. Sprint 10 appends vnl + temis as
+    the sixth and seventh slots.
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
     assert exps == [
-        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace", "noise",
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+        "noise", "vnl", "temis",
     ], exps
 
 
@@ -531,16 +533,17 @@ def test_real_metadata_file_contains_nhd_bluespace_with_runner_module():
 
 
 def test_list_experiments_after_nhd_bluespace_added():
-    """Post-B2: list_experiments returns the 5-experiment metadata-file order.
+    """Post-B2: list_experiments returns the metadata-file order list.
 
     Sprint 5 baseline was [bg_ndi_wi, zcta5_cbp, tiger_proximity]; Sprint 7
-    appended nhd_bluespace as the fourth slot; Sprint 9 appends noise as
-    the fifth.
+    appended nhd_bluespace; Sprint 9 appended noise; Sprint 10 appends
+    vnl + temis as the sixth and seventh slots.
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
     assert exps == [
-        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace", "noise",
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+        "noise", "vnl", "temis",
     ], exps
 
 
@@ -672,3 +675,146 @@ def test_noise_preflight_raises_when_tif_missing(tmp_path, monkeypatch):
     msg = str(exc_info.value)
     assert "noise" in msg
     assert "CONUS_L50dBA_sumDay_exi.tif" in msg
+
+
+# ---------------------------------------------------------------------------
+# Sprint 10 T1: vnl + temis metadata entries + registry-level guards
+# ---------------------------------------------------------------------------
+
+
+def test_real_metadata_file_contains_vnl_with_runner_module():
+    """Post-Sprint-10-B3: real metadata loads cleanly + exposes vnl entry now
+    that backend/app/experiments/vnl.py exists. Pre-runner this fails with
+    MetadataSchemaError ('unknown experiment vnl') — the half-landed gate.
+    """
+    from app import variable_registry as vr
+    payload = vr.load_variables(force=True)
+    assert "vnl" in payload["variables"], sorted(payload["variables"].keys())
+    entry = payload["variables"]["vnl"]
+    assert entry["experiment"] == "vnl"
+    assert entry["boundary"] == "BG"
+    assert entry["coverage_years"] == [2013, 2019]
+    assert entry["value_cols"] == ["value"]
+
+
+def test_real_metadata_file_contains_temis_with_runner_module():
+    """Post-Sprint-10-B3: real metadata loads cleanly + exposes temis entry
+    once backend/app/experiments/temis.py exists.
+    """
+    from app import variable_registry as vr
+    payload = vr.load_variables(force=True)
+    assert "temis" in payload["variables"], sorted(payload["variables"].keys())
+    entry = payload["variables"]["temis"]
+    assert entry["experiment"] == "temis"
+    assert entry["boundary"] == "BG"
+    assert entry["coverage_years"] == [2013, 2019]
+    assert entry["value_cols"] == ["uvddc", "uvdec", "uvdvc", "uvief"]
+
+
+def test_list_experiments_after_vnl_and_temis_added():
+    """Sprint 10: list_experiments now contains seven entries in file order.
+    bg_ndi_wi -> zcta5_cbp -> tiger_proximity -> nhd_bluespace -> noise -> vnl -> temis.
+    """
+    from app import variable_registry as vr
+    exps = vr.list_experiments()
+    assert exps == [
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+        "noise", "vnl", "temis",
+    ], exps
+
+
+# ---------------------------------------------------------------------------
+# Sprint 10 T5: VNL + TEMIS server-boot pre-flight (mirror of Noise T4)
+# ---------------------------------------------------------------------------
+
+
+def _make_vnl_tree(root: Path, *, with_tif: bool = True) -> Path:
+    """Build a fake {root}/data_full/VNL/C3/ tree. with_tif=False creates
+    only the C3 parent so the TIF-missing branch can be exercised.
+    """
+    c3 = root / "data_full" / "VNL" / "C3"
+    c3.mkdir(parents=True, exist_ok=True)
+    if with_tif:
+        (c3 / "VNL_v21_npp_2013_global_vcmcfg_c202205302300.average_masked.dat.tif").write_bytes(b"\x00")
+    return c3
+
+
+def _make_temis_tree(root: Path, *, with_subdir: bool = True) -> Path:
+    """Build a fake {root}/data_full/TEMIS/C4/raw/ tree. with_subdir=False
+    creates only the raw parent so the missing-UV-subdir branch can be
+    exercised.
+    """
+    raw = root / "data_full" / "TEMIS" / "C4" / "raw"
+    raw.mkdir(parents=True, exist_ok=True)
+    if with_subdir:
+        (raw / "uvief").mkdir(exist_ok=True)
+    return raw
+
+
+def test_vnl_preflight_passes_when_tif_present(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    # Provision all five trees so no pre-flight short-circuits and none raise.
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    _make_vnl_tree(tmp_path, with_tif=True)
+    _make_temis_tree(tmp_path, with_subdir=True)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "vnl" in payload["variables"]
+
+
+def test_vnl_preflight_raises_when_tif_missing(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    # VNL C3 root exists (no short-circuit) but no VNL_v21_*.tif files.
+    _make_vnl_tree(tmp_path, with_tif=False)
+    _make_temis_tree(tmp_path, with_subdir=True)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc_info:
+        vr.load_variables(force=True)
+    msg = str(exc_info.value)
+    assert "vnl" in msg
+    assert "VNL_v21_*.tif" in msg
+
+
+def test_temis_preflight_passes_when_subdir_present(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    _make_vnl_tree(tmp_path, with_tif=True)
+    _make_temis_tree(tmp_path, with_subdir=True)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "temis" in payload["variables"]
+
+
+def test_temis_preflight_raises_when_no_uv_subdir(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    _make_vnl_tree(tmp_path, with_tif=True)
+    # TEMIS C4 raw root exists (no short-circuit) but no UV subdirs.
+    _make_temis_tree(tmp_path, with_subdir=False)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc_info:
+        vr.load_variables(force=True)
+    msg = str(exc_info.value)
+    assert "temis" in msg
+    assert "uvief" in msg or "uvddc" in msg or "uvdec" in msg or "uvdvc" in msg
