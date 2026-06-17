@@ -410,3 +410,81 @@ Pre-flight:
    (`_assert_temis_data_present` in `variable_registry.py`) mentioning
    `temis` and the UV-variable subdir names. Restore the directories.
    No partial run, no orphan cache files for either failure.
+
+## Sprint 11 — FARA Food Access (Tract boundary, recode flags)
+
+Pre-flight:
+
+- spacescans-pipeline editable install reflects Sprint 11 Phase A
+  (`output_grouping` / `resolve_output_grouping` dispatch in
+  `fara_linkage.py`). Verify with
+  `python -c "from spacescans.linkage import fara_linkage;
+  import inspect; print('output_grouping' in
+  inspect.getsource(fara_linkage))"` — expect True.
+- FARA static panel exists and is readable at
+  `data_full/FARA/C4/fara_nationwide_2010_2019_interpolated.Rda`
+  (~440 MB, R `fara1019` data key).
+- FARA label CSV exists at
+  `data_full/FARA/C4/varnameCountRemoved.csv` (defines the column
+  set the runner discovers dynamically; backend metadata declares
+  only the four headline columns the merge step exposes).
+- Tract C3 shapefile set under `data_full/TRACT/C3/tl_2010_*_tract10/`
+  is present for at least the states that intersect the cohort.
+- `backend/app/data/variable_metadata.json` has **9** entries
+  including `fara_tract` (boundary `Tract`, `coverage_years=[2013,
+  2019]`, 4 value_cols
+  `[LILATracts_1And10, LATracts1, HUNVFlag, LowIncomeTracts]`,
+  unit `binary flags`, `variable_type=categorical`).
+
+1. Variables-step renders 9 cards grouped by boundary in
+   `BOUNDARY_ORDER` (`BG → ZCTA5 → Tract → County`):
+   - "Block Group" section: NDI, EPA Walkability Index, TIGER Road
+     Proximity, NHD Bluespace, BTS Transportation Noise (L50 dBA),
+     VIIRS Night-time Lights (VNL), TEMIS UV Exposure — **7 cards**.
+   - "ZCTA5" section: Community Organization Density (ZBP) — **1 card**.
+   - "Tract" section: FARA Food Access (Tract) — **1 card** (NEW).
+   The FARA card shows label "FARA Food Access (Tract)", year-range
+   "2013–2019", boundary "Tract", unit "binary flags". The Tract
+   header appears between ZCTA5 and County per `BOUNDARY_ORDER`.
+2. Tick the FARA card → coverage panel mounts inline; same shape
+   as prior cards. Confirm a non-trivial intersection for the
+   configured study county.
+3. Tick all 9 variables → Review step → Run. Watch status.json:
+   - `experiments` map shows runners spawning in metadata-file order:
+     bg_ndi_wi → zcta5_cbp → tiger_proximity → nhd_bluespace → noise →
+     vnl → temis → fara_tract. All eight `started_at` timestamps must
+     be monotonic.
+   - logs.jsonl carries entries from all eight runners; specifically
+     `c3_tract_us` and `c4_tract_fara` for the FARA path.
+   - result.csv on completion carries
+     ndi + NatWalkInd + all 10 r_* + 3 TIGER dist_* +
+     5 NHD dist_*_m + 3 noise l50dba_* + 1 VNL value +
+     4 TEMIS uv* + 4 FARA flag columns
+     (`LILATracts_1And10`, `LATracts1`, `HUNVFlag`, `LowIncomeTracts`).
+4. Repeat the same task; second run should hit the `TRACT_FARA` C3
+   cache (status.json shows c3_tract_us progress to 100% in <1s for
+   the cached cohort + buffer; logs.jsonl carries
+   `cache hit: <sha8>__TRACT_FARA__b270m`).
+5. Negative test (unsupported output_grouping): edit
+   `configs/c4/tract_fara_demo.yaml` to change the shipped
+   `output_grouping: patient` to an unknown value (e.g.
+   `output_grouping: foo`); render a task via the runner (web renders
+   C4 with `output_grouping=episode`, so to trip the pipeline error
+   you must point at the YAML directly via `python -m spacescans.cli
+   run configs/c4/tract_fara_demo.yaml`). Expect a clear ValueError
+   from `fara_linkage.py`:
+   `unsupported output_grouping: 'foo' (expected 'patient' or 'episode')`.
+   Restore the YAML. Same caveat as Sprint 5/7/9/10 applies: do NOT
+   test by *removing* the key — `TimeConfig.output_grouping` defaults
+   to `patient` and would silently fall through.
+6. Negative test (missing FARA data): rename
+   `data_full/FARA/C4/fara_nationwide_2010_2019_interpolated.Rda`
+   aside and restart the server. Expect `MetadataSchemaError` during
+   server-boot pre-flight (`_assert_fara_data_present` in
+   `variable_registry.py`) with the .Rda path in the message.
+   Restore the file.
+7. Negative test (missing label CSV): rename
+   `data_full/FARA/C4/varnameCountRemoved.csv` aside and restart the
+   server. Expect `MetadataSchemaError` mentioning `fara_tract` and
+   `varnameCountRemoved.csv`. Restore the file. No partial run, no
+   orphan cache files for either failure.
