@@ -133,6 +133,34 @@ def download_results(
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(result_path, filename=result_path.name)
 
+@router.get("/{task_id}/results/preview")
+def preview_results(
+    task_id: str,
+    limit: int = Query(20, ge=1, le=200),
+    user: dict = Depends(get_current_user),
+):
+    """Return the first N rows of result.csv as JSON for in-browser preview.
+
+    Response: {columns: [...], rows: [[...], ...], total_rows: int, has_more: bool}
+    NaN values are serialized as null. Used by the results page table widget.
+    """
+    _verify_ownership(task_id, user)
+    result_path = task_manager.get_result_path(task_id)
+    if result_path is None or not result_path.exists():
+        raise HTTPException(status_code=404, detail="Results not ready")
+    import pandas as pd  # local import — pandas is heavy; defer until needed
+    total_rows = sum(1 for _ in open(result_path)) - 1  # excl header
+    df = pd.read_csv(result_path, nrows=limit)
+    # Cast to object dtype before substituting None, otherwise float columns
+    # silently convert None back to NaN (which is not JSON-compliant).
+    rows = df.astype(object).where(df.notna(), None).values.tolist()
+    return {
+        "columns": list(df.columns),
+        "rows": rows,
+        "total_rows": max(total_rows, 0),
+        "has_more": total_rows > len(rows),
+    }
+
 @router.get("/{task_id}/coverage")
 def get_coverage(
     task_id: str,

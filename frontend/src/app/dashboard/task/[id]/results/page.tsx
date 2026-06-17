@@ -3,15 +3,24 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, type Task, type TaskStatus } from "@/lib/api";
+import { api, type Task, type TaskStatus, type ResultsPreview } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   ArrowLeft,
   Download,
   Calendar,
   FileText,
   CheckCircle2,
+  Table as TableIcon,
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -60,6 +69,8 @@ export default function TaskResultsPage() {
 
   const [task, setTask] = useState<Task | null>(null);
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null);
+  const [preview, setPreview] = useState<ResultsPreview | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,6 +87,19 @@ export default function TaskResultsPage() {
         } catch {
           // status.json may be unavailable for legacy tasks — fine.
         }
+        // Load preview only if task is finished (result.csv exists)
+        if (t.status === "finished") {
+          try {
+            const p = await api.getResultsPreview(id, 20);
+            if (!cancelled) setPreview(p);
+          } catch (err) {
+            if (!cancelled) {
+              setPreviewError(
+                err instanceof Error ? err.message : "Preview unavailable"
+              );
+            }
+          }
+        }
         setLoading(false);
       } catch (err) {
         if (!cancelled) {
@@ -89,6 +113,16 @@ export default function TaskResultsPage() {
       cancelled = true;
     };
   }, [id]);
+
+  function formatCell(value: string | number | null): string {
+    if (value === null || value === undefined) return "—";
+    if (typeof value === "number") {
+      if (Number.isInteger(value)) return String(value);
+      return value.toFixed(4);
+    }
+    const s = String(value);
+    return s.length > 30 ? s.slice(0, 27) + "…" : s;
+  }
 
   function handleDownload() {
     window.open(api.downloadResults(id), "_blank");
@@ -179,6 +213,61 @@ export default function TaskResultsPage() {
           </div>
         </div>
       </div>
+
+      {/* Preview section */}
+      {preview && (
+        <div className="rounded-lg border bg-card p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <TableIcon className="size-4" />
+            Result Preview
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Showing first {preview.rows.length} of{" "}
+            <span className="font-medium">{preview.total_rows.toLocaleString()}</span>{" "}
+            rows · {preview.columns.length} columns
+            {preview.has_more && (
+              <span className="text-muted-foreground">
+                {" "}
+                · download full CSV below for the rest
+              </span>
+            )}
+          </p>
+          <div className="mt-3 overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  {preview.columns.map((col) => (
+                    <TableHead key={col} className="whitespace-nowrap text-xs font-medium">
+                      {col}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {preview.rows.map((row, i) => (
+                  <TableRow key={i}>
+                    {row.map((cell, j) => (
+                      <TableCell
+                        key={j}
+                        className="whitespace-nowrap font-mono text-xs"
+                        title={cell === null ? "null" : String(cell)}
+                      >
+                        {formatCell(cell)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+      {previewError && !preview && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm text-amber-700 dark:text-amber-400">
+          Preview unavailable: {previewError}. The full CSV is still
+          downloadable below.
+        </div>
+      )}
 
       {/* Download section */}
       <div className="rounded-lg border bg-card p-6 shadow-sm">

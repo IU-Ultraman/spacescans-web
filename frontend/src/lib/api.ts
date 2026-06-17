@@ -121,6 +121,13 @@ export interface VariableCatalog {
   variables: Record<string, VariableMetadata>;
 }
 
+export interface ResultsPreview {
+  columns: string[];
+  rows: (string | number | null)[][];
+  total_rows: number;
+  has_more: boolean;
+}
+
 export interface CoverageResponse {
   row_count: number;
   variables: Record<string, VarCoverage>;
@@ -160,6 +167,9 @@ export const api = {
     request<{ status: string }>(`/api/tasks/${id}`, {
       method: "DELETE",
     }),
+
+  getResultsPreview: (id: string, limit = 20) =>
+    request<ResultsPreview>(`/api/tasks/${id}/results/preview?limit=${limit}`),
 
   uploadFile: async (id: string, file: File) => {
     const token = localStorage.getItem("token");

@@ -242,3 +242,70 @@ def test_get_results_with_file_query(monkeypatch, tmp_path):
     # Reject traversal
     resp = client.get(f"/api/tasks/{task_id}/results?file=../../../etc/passwd", headers=auth)
     assert resp.status_code == 400
+
+
+def test_results_preview(monkeypatch, tmp_path):
+    """GET /results/preview returns columns + first N rows + total_rows."""
+    import importlib, app.config, app.task_manager
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("TASKS_DIR", str(tmp_path / "tasks"))
+    importlib.reload(app.config)
+    importlib.reload(app.task_manager)
+    import app.main
+    importlib.reload(app.main)
+
+    from app.main import create_app
+    from app.database import init_db
+    from fastapi.testclient import TestClient
+
+    init_db()
+    client = TestClient(create_app())
+
+    resp = client.post("/api/auth/signup", json={
+        "email": "pv@p.com", "password": "pw123", "first_name": "P", "last_name": "V"
+    })
+    token = resp.json()["access_token"]
+    auth = {"Authorization": f"Bearer {token}"}
+
+    resp = client.post("/api/tasks", json={"task_name": "preview"}, headers=auth)
+    task_id = resp.json()["id"]
+    task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
+    (task_dir / "output").mkdir(parents=True, exist_ok=True)
+
+    # No result.csv yet → 404
+    resp = client.get(f"/api/tasks/{task_id}/results/preview", headers=auth)
+    assert resp.status_code == 404
+
+    # Write a 25-row result.csv with mixed types + a NaN
+    csv = "pid,episode_id,ndi,note\n"
+    csv += "\n".join(
+        [f"PID{i:04d},{i},{0.1 * i:.4f},sample" for i in range(25)]
+    )
+    csv += "\nPID9999,99,,missing"
+    (task_dir / "output" / "result.csv").write_text(csv)
+
+    # Default limit 20
+    resp = client.get(f"/api/tasks/{task_id}/results/preview", headers=auth)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["columns"] == ["pid", "episode_id", "ndi", "note"]
+    assert len(body["rows"]) == 20
+    assert body["total_rows"] == 26
+    assert body["has_more"] is True
+    assert body["rows"][0][0] == "PID0000"
+
+    # limit=50 → all 26 rows
+    resp = client.get(f"/api/tasks/{task_id}/results/preview?limit=50", headers=auth)
+    body = resp.json()
+    assert len(body["rows"]) == 26
+    assert body["has_more"] is False
+    nan_row = body["rows"][-1]
+    assert nan_row[0] == "PID9999"
+    assert nan_row[2] is None
+
+    # Out-of-range limits rejected
+    resp = client.get(f"/api/tasks/{task_id}/results/preview?limit=0", headers=auth)
+    assert resp.status_code == 422
+    resp = client.get(f"/api/tasks/{task_id}/results/preview?limit=500", headers=auth)
+    assert resp.status_code == 422
