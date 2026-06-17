@@ -219,15 +219,15 @@ def test_variables_by_experiment_preserves_file_order(tmp_path, monkeypatch):
 
 
 def test_list_experiments_dedupes_in_file_order():
-    """Post-B2 invariant: with the tiger_proximity + nhd_bluespace runner
-    modules now present in app.experiments, list_experiments() returns the
-    file-order de-duped list of experiments referenced by
-    variable_metadata.json. Sprint 7 appends nhd_bluespace as the fourth slot.
+    """Post-B2 invariant: with the tiger_proximity + nhd_bluespace + noise
+    runner modules now present in app.experiments, list_experiments() returns
+    the file-order de-duped list of experiments referenced by
+    variable_metadata.json. Sprint 9 appends noise as the fifth slot.
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
     assert exps == [
-        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace", "noise",
     ], exps
 
 
@@ -531,13 +531,90 @@ def test_real_metadata_file_contains_nhd_bluespace_with_runner_module():
 
 
 def test_list_experiments_after_nhd_bluespace_added():
-    """Post-B2: list_experiments returns the 4-experiment metadata-file order.
+    """Post-B2: list_experiments returns the 5-experiment metadata-file order.
 
     Sprint 5 baseline was [bg_ndi_wi, zcta5_cbp, tiger_proximity]; Sprint 7
-    appends nhd_bluespace as the fourth slot.
+    appended nhd_bluespace as the fourth slot; Sprint 9 appends noise as
+    the fifth.
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
     assert exps == [
-        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
+        "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace", "noise",
     ], exps
+
+
+# ---------------------------------------------------------------------------
+# Sprint 9 T1: noise metadata entry + registry-level guards
+# ---------------------------------------------------------------------------
+
+
+def test_registry_accepts_noise_entry(tmp_path, monkeypatch):
+    """Sprint 9 T1: noise entry passes schema (3 value_cols, BG boundary,
+    [2020, 2020] static-product coverage) once a noise experiment module
+    exists.
+
+    Mirrors test_registry_accepts_nhd_bluespace_entry (Sprint 7 B1 pattern):
+    stubs _discover_experiments so it does NOT depend on T2's runner module
+    landing — locks in the canonical entry shape.
+    """
+    from app import variable_registry as vr
+
+    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
+    payload_path = tmp_path / "variable_metadata.json"
+    payload_path.write_text(json.dumps({
+        "schema_version": 1,
+        "variables": {
+            "noise": {
+                "label": "BTS Transportation Noise (L50 dBA)",
+                "description": (
+                    "Per-block-group static daytime road+aviation noise "
+                    "exposure in L50 dBA (existing/imp/nat scenarios) from "
+                    "the US DOT BTS Transportation Noise CONUS raster "
+                    "(270 m grid, static product). l50dba_exi is the "
+                    "existing-conditions surface; l50dba_imp and l50dba_nat "
+                    "are alternative-scenario surfaces."
+                ),
+                "boundary": "BG",
+                "coverage_years": [2020, 2020],
+                "coverage_region": "CONUS",
+                "experiment": "noise",
+                "variable_type": "continuous",
+                "display_unit": "dBA",
+                "value_cols": ["l50dba_exi", "l50dba_imp", "l50dba_nat"],
+            }
+        },
+    }))
+
+    monkeypatch.setattr(vr, "_METADATA_PATH", payload_path)
+    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
+    monkeypatch.setattr(
+        vr, "_discover_experiments",
+        lambda: {"bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace", "noise"},
+    )
+
+    payload = vr.load_variables(force=True)
+    entry = payload["variables"]["noise"]
+    assert entry["boundary"] == "BG"
+    assert entry["experiment"] == "noise"
+    assert entry["coverage_years"] == [2020, 2020]
+    assert entry["display_unit"] == "dBA"
+    assert entry["value_cols"] == ["l50dba_exi", "l50dba_imp", "l50dba_nat"]
+    assert "BTS Transportation Noise" in entry["description"]
+
+
+def test_real_metadata_file_contains_noise_with_runner_module():
+    """Post-T2: the real, on-disk variable_metadata.json loads cleanly and
+    exposes the noise entry now that backend/app/experiments/noise.py exists.
+
+    Before T2 this test fails with MetadataSchemaError ("unknown experiment
+    'noise'") — the spec's half-landed gate — and flips GREEN the moment T2
+    lands the runner module.
+    """
+    from app import variable_registry as vr
+    payload = vr.load_variables(force=True)
+    assert "noise" in payload["variables"], sorted(payload["variables"].keys())
+    entry = payload["variables"]["noise"]
+    assert entry["experiment"] == "noise"
+    assert entry["boundary"] == "BG"
+    assert entry["coverage_years"] == [2020, 2020]
