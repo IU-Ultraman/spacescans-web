@@ -24,7 +24,11 @@ export function VariableCard({
         <div className="text-sm text-muted-foreground">{meta.description}</div>
         <div className="flex gap-1 mt-1">
           <Chip>{meta.display_unit}</Chip>
-          <Chip>{meta.coverage_years[0]}–{meta.coverage_years[1]}</Chip>
+          {meta.temporal === "static" ? (
+            <Chip>Static</Chip>
+          ) : (
+            <Chip>{meta.coverage_years[0]}–{meta.coverage_years[1]}</Chip>
+          )}
           <Chip variant="outline">{meta.boundary}</Chip>
         </div>
         {checked && (

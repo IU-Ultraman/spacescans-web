@@ -35,6 +35,18 @@ _REGISTRY_FIXTURE = {
                 "r_golf", "r_sports",
             ],
         },
+        "noise": {
+            "label": "BTS Transportation Noise (L50 dBA)",
+            "description": "Static noise layer.",
+            "boundary": "BG",
+            "coverage_years": [2020, 2020],
+            "coverage_region": "CONUS",
+            "experiment": "noise",
+            "temporal": "static",
+            "variable_type": "continuous",
+            "display_unit": "dBA",
+            "value_cols": ["l50dba_exi"],
+        },
     },
 }
 
@@ -57,7 +69,7 @@ def _seed(monkeypatch, tmp_path, csv_body: str) -> str:
     monkeypatch.setattr(vr, "_SCHEMA_PATH", reg_path)
     monkeypatch.setattr("jsonschema.validate", lambda payload, schema: None)
     monkeypatch.setattr(vr, "_discover_experiments",
-                        lambda: {"bg_ndi_wi", "zcta5_cbp"})
+                        lambda: {"bg_ndi_wi", "zcta5_cbp", "noise"})
 
     import app.task_manager
     importlib.reload(app.task_manager)
@@ -81,6 +93,43 @@ def test_compute_coverage_response_includes_boundary_and_display_unit(monkeypatc
     assert v["display_unit"] == "z-score"
     assert v["coverage_years"] == [2012, 2022]
     assert v["coverage_pct"] == 100.0
+
+
+def test_compute_coverage_static_skips_time_window(monkeypatch, tmp_path):
+    """A static product (noise, vintage 2020) must NOT report 0% for a cohort
+    living entirely outside that year — the time-window gate is skipped, so
+    coverage reflects spatial (CONUS) overlap only, and the response carries
+    temporal='static'."""
+    csv = (
+        "pid,startDate,endDate,longitude,latitude\n"
+        "P1,2017-01-01,2017-12-31,-93.0,45.0\n"   # in CONUS, far from 2020
+    )
+    task_id = _seed(monkeypatch, tmp_path, csv)
+    from app.task_manager import compute_coverage
+    out = compute_coverage(task_id, ["noise"])
+    v = out["variables"]["noise"]
+    assert v["temporal"] == "static"
+    # Time gate skipped → all patients "in time", so a CONUS patient is 100%.
+    assert v["patients_in_time_window"] == 1
+    assert v["coverage_pct"] == 100.0
+    # No time-window warning for a static product.
+    assert not any("outside" in w and "2020" in w for w in v["warnings"])
+
+
+def test_compute_coverage_static_still_flags_non_conus(monkeypatch, tmp_path):
+    """Static products keep the spatial check: an Alaska patient is out of the
+    CONUS coverage area regardless of the (skipped) time window."""
+    csv = (
+        "pid,startDate,endDate,longitude,latitude\n"
+        "P_AK,2017-01-01,2017-12-31,-149.9,61.2\n"  # Anchorage — outside CONUS
+    )
+    task_id = _seed(monkeypatch, tmp_path, csv)
+    from app.task_manager import compute_coverage
+    out = compute_coverage(task_id, ["noise"])
+    v = out["variables"]["noise"]
+    assert v["temporal"] == "static"
+    assert v["patients_in_region"] == 0
+    assert v["coverage_pct"] == 0.0  # spatial miss still drives 0
 
 
 def test_compute_coverage_cbp_zcta5_returns_boundary_zcta5(monkeypatch, tmp_path):

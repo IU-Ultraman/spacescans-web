@@ -67,12 +67,24 @@ export function VariableCoveragePanel({
     >
       <div className="flex items-center gap-1.5 font-medium">
         <Icon className="size-3.5" />
-        {data.coverage_pct}% of your cohort covered
+        {data.temporal === "static"
+          ? `${data.coverage_pct}% in CONUS coverage area`
+          : `${data.coverage_pct}% of your cohort covered`}
       </div>
       <div className="mt-0.5 text-muted-foreground">
-        {data.patients_covered.toLocaleString()} /{" "}
-        {rowCount.toLocaleString()} within {data.coverage_years[0]}-
-        {data.coverage_years[1]} + {data.boundary} on CONUS
+        {data.temporal === "static" ? (
+          <>
+            {data.patients_covered.toLocaleString()} /{" "}
+            {rowCount.toLocaleString()} in CONUS ({data.boundary}) — static
+            layer, applies to any study period
+          </>
+        ) : (
+          <>
+            {data.patients_covered.toLocaleString()} /{" "}
+            {rowCount.toLocaleString()} within {data.coverage_years[0]}-
+            {data.coverage_years[1]} + {data.boundary} on CONUS
+          </>
+        )}
       </div>
       {data.warnings.map((w, i) => (
         <div key={i} className="mt-1">

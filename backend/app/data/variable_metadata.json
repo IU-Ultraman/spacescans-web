@@ -56,6 +56,7 @@
       "coverage_years": [2024, 2024],
       "coverage_region": "CONUS",
       "experiment": "nhd_bluespace",
+      "temporal": "static",
       "variable_type": "continuous",
       "display_unit": "meters",
       "value_cols": ["dist_flow_m", "dist_water_m", "dist_area_m", "dist_coast_m", "dist_blue_m"]
@@ -67,6 +68,7 @@
       "coverage_years": [2020, 2020],
       "coverage_region": "CONUS",
       "experiment": "noise",
+      "temporal": "static",
       "variable_type": "continuous",
       "display_unit": "dBA",
       "value_cols": ["l50dba_exi", "l50dba_imp", "l50dba_nat"]

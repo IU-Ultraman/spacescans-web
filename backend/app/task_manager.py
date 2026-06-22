@@ -122,6 +122,7 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
                     "warnings": ["Cohort is empty — no patients to evaluate"],
                     "boundary": resolved[var]["boundary"],
                     "display_unit": resolved[var]["display_unit"],
+                    "temporal": resolved[var].get("temporal", "yearly"),
                 }
                 for var in variable_keys
             },
@@ -131,9 +132,17 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
     for var in variable_keys:
         m = resolved[var]
         y0, y1 = m["coverage_years"]
-        cov_start = pd.Timestamp(f"{y0}-01-01")
-        cov_end = pd.Timestamp(f"{y1}-12-31")
-        in_time = (df["startDate"] <= cov_end) & (df["endDate"] >= cov_start)
+        # Static products (e.g. NHD bluespace, BTS noise) have no temporal
+        # dimension — their exposure value applies to any study year. Skip the
+        # time-window gate so the coverage panel reflects spatial coverage only.
+        temporal = m.get("temporal", "yearly")
+        is_static = temporal == "static"
+        if is_static:
+            in_time = pd.Series(True, index=df.index)
+        else:
+            cov_start = pd.Timestamp(f"{y0}-01-01")
+            cov_end = pd.Timestamp(f"{y1}-12-31")
+            in_time = (df["startDate"] <= cov_end) & (df["endDate"] >= cov_start)
         if m.get("coverage_region") == "CONUS":
             in_region = (
                 df["longitude"].between(-125, -66)
@@ -144,12 +153,15 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
         covered = in_time & in_region
 
         warnings: list[str] = []
-        time_out_pct = (~in_time).sum() / n_total * 100
-        if time_out_pct > 5:
-            warnings.append(
-                f"{time_out_pct:.0f}% of patients have episodes entirely outside "
-                f"{y0}-{y1}"
-            )
+        # No time-window warning for static products — only yearly ones can
+        # fall "outside" their coverage years.
+        if not is_static:
+            time_out_pct = (~in_time).sum() / n_total * 100
+            if time_out_pct > 5:
+                warnings.append(
+                    f"{time_out_pct:.0f}% of patients have episodes entirely outside "
+                    f"{y0}-{y1}"
+                )
         region_out_pct = (~in_region).sum() / n_total * 100
         if region_out_pct > 5:
             warnings.append(
@@ -166,6 +178,7 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
             "warnings": warnings,
             "boundary": m["boundary"],
             "display_unit": m["display_unit"],
+            "temporal": temporal,
         }
 
     return {"row_count": n_total, "variables": out_vars}

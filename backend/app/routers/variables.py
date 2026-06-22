@@ -17,6 +17,7 @@ class VariableMetadataModel(BaseModel):
     coverage_years: tuple[int, int]
     coverage_region: Literal["CONUS", "US", "AK_HI"]
     experiment: str
+    temporal: Literal["static", "yearly"] = "yearly"
     variable_type: Literal["categorical", "continuous"]
     display_unit: str
     value_cols: list[str]

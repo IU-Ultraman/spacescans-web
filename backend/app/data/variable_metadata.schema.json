@@ -40,6 +40,10 @@
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
             },
+            "temporal": {
+              "type": "string",
+              "enum": ["static", "yearly"]
+            },
             "variable_type": {
               "type": "string",
               "enum": ["categorical", "continuous"]

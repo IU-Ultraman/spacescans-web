@@ -103,6 +103,8 @@ export interface VarCoverage {
   warnings: string[];
   boundary: 'BG' | 'ZCTA5' | 'Tract' | 'County';
   display_unit: string;
+  /** "static" products carry one vintage and skip the time-window check. */
+  temporal?: 'static' | 'yearly';
 }
 
 export interface VariableMetadata {
@@ -112,6 +114,8 @@ export interface VariableMetadata {
   coverage_years: [number, number];
   coverage_region: 'CONUS' | 'US' | 'AK_HI';
   experiment: string;
+  /** "static" products apply to any study period (no year restriction). */
+  temporal?: 'static' | 'yearly';
   variable_type: 'categorical' | 'continuous';
   display_unit: string;
   value_cols: string[];
