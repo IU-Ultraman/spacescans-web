@@ -138,6 +138,12 @@ def test_start_task_popens_dispatcher_and_returns_pid(task_dir_with_config, monk
         captured["kwargs"] = kw
         return _FakePopen(cmd, returncode=0, **kw)
 
+    # Isolate the run-lock + cwd to tmp so the probe never collides with a
+    # real DATA_DIR/.run_lock held by another process on the dev machine.
+    monkeypatch.setattr(task_manager.app.config.settings, "DATA_DIR",
+                        task_dir_with_config.parent)
+    monkeypatch.setattr(task_manager.app.config.settings, "BASE_DIR",
+                        task_dir_with_config.parent)
     monkeypatch.setattr(task_manager.subprocess, "Popen", fake_popen)
     monkeypatch.setattr(task_manager, "_task_dir",
                         lambda task_id: task_dir_with_config)
@@ -148,6 +154,38 @@ def test_start_task_popens_dispatcher_and_returns_pid(task_dir_with_config, monk
     assert "run" in captured["cmd"]
     assert captured["kwargs"].get("start_new_session") is True
     assert isinstance(out["pid"], int)
+
+
+def test_start_task_stamps_running_status_synchronously(
+    task_dir_with_config, monkeypatch
+):
+    """Regression: the task detail page only begins polling once status is
+    'running'. start_task must therefore flip status.json to 'running' the
+    instant it Popens the dispatcher — the dispatcher subprocess takes seconds
+    to boot (heavy imports) before it stamps 'running' itself, and in that gap
+    a freshly-started task was observable as 'not_started', which the UI renders
+    as "Not Configured Yet" and never re-polls out of.
+    """
+    from app import task_manager
+
+    # Isolate the run-lock + cwd to tmp so the probe never collides with a
+    # real DATA_DIR/.run_lock held by another process on the dev machine.
+    monkeypatch.setattr(task_manager.app.config.settings, "DATA_DIR",
+                        task_dir_with_config.parent)
+    monkeypatch.setattr(task_manager.app.config.settings, "BASE_DIR",
+                        task_dir_with_config.parent)
+    monkeypatch.setattr(task_manager.subprocess, "Popen",
+                        lambda cmd, **kw: _FakePopen(cmd, returncode=0, **kw))
+    monkeypatch.setattr(task_manager, "_task_dir",
+                        lambda task_id: task_dir_with_config)
+
+    task_manager.start_task(task_dir_with_config.name)
+
+    status = json.loads((task_dir_with_config / "status.json").read_text())
+    assert status["status"] == "running", (
+        f"start_task must stamp status='running' synchronously; got {status.get('status')!r}"
+    )
+    assert isinstance(status["pid"], int)
 
 
 def test_dispatch_derives_top_level_progress_and_steps_from_slots(

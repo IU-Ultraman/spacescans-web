@@ -351,7 +351,14 @@ def start_task(task_id: str) -> dict:
         stderr=subprocess.DEVNULL,
         start_new_session=True,
     )
-    _write_status(task_dir, pid=proc.pid)
+    # Stamp status='running' synchronously, in the same write that records the
+    # supervisor pid. The dispatcher subprocess re-affirms 'running' once it has
+    # booted (heavy imports take seconds), but the client navigates to the task
+    # detail page the instant this call returns — and that page only begins
+    # polling when status is already 'running'. Without this, the freshly
+    # started task is observable as 'not_started' (rendered "Not Configured
+    # Yet") for the whole boot window, and the page never re-polls out of it.
+    _write_status(task_dir, status="running", pid=proc.pid)
     return {"pid": proc.pid, "task_id": task_id}
 
 def stop_task(task_id: str) -> dict:
