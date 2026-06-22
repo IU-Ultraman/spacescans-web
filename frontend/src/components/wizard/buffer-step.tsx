@@ -44,9 +44,6 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
     }
   };
 
-  // Calculate preview dimensions — max 120px side
-  const previewSize = Math.min(120, Math.max(40, (sizeNum / 5000) * 120));
-
   return (
     <Card>
       <CardHeader>
@@ -104,29 +101,6 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
           <p className="text-xs text-muted-foreground">
             Resolution for boundary overlap rasterization. Lower = more accurate, slower. 25 m is the standard.
           </p>
-        </div>
-
-        {/* Visual preview */}
-        <div className="space-y-2">
-          <Label>Preview</Label>
-          <div className="flex flex-col items-center justify-center rounded-xl border border-muted-foreground/15 bg-muted/20 p-8">
-            <div className="relative flex items-center justify-center">
-              {/* Circular buffer */}
-              <div
-                className="flex items-center justify-center rounded-full border-2 border-primary/60 bg-primary/10 transition-all duration-300"
-                style={{
-                  width: `${previewSize}px`,
-                  height: `${previewSize}px`,
-                }}
-              >
-                {/* Center point */}
-                <div className="size-2.5 rounded-full bg-primary" />
-              </div>
-            </div>
-            <p className="mt-4 text-sm text-muted-foreground">
-              {isValid ? `${sizeNum.toLocaleString()} m` : "---"} radius
-            </p>
-          </div>
         </div>
 
         {/* Navigation */}
