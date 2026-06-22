@@ -1,6 +1,9 @@
 import type { VariableCatalog, VariableMetadata } from './api';
 
-export const BOUNDARY_ORDER = ['BG', 'ZCTA5', 'Tract', 'County'] as const;
+// Ordered smallest → largest geography: Block Group ⊂ Census Tract ⊂
+// County, with ZCTA5 (ZIP-code area, ~tract-to-county scale) placed after
+// Tract. Drives the Select Variables section order.
+export const BOUNDARY_ORDER = ['BG', 'Tract', 'ZCTA5', 'County'] as const;
 export type BoundaryKey = typeof BOUNDARY_ORDER[number];
 
 export const BOUNDARY_LABEL: Record<BoundaryKey, string> = {
