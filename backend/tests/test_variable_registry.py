@@ -1000,3 +1000,33 @@ def test_variable_metadata_model_accepts_optional_ontology_id():
     )
     assert VariableMetadataModel(**common, ontology_id="000289").ontology_id == "000289"
     assert VariableMetadataModel(**common).ontology_id is None
+
+
+def test_every_variable_links_to_an_existing_ontology_node():
+    """All 9 variables must carry an ontology_id, and every id must resolve to
+    a node in the generated ontology metadata (link integrity)."""
+    import json
+    import pathlib
+
+    meta = json.loads(
+        pathlib.Path("app/data/variable_metadata.json").read_text()
+    )["variables"]
+    onto = json.loads(
+        pathlib.Path("../frontend/public/ontology/metadata.json").read_text()
+    )
+
+    expected = {
+        "noise": "000289",
+        "vnl": "000290",
+        "temis": "000288",
+        "fara_tract": "000294",
+        "walkability": "SPACESCANS_Walkability",
+        "ndi": "SPACESCANS_Neighborhood_Deprivation_Index",
+        "cbp_zcta5": "SPACESCANS_Community_Organization_Density",
+        "tiger_proximity": "SPACESCANS_Road_Proximity",
+        "nhd_bluespace": "SPACESCANS_Bluespace",
+    }
+    for var, want_id in expected.items():
+        assert var in meta, f"missing variable {var}"
+        assert meta[var].get("ontology_id") == want_id, var
+        assert want_id in onto, f"{var} -> {want_id} not in ontology metadata"

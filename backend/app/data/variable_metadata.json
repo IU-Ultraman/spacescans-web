@@ -8,6 +8,7 @@
       "coverage_years": [2012, 2022],
       "coverage_region": "CONUS",
       "experiment": "bg_ndi_wi",
+      "ontology_id": "SPACESCANS_Neighborhood_Deprivation_Index",
       "variable_type": "continuous",
       "display_unit": "z-score",
       "value_cols": ["ndi"]
@@ -19,6 +20,7 @@
       "coverage_years": [2016, 2021],
       "coverage_region": "CONUS",
       "experiment": "bg_ndi_wi",
+      "ontology_id": "SPACESCANS_Walkability",
       "variable_type": "continuous",
       "display_unit": "1-20 index",
       "value_cols": ["NatWalkInd"]
@@ -30,6 +32,7 @@
       "coverage_years": [2013, 2019],
       "coverage_region": "CONUS",
       "experiment": "zcta5_cbp",
+      "ontology_id": "SPACESCANS_Community_Organization_Density",
       "variable_type": "continuous",
       "display_unit": "establishments / 1k residents",
       "value_cols": [
@@ -45,6 +48,7 @@
       "coverage_years": [2013, 2019],
       "coverage_region": "CONUS",
       "experiment": "tiger_proximity",
+      "ontology_id": "SPACESCANS_Road_Proximity",
       "variable_type": "continuous",
       "display_unit": "meters",
       "value_cols": ["dist_pri", "dist_sec", "dist_prisec"]
@@ -56,6 +60,7 @@
       "coverage_years": [2024, 2024],
       "coverage_region": "CONUS",
       "experiment": "nhd_bluespace",
+      "ontology_id": "SPACESCANS_Bluespace",
       "temporal": "static",
       "variable_type": "continuous",
       "display_unit": "meters",
@@ -68,6 +73,7 @@
       "coverage_years": [2020, 2020],
       "coverage_region": "CONUS",
       "experiment": "noise",
+      "ontology_id": "000289",
       "temporal": "static",
       "variable_type": "continuous",
       "display_unit": "dBA",
@@ -80,6 +86,7 @@
       "coverage_years": [2013, 2019],
       "coverage_region": "CONUS",
       "experiment": "vnl",
+      "ontology_id": "000290",
       "variable_type": "continuous",
       "display_unit": "radiance",
       "value_cols": ["value"]
@@ -91,6 +98,7 @@
       "coverage_years": [2013, 2019],
       "coverage_region": "CONUS",
       "experiment": "temis",
+      "ontology_id": "000288",
       "variable_type": "continuous",
       "display_unit": "UV index",
       "value_cols": ["uvddc", "uvdec", "uvdvc", "uvief"]
@@ -102,6 +110,7 @@
       "coverage_years": [2013, 2019],
       "coverage_region": "CONUS",
       "experiment": "fara_tract",
+      "ontology_id": "000294",
       "variable_type": "categorical",
       "display_unit": "binary flags",
       "value_cols": ["LILATracts_1And10", "LATracts1", "HUNVFlag", "LowIncomeTracts"]
