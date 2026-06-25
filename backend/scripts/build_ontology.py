@@ -1,4 +1,9 @@
-"""Parse OWL file and output split JSON files for the frontend ontology browser."""
+"""Parse OWL file and output split JSON files for the frontend ontology browser.
+
+NOTE: after regenerating from an OWL source, the SPACESCANS-local extension
+nodes are wiped. Re-run `python scripts/extend_ontology.py` immediately after
+this script to re-inject them (see extend_ontology.py).
+"""
 import json
 import sys
 from pathlib import Path
