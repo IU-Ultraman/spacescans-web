@@ -14,8 +14,9 @@ import argparse
 import json
 from pathlib import Path
 
-EXTENSION_MARKER = " [SPACESCANS-local extension — pending merge into SPACEO]"
-
+# These are SPACESCANS-local extension nodes (absent from the source SPACEO
+# OWL); their `SPACESCANS_` id prefix is the provenance marker. No user-facing
+# marker is added to the definition text (it shows in the catalog/wizard UI).
 # parent ids: 000292 Built_Environment_Exposome, 000094_2 Natural_Environment_
 # Exposome, 000295 Social_Environment_Exposome (currently a leaf).
 NEW_NODES = [
@@ -64,13 +65,18 @@ def extend_ontology(ontology_dir) -> dict:
     added = 0
     for node in NEW_NODES:
         nid, label, parent = node["id"], node["label"], node["parent"]
-        definition = node["definition"] + EXTENSION_MARKER
+        definition = node["definition"]
 
         metadata[nid] = {"id": nid, "label": label, "definition": definition}
 
-        if nid not in search_ids:
+        # Refresh-or-append in the search index so definition edits propagate on
+        # re-run (append-only would keep a stale prior definition).
+        search_entry = next((it for it in search if it["id"] == nid), None)
+        if search_entry is None:
             search.append({"id": nid, "label": label, "definition": definition})
             search_ids.add(nid)
+        else:
+            search_entry.update({"label": label, "definition": definition})
 
         parent_file = nodes_dir / f"{parent}.json"
         children = _load(parent_file) if parent_file.exists() else []

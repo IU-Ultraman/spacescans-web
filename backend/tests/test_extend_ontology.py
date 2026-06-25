@@ -32,7 +32,7 @@ def _seed(base: Path):
 
 
 def test_extend_adds_five_nodes_and_flips_social(tmp_path):
-    from scripts.extend_ontology import extend_ontology, NEW_NODES, EXTENSION_MARKER
+    from scripts.extend_ontology import extend_ontology, NEW_NODES
 
     _seed(tmp_path)
     extend_ontology(tmp_path)
@@ -41,7 +41,9 @@ def test_extend_adds_five_nodes_and_flips_social(tmp_path):
     search_ids = {it["id"] for it in json.loads((tmp_path / "search-index.json").read_text())}
     for node in NEW_NODES:
         assert node["id"] in meta, node["id"]
-        assert meta[node["id"]]["definition"].endswith(EXTENSION_MARKER)
+        # Definition is the plain text — no user-facing extension marker.
+        assert meta[node["id"]]["definition"] == node["definition"]
+        assert "SPACESCANS-local extension" not in meta[node["id"]]["definition"]
         assert node["id"] in search_ids
 
     # Social leaf became a parent file with its 2 children.

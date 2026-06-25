@@ -2,13 +2,13 @@
   {
     "id": "SPACESCANS_Community_Organization_Density",
     "label": "Community_Organization_Density",
-    "definition": "Per-capita density of community organization categories (religious, civic, business, etc.) from US Census ZIP Business Patterns. [SPACESCANS-local extension \u2014 pending merge into SPACEO]",
+    "definition": "Per-capita density of community organization categories (religious, civic, business, etc.) from US Census ZIP Business Patterns.",
     "has_children": false
   },
   {
     "id": "SPACESCANS_Neighborhood_Deprivation_Index",
     "label": "Neighborhood_Deprivation_Index",
-    "definition": "Composite measure of neighborhood-level socioeconomic deprivation derived from US Census ACS variables. [SPACESCANS-local extension \u2014 pending merge into SPACEO]",
+    "definition": "Composite measure of neighborhood-level socioeconomic deprivation derived from US Census ACS variables.",
     "has_children": false
   }
 ]

@@ -14,13 +14,13 @@
   {
     "id": "SPACESCANS_Road_Proximity",
     "label": "Road_Proximity",
-    "definition": "Distance from a residence to the nearest TIGER/Line primary, secondary, and combined primary+secondary roads. [SPACESCANS-local extension \u2014 pending merge into SPACEO]",
+    "definition": "Distance from a residence to the nearest TIGER/Line primary, secondary, and combined primary+secondary roads.",
     "has_children": false
   },
   {
     "id": "SPACESCANS_Walkability",
     "label": "Walkability",
-    "definition": "EPA National Walkability Index ranking neighborhoods on walkability characteristics such as intersection density, transit proximity, and employment mix. [SPACESCANS-local extension \u2014 pending merge into SPACEO]",
+    "definition": "EPA National Walkability Index ranking neighborhoods on walkability characteristics such as intersection density, transit proximity, and employment mix.",
     "has_children": false
   }
 ]

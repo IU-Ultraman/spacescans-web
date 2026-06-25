@@ -81,7 +81,7 @@ export function VariablesStep({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col gap-5 md:flex-row">
+        <div className="flex flex-col gap-5 md:min-h-[24rem] md:flex-row">
           {/* Left: selectable, domain-grouped exposure list */}
           <div className="space-y-4 md:w-2/5 md:shrink-0">
             {GROUP_ORDER.map((group) => {
@@ -141,7 +141,7 @@ export function VariablesStep({
                 </a>
               </>
             ) : (
-              <div className="flex h-full min-h-[12rem] items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              <div className="flex h-full min-h-[20rem] items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
                 Select an exposure on the left to read its definition.
               </div>
             )}
