@@ -9293,5 +9293,30 @@
     "id": "000864",
     "label": "Robbery_Rate(per_100_Population)",
     "definition": "Data Source: Uniform Crime Reports (https://crime-data-explorer.app.cloud.gov/pages/explorer/crime/crime-trend\nhttps://www.fdle.state.fl.us/FSAC/CJAB-Home/Uniform-Crime-Report/Data-Archives)\n\nSpatial Scale:County\n\nTemporal Scale: 1-year\n\nYears Avaliable:1989-2021"
+  },
+  "SPACESCANS_Walkability": {
+    "id": "SPACESCANS_Walkability",
+    "label": "Walkability",
+    "definition": "EPA National Walkability Index ranking neighborhoods on walkability characteristics such as intersection density, transit proximity, and employment mix. [SPACESCANS-local extension \u2014 pending merge into SPACEO]"
+  },
+  "SPACESCANS_Neighborhood_Deprivation_Index": {
+    "id": "SPACESCANS_Neighborhood_Deprivation_Index",
+    "label": "Neighborhood_Deprivation_Index",
+    "definition": "Composite measure of neighborhood-level socioeconomic deprivation derived from US Census ACS variables. [SPACESCANS-local extension \u2014 pending merge into SPACEO]"
+  },
+  "SPACESCANS_Community_Organization_Density": {
+    "id": "SPACESCANS_Community_Organization_Density",
+    "label": "Community_Organization_Density",
+    "definition": "Per-capita density of community organization categories (religious, civic, business, etc.) from US Census ZIP Business Patterns. [SPACESCANS-local extension \u2014 pending merge into SPACEO]"
+  },
+  "SPACESCANS_Road_Proximity": {
+    "id": "SPACESCANS_Road_Proximity",
+    "label": "Road_Proximity",
+    "definition": "Distance from a residence to the nearest TIGER/Line primary, secondary, and combined primary+secondary roads. [SPACESCANS-local extension \u2014 pending merge into SPACEO]"
+  },
+  "SPACESCANS_Bluespace": {
+    "id": "SPACESCANS_Bluespace",
+    "label": "Bluespace",
+    "definition": "Distance from a residence to the nearest NHD surface-water feature (flowline, waterbody, area feature, coastline, and combined blue feature). [SPACESCANS-local extension \u2014 pending merge into SPACEO]"
   }
 }

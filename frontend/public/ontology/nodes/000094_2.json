@@ -6,6 +6,12 @@
     "has_children": true
   },
   {
+    "id": "SPACESCANS_Bluespace",
+    "label": "Bluespace",
+    "definition": "Distance from a residence to the nearest NHD surface-water feature (flowline, waterbody, area feature, coastline, and combined blue feature). [SPACESCANS-local extension \u2014 pending merge into SPACEO]",
+    "has_children": false
+  },
+  {
     "id": "000290",
     "label": "Light_at_Night",
     "definition": "",
