@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 
 const STEPS = [
+  { label: "Select Exposures", description: "Pick exposures" },
   { label: "Upload Data", description: "CSV file" },
   { label: "Buffer Settings", description: "Shape & size" },
-  { label: "Variables", description: "BG NDI / Walkability" },
   { label: "Review & Run", description: "Confirm & start" },
 ];
 

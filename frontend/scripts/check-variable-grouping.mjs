@@ -3,8 +3,11 @@ import assert from 'node:assert/strict';
 import {
   groupByBoundary,
   groupByExperiment,
+  groupByDomain,
   BOUNDARY_ORDER,
   BOUNDARY_LABEL,
+  DOMAIN_ORDER,
+  VARIABLE_DOMAIN,
 } from '../.next-check/lib/variable-grouping.js';
 
 const catalog = {
@@ -44,5 +47,34 @@ assert.deepEqual(byExp.bg_ndi_wi, ['bg_ndi', 'bg_wi']);
 
 assert.deepEqual([...BOUNDARY_ORDER], ['BG', 'Tract', 'ZCTA5', 'County']);
 assert.equal(BOUNDARY_LABEL.BG, 'Block Group');
+
+// --- domain grouping ---
+// The 9 real variables must each map to the expected environmental domain.
+const EXPECTED_DOMAIN = {
+  walkability: 'built', tiger_proximity: 'built', fara_tract: 'built',
+  noise: 'natural', vnl: 'natural', temis: 'natural', nhd_bluespace: 'natural',
+  ndi: 'social', cbp_zcta5: 'social',
+};
+for (const [k, d] of Object.entries(EXPECTED_DOMAIN)) {
+  assert.equal(VARIABLE_DOMAIN[k], d, `VARIABLE_DOMAIN[${k}] should be ${d}`);
+}
+assert.deepEqual([...DOMAIN_ORDER], ['built', 'natural', 'social']);
+
+// groupByDomain returns groups in DOMAIN_ORDER; an unknown key lands in 'other'.
+const domainCatalog = {
+  schema_version: 1,
+  variables: {
+    noise: { ...catalog.variables.bg_ndi, label: 'Noise' },         // natural
+    ndi: { ...catalog.variables.bg_ndi, label: 'NDI' },             // social
+    walkability: { ...catalog.variables.bg_wi, label: 'Walk' },     // built
+    mystery_var: { ...catalog.variables.bg_wi, label: 'Mystery' },  // unmapped
+  },
+};
+const byDomain = groupByDomain(domainCatalog.variables);
+assert.deepEqual(Object.keys(byDomain), ['built', 'natural', 'social', 'other']);
+assert.equal(byDomain.built[0][0], 'walkability');
+assert.equal(byDomain.natural[0][0], 'noise');
+assert.equal(byDomain.social[0][0], 'ndi');
+assert.equal(byDomain.other[0][0], 'mystery_var');
 
 console.log('variable-grouping smoke OK');

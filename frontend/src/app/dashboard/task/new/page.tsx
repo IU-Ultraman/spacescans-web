@@ -14,40 +14,46 @@ export default function NewTaskPage() {
   const [bufferConfig, setBufferConfig] = useState<BufferConfig | null>(null);
   const [selectedVariables, setSelectedVariables] = useState<string[]>([]);
 
+  // Catalog-first flow: Select Exposures → Upload → Buffer → Review.
+  const handleVariablesComplete = (variables: string[]) => {
+    setSelectedVariables(variables);
+    setStep(1);
+  };
+
   const handleUploadComplete = (id: string, summary: DataSummary) => {
     setTaskId(id);
     setDataSummary(summary);
-    setStep(1);
+    setStep(2);
   };
 
   const handleBufferComplete = (config: BufferConfig) => {
     setBufferConfig(config);
-    setStep(2);
-  };
-
-  const handleVariablesComplete = (variables: string[]) => {
-    setSelectedVariables(variables);
     setStep(3);
   };
 
   return (
     <WizardLayout currentStep={step}>
-      {step === 0 && <UploadStep onComplete={handleUploadComplete} />}
-
-      {step === 1 && (
-        <BufferStep
-          onComplete={handleBufferComplete}
-          onBack={() => setStep(0)}
-          initialConfig={bufferConfig ?? undefined}
+      {step === 0 && (
+        <VariablesStep
+          onComplete={handleVariablesComplete}
+          initialSelection={selectedVariables}
         />
       )}
 
-      {step === 2 && taskId && (
-        <VariablesStep
-          taskId={taskId}
-          onComplete={handleVariablesComplete}
+      {step === 1 && (
+        <UploadStep
+          onComplete={handleUploadComplete}
+          onBack={() => setStep(0)}
+          initialTaskId={taskId}
+          initialSummary={dataSummary}
+        />
+      )}
+
+      {step === 2 && (
+        <BufferStep
+          onComplete={handleBufferComplete}
           onBack={() => setStep(1)}
-          initialSelection={selectedVariables}
+          initialConfig={bufferConfig ?? undefined}
         />
       )}
 

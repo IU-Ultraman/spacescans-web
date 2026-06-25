@@ -11,7 +11,9 @@ interface VariableCardProps {
   meta: VariableMetadata;
   checked: boolean;
   onToggle: () => void;
-  taskId: string;
+  /** When provided, a per-variable coverage panel is shown once checked.
+   *  Omitted in the Select-Exposures step (no task/cohort uploaded yet). */
+  taskId?: string;
 }
 
 export function VariableCard({
@@ -44,7 +46,7 @@ export function VariableCard({
             View in ontology
           </a>
         )}
-        {checked && (
+        {checked && taskId && (
           <VariableCoveragePanel taskId={taskId} variableKey={varKey} />
         )}
       </div>

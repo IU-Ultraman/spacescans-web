@@ -18,6 +18,7 @@ import {
   FileSpreadsheet,
   AlertCircle,
   CheckCircle2,
+  ArrowLeft,
   ArrowRight,
   Loader2,
   Info,
@@ -52,16 +53,24 @@ export interface DataSummary {
 
 interface UploadStepProps {
   onComplete: (taskId: string, dataSummary: DataSummary) => void;
+  /** Optional — present once the wizard has a step before this one. */
+  onBack?: () => void;
+  /** Restore prior upload when revisiting via Back, so we don't create a
+   *  second task. When both are set, the summary view is shown immediately. */
+  initialTaskId?: string | null;
+  initialSummary?: DataSummary | null;
 }
 
-export function UploadStep({ onComplete }: UploadStepProps) {
+export function UploadStep({
+  onComplete, onBack, initialTaskId = null, initialSummary = null,
+}: UploadStepProps) {
   const [taskName, setTaskName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dataSummary, setDataSummary] = useState<DataSummary | null>(null);
-  const [taskId, setTaskId] = useState<string | null>(null);
+  const [dataSummary, setDataSummary] = useState<DataSummary | null>(initialSummary);
+  const [taskId, setTaskId] = useState<string | null>(initialTaskId);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback((f: File) => {
@@ -390,12 +399,30 @@ export function UploadStep({ onComplete }: UploadStepProps) {
           </div>
         )}
 
-        {/* Next button */}
+        {/* Next button (with Back once a previous step exists) */}
         {dataSummary && (
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-between pt-2">
+            {onBack ? (
+              <Button variant="outline" onClick={onBack} size="lg">
+                <ArrowLeft className="size-4" />
+                Back
+              </Button>
+            ) : (
+              <span />
+            )}
             <Button onClick={handleNext} size="lg">
               Next
               <ArrowRight className="size-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Back button before an upload exists (so exposures can be revised) */}
+        {onBack && !dataSummary && !uploading && (
+          <div className="flex pt-2">
+            <Button variant="outline" onClick={onBack} size="lg">
+              <ArrowLeft className="size-4" />
+              Back
             </Button>
           </div>
         )}

@@ -8,7 +8,8 @@ import {
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import {
-  BOUNDARY_ORDER, BOUNDARY_LABEL, groupByBoundary,
+  DOMAIN_ORDER, DOMAIN_GROUP_LABEL, groupByDomain,
+  type DomainGroupKey,
 } from "@/lib/variable-grouping";
 import { ErrorCard } from "./error-card";
 import { LoadingCard } from "./loading-card";
@@ -17,15 +18,18 @@ import { VariableCard } from "./variable-card";
 
 const EXPECTED_VARIABLE_SCHEMA_VERSION = 1;
 
+// Domain groups rendered in order, with any unmapped variables last.
+const GROUP_ORDER: DomainGroupKey[] = [...DOMAIN_ORDER, "other"];
+
 interface VariablesStepProps {
-  taskId: string;
   onComplete: (selectedVariables: string[]) => void;
-  onBack: () => void;
+  /** Optional — the first wizard step has no "Back" target. */
+  onBack?: () => void;
   initialSelection?: string[];
 }
 
 export function VariablesStep({
-  taskId, onComplete, onBack, initialSelection = [],
+  onComplete, onBack, initialSelection = [],
 }: VariablesStepProps) {
   const { catalog, error: loadError } = useVariableCatalog();
   const [selected, setSelected] = useState<string[]>(initialSelection);
@@ -37,13 +41,13 @@ export function VariablesStep({
   }, [catalog]);
 
   const grouped = useMemo(
-    () => (catalog ? groupByBoundary(catalog.variables) : null),
+    () => (catalog ? groupByDomain(catalog.variables) : null),
     [catalog],
   );
 
   if (loadError) return <ErrorCard message={loadError} />;
   if (!catalog || !grouped) {
-    return <LoadingCard message="Loading variable catalog..." />;
+    return <LoadingCard message="Loading exposure catalog..." />;
   }
   if (catalog.schema_version !== EXPECTED_VARIABLE_SCHEMA_VERSION) {
     return (
@@ -65,20 +69,21 @@ export function VariablesStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Select Variables</CardTitle>
+        <CardTitle className="text-lg">Select Exposures</CardTitle>
         <CardDescription>
-          Choose one or more exposures to compute for your cohort. Variables
-          are grouped by spatial boundary.
+          Browse the exposures you can link, grouped by environmental domain.
+          Pick one or more, then upload your cohort. Click &ldquo;View in
+          ontology&rdquo; on any card for its formal definition.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {BOUNDARY_ORDER.map((boundary) => {
-          const entries = grouped[boundary];
+        {GROUP_ORDER.map((group) => {
+          const entries = grouped[group];
           if (!entries || entries.length === 0) return null;
           return (
-            <section key={boundary} className="space-y-3">
+            <section key={group} className="space-y-3">
               <h3 className="text-sm font-medium text-muted-foreground">
-                {BOUNDARY_LABEL[boundary]}
+                {DOMAIN_GROUP_LABEL[group]}
               </h3>
               <div className="space-y-3">
                 {entries.map(([key, meta]) => (
@@ -88,7 +93,6 @@ export function VariablesStep({
                     meta={meta}
                     checked={selected.includes(key)}
                     onToggle={() => toggleSelection(key)}
-                    taskId={taskId}
                   />
                 ))}
               </div>
@@ -97,9 +101,13 @@ export function VariablesStep({
         })}
 
         <div className="flex justify-between pt-4">
-          <Button variant="outline" onClick={onBack} size="lg">
-            <ArrowLeft className="size-4" /> Back
-          </Button>
+          {onBack ? (
+            <Button variant="outline" onClick={onBack} size="lg">
+              <ArrowLeft className="size-4" /> Back
+            </Button>
+          ) : (
+            <span />
+          )}
           <Button
             onClick={() => onComplete(selected)}
             disabled={!canContinue}

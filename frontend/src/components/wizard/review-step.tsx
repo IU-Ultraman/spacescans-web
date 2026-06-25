@@ -27,9 +27,11 @@ import {
   Settings,
   Shapes,
   Tags,
+  Target,
 } from "lucide-react";
 import type { DataSummary } from "./upload-step";
 import type { BufferConfig } from "./buffer-step";
+import { VariableCoveragePanel } from "./variable-coverage-panel";
 
 // Helper — heuristic runtime estimate
 function estimateRuntime(nRows: number, bufferM: number, nVariables: number): string {
@@ -190,6 +192,29 @@ export function ReviewStep({
             </div>
           )}
         </SummarySection>
+
+        {/* Cohort coverage — pre-flight against the uploaded data */}
+        {selectedVariables.length > 0 && (
+          <SummarySection
+            icon={<Target className="size-4" />}
+            title="Cohort Coverage"
+          >
+            <p className="mb-3 text-xs text-muted-foreground">
+              How much of your uploaded cohort each exposure can cover. If a
+              value looks low, go back to step 1 and adjust your selection.
+            </p>
+            <div className="space-y-3">
+              {selectedVariables.map((key) => (
+                <div key={key}>
+                  <div className="text-xs font-medium text-foreground">
+                    {catalog?.variables[key]?.label ?? key}
+                  </div>
+                  <VariableCoveragePanel taskId={taskId} variableKey={key} />
+                </div>
+              ))}
+            </div>
+          </SummarySection>
+        )}
 
         {/* Advanced options */}
         <div className="rounded-lg border border-border">
