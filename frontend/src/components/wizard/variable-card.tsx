@@ -1,5 +1,6 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Chip } from "@/components/ui/chip";
 import type { VariableMetadata } from "@/lib/api";
@@ -31,6 +32,18 @@ export function VariableCard({
           )}
           <Chip variant="outline">{meta.boundary}</Chip>
         </div>
+        {meta.ontology_id && (
+          <a
+            href={`/catalog?node=${encodeURIComponent(meta.ontology_id)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="mt-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+          >
+            <ExternalLink className="size-3" />
+            View in ontology
+          </a>
+        )}
         {checked && (
           <VariableCoveragePanel taskId={taskId} variableKey={varKey} />
         )}

@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { OntologySearch } from "@/components/ontology-search";
 import { OntologyTree } from "@/components/ontology-tree";
 import { CatalogDetail } from "@/components/catalog-detail";
 
 export default function CatalogPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Deep-link support: /catalog?node=<id> preselects that node so the detail
+  // panel shows it immediately (e.g. arriving from a variable's "View in
+  // ontology" link). Read client-side to avoid a Suspense boundary.
+  useEffect(() => {
+    const node = new URLSearchParams(window.location.search).get("node");
+    if (node) setSelectedId(node);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
