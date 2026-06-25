@@ -962,3 +962,41 @@ def test_fara_preflight_raises_when_rda_missing(tmp_path, monkeypatch):
     msg = str(exc_info.value)
     assert "fara_tract" in msg
     assert "fara_nationwide_2010_2019_interpolated.Rda" in msg
+
+
+def test_schema_allows_optional_ontology_id():
+    """The variable_metadata schema must accept an optional ontology_id and
+    still validate when it is absent (additionalProperties is false, so this
+    fails until ontology_id is declared in the schema)."""
+    import json
+    import pathlib
+
+    import jsonschema
+
+    schema = json.loads(
+        pathlib.Path("app/data/variable_metadata.schema.json").read_text()
+    )
+    base_var = {
+        "label": "L", "description": "D", "boundary": "BG",
+        "coverage_years": [2010, 2020], "coverage_region": "CONUS",
+        "experiment": "e", "variable_type": "continuous",
+        "display_unit": "u", "value_cols": ["v"],
+    }
+    with_id = {"schema_version": 1,
+               "variables": {"x": {**base_var, "ontology_id": "000289"}}}
+    without_id = {"schema_version": 1, "variables": {"x": dict(base_var)}}
+    jsonschema.validate(with_id, schema)      # must not raise
+    jsonschema.validate(without_id, schema)   # must not raise
+
+
+def test_variable_metadata_model_accepts_optional_ontology_id():
+    from app.routers.variables import VariableMetadataModel
+
+    common = dict(
+        label="L", description="D", boundary="BG",
+        coverage_years=(2010, 2020), coverage_region="CONUS",
+        experiment="e", variable_type="continuous",
+        display_unit="u", value_cols=["v"],
+    )
+    assert VariableMetadataModel(**common, ontology_id="000289").ontology_id == "000289"
+    assert VariableMetadataModel(**common).ontology_id is None

@@ -114,6 +114,8 @@ export interface VariableMetadata {
   coverage_years: [number, number];
   coverage_region: 'CONUS' | 'US' | 'AK_HI';
   experiment: string;
+  /** Linked SPACESCANS ontology node id (see frontend/public/ontology). */
+  ontology_id?: string;
   /** "static" products apply to any study period (no year restriction). */
   temporal?: 'static' | 'yearly';
   variable_type: 'categorical' | 'continuous';
