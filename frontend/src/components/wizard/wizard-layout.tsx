@@ -17,7 +17,7 @@ interface WizardLayoutProps {
 
 export function WizardLayout({ currentStep, children }: WizardLayoutProps) {
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-7xl">
       {/* Stepper */}
       <nav aria-label="Wizard steps" className="mb-8">
         <ol className="flex items-center">
