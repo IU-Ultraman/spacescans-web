@@ -11,7 +11,7 @@ import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import {
-  DOMAIN_ORDER, DOMAIN_GROUP_LABEL, groupByDomain,
+  DOMAIN_ORDER, DOMAIN_GROUP_LABEL, groupByDomain, BOUNDARY_INFO,
   type DomainGroupKey,
 } from "@/lib/variable-grouping";
 import { CatalogDetail } from "@/components/catalog-detail";
@@ -121,7 +121,12 @@ export function VariablesStep({
                           <span className="shrink-0 text-[10px] text-muted-foreground">
                             {nOut} outcome{nOut === 1 ? "" : "s"}
                           </span>
-                          <Chip variant="outline">{meta.boundary}</Chip>
+                          <span
+                            className="shrink-0"
+                            title={`${BOUNDARY_INFO[meta.boundary].name} — ${BOUNDARY_INFO[meta.boundary].blurb}`}
+                          >
+                            <Chip variant="outline">{meta.boundary}</Chip>
+                          </span>
                         </div>
                       );
                     })}
@@ -138,6 +143,13 @@ export function VariablesStep({
             {focusedMeta ? (
               <>
                 <CatalogDetail selectedId={focusedMeta.ontology_id ?? null} />
+                <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
+                  <span className="font-medium text-foreground/80">
+                    Geographic resolution:
+                  </span>{" "}
+                  {BOUNDARY_INFO[focusedMeta.boundary].name} —{" "}
+                  {BOUNDARY_INFO[focusedMeta.boundary].blurb}
+                </p>
                 <div className="mt-3">
                   <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Outcomes ({focusedMeta.value_cols.length})

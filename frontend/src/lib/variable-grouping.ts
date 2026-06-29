@@ -13,6 +13,33 @@ export const BOUNDARY_LABEL: Record<BoundaryKey, string> = {
   County: 'County',
 };
 
+// Plain-language explanation of each Census geography, used in tooltips and the
+// Select-Exposures detail panel. "blurb" answers "what is this and why does it
+// matter" for a researcher who knows cohorts but not the Census hierarchy: it
+// is the geographic resolution at which the exposure is assigned to a residence.
+export const BOUNDARY_INFO: Record<BoundaryKey, { name: string; blurb: string }> = {
+  BG: {
+    name: 'Block Group',
+    blurb:
+      'Smallest Census area (~600–3,000 people, a few city blocks). This exposure is assigned at block-group resolution — the finest, most local.',
+  },
+  Tract: {
+    name: 'Census Tract',
+    blurb:
+      'Neighborhood-sized Census area (~1,200–8,000 people), made of several block groups. This exposure is assigned at tract resolution.',
+  },
+  ZCTA5: {
+    name: 'ZIP Code Tabulation Area',
+    blurb:
+      "The Census Bureau's approximation of a 5-digit ZIP-code area (roughly tract-to-county scale). This exposure is assigned per ZCTA.",
+  },
+  County: {
+    name: 'County',
+    blurb:
+      'County-level area — the coarsest resolution here. This exposure is assigned per county.',
+  },
+};
+
 export function groupByBoundary(
   variables: Record<string, VariableMetadata>,
 ): Partial<Record<BoundaryKey, [string, VariableMetadata][]>> {

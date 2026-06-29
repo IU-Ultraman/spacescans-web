@@ -47,21 +47,22 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Buffer Settings</CardTitle>
+        <CardTitle className="text-lg">Exposure Area (Buffer)</CardTitle>
         <CardDescription>
-          Configure the spatial buffer around each data point.
+          Choose how large an area around each home to summarize exposures over.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-xs text-muted-foreground">
-          The spacescans-pipeline computes a circular buffer (radius in meters) around each
-          patient&apos;s residence and overlays it with the chosen boundary layer. Set the radius
-          and rasterization resolution below.
+          For each person&apos;s home, we draw a circle of the radius you set and
+          summarize the surrounding environment inside it — so each exposure
+          reflects the area around the address, not just the single point.
+          Set the circle&apos;s radius and how finely it&apos;s measured below.
         </p>
 
         {/* Size input */}
         <div className="space-y-2">
-          <Label htmlFor="buffer-size">Buffer Size</Label>
+          <Label htmlFor="buffer-size">Circle radius</Label>
           <div className="flex items-center gap-2">
             <Input
               id="buffer-size"
@@ -81,13 +82,14 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
             </p>
           )}
           <p className="text-xs text-muted-foreground">
-            Typical: 270 m (about a 3-5 minute walk). Larger buffers take significantly longer to run.
+            Typical: 270 m (about a 3–5 minute walk). A larger circle captures a
+            wider area around the home but takes significantly longer to run.
           </p>
         </div>
 
         {/* Rasterization resolution */}
         <div className="space-y-2">
-          <Label htmlFor="raster-res">Rasterization resolution (m)</Label>
+          <Label htmlFor="raster-res">Measurement grid size (m)</Label>
           <Input
             id="raster-res"
             type="number"
@@ -99,7 +101,9 @@ export function BufferStep({ onComplete, onBack, initialConfig }: BufferStepProp
             className="w-32"
           />
           <p className="text-xs text-muted-foreground">
-            Resolution for boundary overlap rasterization. Lower = more accurate, slower. 25 m is the standard.
+            How finely the circle is gridded when overlapping it with map data —
+            smaller squares = more precise, slower. 25 m is the standard and
+            works well for most studies.
           </p>
         </div>
 

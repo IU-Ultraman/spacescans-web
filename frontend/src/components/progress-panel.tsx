@@ -16,18 +16,56 @@ interface ProgressPanelProps {
   totalSteps?: number;
 }
 
-// Canonical execution order across the whole pipeline, including pre- and
-// post-steps that aren't surfaced as items in the step list. Used purely to
-// decide done/running/pending state for items in `steps`.
-const STEP_ORDER = ["csv_to_parquet", "c3_bg", "c4_ndi", "c4_wi", "merge"];
+// Friendly names for the raw pipeline step ids. C3 builds spatial weights;
+// C4 links an exposure to the cohort. The suffix after c3_/c4_ is a boundary
+// (bg/zcta5/tract_us…) or a variable key (ndi/wi/zcta5_cbp…).
+const STEP_SUFFIX_LABEL: Record<string, string> = {
+  bg: "Block Group",
+  zcta5: "ZCTA5",
+  tract_us: "Census Tract",
+  county_us: "County",
+  cache: "cache",
+  ndi: "Neighborhood Deprivation",
+  wi: "Walkability",
+  zcta5_cbp: "Community Organizations",
+  tiger_roads: "Road Proximity",
+  nhd_bluespace: "Bluespace",
+  noise: "Noise",
+  temis: "UV Exposure",
+  vnl: "Night-time Lights",
+  tract_fara: "Food Access",
+};
+
+function prettify(s: string): string {
+  return s.replace(/_/g, " ");
+}
+
+function friendlyStep(raw: string): string {
+  if (raw === "csv_to_parquet") return "Preparing your data";
+  if (raw === "merge") return "Merging results";
+  if (raw.startsWith("c3_")) {
+    const s = raw.slice(3);
+    return `Computing spatial weights — ${STEP_SUFFIX_LABEL[s] ?? prettify(s)}`;
+  }
+  if (raw.startsWith("c4_")) {
+    const s = raw.slice(3);
+    return `Linking ${STEP_SUFFIX_LABEL[s] ?? prettify(s)}`;
+  }
+  return prettify(raw);
+}
 
 function stepState(
   stepName: string,
   currentStep: string | undefined,
+  steps: string[],
 ): "done" | "running" | "pending" {
   if (!currentStep) return "pending";
-  const currentIdx = STEP_ORDER.indexOf(currentStep);
-  const myIdx = STEP_ORDER.indexOf(stepName);
+  // Real execution order = csv_to_parquet, then this task's variable steps in
+  // order, then merge. Derived from the actual step list so it is correct for
+  // every experiment (not just a hardcoded bg_ndi_wi order).
+  const order = ["csv_to_parquet", ...steps, "merge"];
+  const currentIdx = order.indexOf(currentStep);
+  const myIdx = order.indexOf(stepName);
   if (currentIdx === -1 || myIdx === -1) return "pending";
   if (myIdx < currentIdx) return "done";
   if (myIdx === currentIdx) return "running";
@@ -69,7 +107,7 @@ export function ProgressPanel({
         {steps && steps.length > 0 && (
           <div className="space-y-1 border-t pt-3">
             {steps.map((stepName, i) => {
-              const state = stepState(stepName, currentStep);
+              const state = stepState(stepName, currentStep, steps);
               const Icon =
                 state === "done"
                   ? CheckCircle2
@@ -88,10 +126,13 @@ export function ProgressPanel({
                   className="flex items-center gap-2 text-sm"
                 >
                   <Icon className={iconClass} aria-hidden />
-                  <span className="font-mono text-xs text-muted-foreground">
-                    Step {i + 1}/{totalSteps ?? steps.length}
+                  <span className="font-mono text-[10px] text-muted-foreground tabular-nums">
+                    {i + 1}/{totalSteps ?? steps.length}
                   </span>
-                  <span className="font-medium">{stepName}</span>
+                  <span className="font-medium">{friendlyStep(stepName)}</span>
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    {stepName}
+                  </span>
                   {state === "running" && message && (
                     <span className="text-muted-foreground">— {message}</span>
                   )}
