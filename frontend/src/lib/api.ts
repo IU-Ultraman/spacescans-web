@@ -55,6 +55,14 @@ export interface Task {
   created_at: string;
   error_message?: string;
   variables?: string[];
+  /** Spatial buffer from the saved config (radius + raster grid in meters). */
+  buffer?: { size: number; raster_res_m: number } | null;
+  /** Summary of the uploaded cohort (from meta.json). */
+  data_summary?: {
+    row_count: number;
+    columns: string[];
+    date_range?: { min: string; max: string };
+  } | null;
 }
 
 /**

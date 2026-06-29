@@ -226,18 +226,22 @@ def _flatten_status_into_meta(meta: dict, status: dict) -> None:
 
 
 def _attach_variables(meta: dict, task_dir: Path) -> None:
-    """Pull the selected variables list out of config.json (if present) so
-    the task list endpoint can surface it. Missing/invalid config → []."""
+    """Pull the selected variables + buffer config out of config.json (if
+    present) so the task endpoints can surface them. Missing/invalid → []/None."""
     config_path = task_dir / "config.json"
     if not config_path.exists():
         meta["variables"] = []
+        meta["buffer"] = None
         return
     try:
         cfg = json.loads(config_path.read_text())
         vars_ = cfg.get("variables") or []
         meta["variables"] = [str(v) for v in vars_ if isinstance(v, str)]
+        buf = cfg.get("buffer")
+        meta["buffer"] = buf if isinstance(buf, dict) else None
     except Exception:
         meta["variables"] = []
+        meta["buffer"] = None
 
 
 def list_tasks(user_id: int) -> list[dict]:

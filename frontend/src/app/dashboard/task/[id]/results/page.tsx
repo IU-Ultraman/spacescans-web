@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api, type Task, type TaskStatus, type ResultsPreview } from "@/lib/api";
 import { INPUT_COLUMNS } from "@/lib/result-columns";
 import { useColumnMeta } from "@/lib/use-column-meta";
+import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { HistogramsCard } from "@/components/results/histograms-card";
@@ -73,6 +74,7 @@ export default function TaskResultsPage() {
   const router = useRouter();
   const id = params.id;
   const colMeta = useColumnMeta();
+  const { catalog } = useVariableCatalog();
 
   const [task, setTask] = useState<Task | null>(null);
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null);
@@ -226,6 +228,45 @@ export default function TaskResultsPage() {
             <span className="text-muted-foreground">Status</span>
             <span className="font-medium capitalize">{task.status}</span>
           </div>
+          {task.data_summary && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Cohort size</span>
+              <span className="font-medium">
+                {task.data_summary.row_count.toLocaleString()} rows
+              </span>
+            </div>
+          )}
+          {task.data_summary?.date_range && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Date range</span>
+              <span className="font-medium">
+                {task.data_summary.date_range.min} –{" "}
+                {task.data_summary.date_range.max}
+              </span>
+            </div>
+          )}
+          {task.buffer && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Buffer radius</span>
+              <span className="font-medium">{task.buffer.size} m</span>
+            </div>
+          )}
+          {task.buffer && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Grid resolution</span>
+              <span className="font-medium">{task.buffer.raster_res_m} m</span>
+            </div>
+          )}
+          {task.variables && task.variables.length > 0 && (
+            <div className="flex justify-between gap-4">
+              <span className="shrink-0 text-muted-foreground">Variables</span>
+              <span className="text-right font-medium">
+                {task.variables
+                  .map((v) => catalog?.variables[v]?.label ?? v)
+                  .join(", ")}
+              </span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Task ID</span>
             <span className="font-mono text-xs">{task.id}</span>
