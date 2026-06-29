@@ -10,6 +10,7 @@ import { Chip } from "@/components/ui/chip";
 import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
+import type { VariableMetadata } from "@/lib/api";
 import {
   DOMAIN_ORDER, DOMAIN_GROUP_LABEL, groupByDomain, BOUNDARY_INFO,
   type DomainGroupKey,
@@ -73,6 +74,41 @@ export function VariablesStep({
   const canContinue = selected.length >= 1;
   const focusedMeta = focused ? catalog.variables[focused] ?? null : null;
 
+  const renderRow = ([key, meta]: [string, VariableMetadata]) => {
+    const isSel = selected.includes(key);
+    const isFocused = focused === key;
+    const nOut = meta.value_cols.length;
+    return (
+      <div
+        key={key}
+        onClick={() => setFocused(key)}
+        className={cn(
+          "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/60",
+          isFocused && "bg-primary/5",
+        )}
+      >
+        <Checkbox
+          checked={isSel}
+          onCheckedChange={() => toggleSelection(key)}
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0"
+        />
+        <span className="min-w-0 flex-1 truncate text-sm text-foreground/90">
+          {meta.label}
+        </span>
+        <span className="shrink-0 text-[10px] text-muted-foreground">
+          {nOut} outcome{nOut === 1 ? "" : "s"}
+        </span>
+        <span
+          className="shrink-0"
+          title={`${BOUNDARY_INFO[meta.boundary].name} — ${BOUNDARY_INFO[meta.boundary].blurb}`}
+        >
+          <Chip variant="outline">{meta.boundary}</Chip>
+        </span>
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -95,42 +131,26 @@ export function VariablesStep({
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {DOMAIN_GROUP_LABEL[group]}
                   </h3>
-                  <div className="space-y-0.5">
-                    {entries.map(([key, meta]) => {
-                      const isSel = selected.includes(key);
-                      const isFocused = focused === key;
-                      const nOut = meta.value_cols.length;
-                      return (
-                        <div
-                          key={key}
-                          onClick={() => setFocused(key)}
-                          className={cn(
-                            "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/60",
-                            isFocused && "bg-primary/5",
-                          )}
-                        >
-                          <Checkbox
-                            checked={isSel}
-                            onCheckedChange={() => toggleSelection(key)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="shrink-0"
-                          />
-                          <span className="min-w-0 flex-1 truncate text-sm text-foreground/90">
-                            {meta.label}
-                          </span>
-                          <span className="shrink-0 text-[10px] text-muted-foreground">
-                            {nOut} outcome{nOut === 1 ? "" : "s"}
-                          </span>
-                          <span
-                            className="shrink-0"
-                            title={`${BOUNDARY_INFO[meta.boundary].name} — ${BOUNDARY_INFO[meta.boundary].blurb}`}
-                          >
-                            <Chip variant="outline">{meta.boundary}</Chip>
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {entries.some(([, m]) => m.temporal !== "static") && (
+                    <div className="space-y-0.5">
+                      {entries
+                        .filter(([, m]) => m.temporal !== "static")
+                        .map(renderRow)}
+                    </div>
+                  )}
+                  {entries.some(([, m]) => m.temporal === "static") && (
+                    <div className="space-y-0.5 pt-1">
+                      <div className="px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                        Static{" "}
+                        <span className="font-normal normal-case text-muted-foreground/60">
+                          · applies to any study period
+                        </span>
+                      </div>
+                      {entries
+                        .filter(([, m]) => m.temporal === "static")
+                        .map(renderRow)}
+                    </div>
+                  )}
                 </section>
               );
             })}
@@ -149,6 +169,14 @@ export function VariablesStep({
                   </span>{" "}
                   {BOUNDARY_INFO[focusedMeta.boundary].name} —{" "}
                   {BOUNDARY_INFO[focusedMeta.boundary].blurb}
+                </p>
+                <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                  <span className="font-medium text-foreground/80">
+                    Time coverage:
+                  </span>{" "}
+                  {focusedMeta.temporal === "static"
+                    ? "Static — applies to any study period (does not vary by year)."
+                    : `Varies by year (${focusedMeta.coverage_years[0]}–${focusedMeta.coverage_years[1]}).`}
                 </p>
                 <div className="mt-3">
                   <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
