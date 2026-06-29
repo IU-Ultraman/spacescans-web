@@ -31,6 +31,7 @@ export default function TaskDetailPage() {
   // `task` so the multi-step fields (current_step, total_steps, steps) survive
   // polling updates and remain available after the run finishes.
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null);
+  const [stopping, setStopping] = useState(false);
 
   const lastTimestampRef = useRef<string | undefined>(undefined);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -173,10 +174,15 @@ export default function TaskDetailPage() {
   }, [id, task?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStop = useCallback(async () => {
+    setStopping(true);
+    setStatusMessage("Stopping — waiting for the pipeline to halt…");
     try {
-      const updated = await api.stopTask(id);
-      setTask(updated);
+      await api.stopTask(id);
+      // Do NOT overwrite `task` with the stop response: keep status
+      // "running" so the poller stays alive and flips the view to
+      // "cancelled" once the backend actually halts the runner.
     } catch (err) {
+      setStopping(false);
       setError(err instanceof Error ? err.message : "Failed to stop task");
     }
   }, [id]);
@@ -236,6 +242,7 @@ export default function TaskDetailPage() {
             progress={task.progress ?? 0}
             message={statusMessage}
             onStop={handleStop}
+            stopping={stopping}
             steps={taskStatus?.steps}
             currentStep={taskStatus?.current_step}
             totalSteps={taskStatus?.total_steps}

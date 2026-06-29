@@ -8,6 +8,8 @@ interface ProgressPanelProps {
   progress: number;
   message: string;
   onStop: () => void;
+  /** True once a stop has been requested but the task hasn't halted yet. */
+  stopping?: boolean;
   /** Ordered list of variable pipeline step names (e.g. ["c3_bg","c4_ndi"]). */
   steps?: string[];
   /** Step currently executing on the backend (may be a pre/post-step like "csv_to_parquet" or "merge"). */
@@ -76,6 +78,7 @@ export function ProgressPanel({
   progress,
   message,
   onStop,
+  stopping = false,
   steps,
   currentStep,
   totalSteps,
@@ -97,10 +100,15 @@ export function ProgressPanel({
             variant="destructive"
             size="sm"
             onClick={onStop}
+            disabled={stopping}
             className="gap-1.5"
           >
-            <Square className="size-3.5" />
-            Stop Task
+            {stopping ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Square className="size-3.5" />
+            )}
+            {stopping ? "Stopping…" : "Stop Task"}
           </Button>
         </div>
 

@@ -240,7 +240,7 @@ export const api = {
     }),
 
   stopTask: (id: string) =>
-    request<Task>(`/api/tasks/${id}/stop`, {
+    request<{ status: string }>(`/api/tasks/${id}/stop`, {
       method: "POST",
     }),
 
