@@ -15,6 +15,18 @@ function getAuthHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/** Clear the stored session and bounce to /login. Called from every 401 path
+ * (fetch + the XHR upload) so an expired/invalid token never strands the user
+ * on a half-broken authenticated page (#5). */
+function handleUnauthorized(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("token");
+  localStorage.removeItem("email");
+  if (window.location.pathname !== "/login") {
+    window.location.href = "/login";
+  }
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -29,10 +41,7 @@ async function request<T>(
   });
 
   if (res.status === 401) {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-      window.location.href = "/login";
-    }
+    handleUnauthorized();
     throw new ApiError(401, "Unauthorized");
   }
 
@@ -273,6 +282,7 @@ export const api = {
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(body);
         } else {
+          if (xhr.status === 401) handleUnauthorized();
           reject(
             new ApiError(
               xhr.status,

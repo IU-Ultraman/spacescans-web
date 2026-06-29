@@ -25,6 +25,18 @@ export default function DashboardLayout({
     }
     setEmail(getEmail());
     setChecked(true);
+
+    // #5: proactively boot the user when the JWT expires mid-session, so they
+    // don't fill out a form only to be rejected on submit. isAuthenticated()
+    // now also checks the token's exp; re-check on an interval to catch expiry
+    // while the user idles on a page.
+    const interval = setInterval(() => {
+      if (!isAuthenticated()) {
+        clearToken();
+        router.replace("/login");
+      }
+    }, 30000);
+    return () => clearInterval(interval);
   }, [router]);
 
   function handleLogout() {
