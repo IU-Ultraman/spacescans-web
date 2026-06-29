@@ -24,6 +24,12 @@ interface OntologyTreeProps {
   selected?: string[];
   onSelectionChange?: (ids: string[]) => void;
   onNodeClick?: (id: string) => void;
+  /** Start the tree from this node's children instead of the full index.json
+   *  roots — e.g. to scope the browser to one subtree. */
+  rootId?: string;
+  /** When provided, only these node ids show a selection checkbox; all other
+   *  nodes are browse-only (no checkbox). Requires `selectable`. */
+  selectableIds?: string[];
 }
 
 export function OntologyTree({
@@ -31,12 +37,18 @@ export function OntologyTree({
   selected = [],
   onSelectionChange,
   onNodeClick,
+  rootId,
+  selectableIds,
 }: OntologyTreeProps) {
   const [roots, setRoots] = useState<TreeNodeState[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/ontology/index.json")
+    const url = rootId
+      ? `/ontology/nodes/${rootId}.json`
+      : "/ontology/index.json";
+    setLoading(true);
+    fetch(url)
       .then((r) => r.json())
       .then((nodes: OntologyNode[]) => {
         setRoots(
@@ -50,7 +62,7 @@ export function OntologyTree({
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [rootId]);
 
   const updateNode = useCallback(
     (
@@ -168,6 +180,7 @@ export function OntologyTree({
           item={item}
           depth={0}
           selectable={selectable}
+          selectableIds={selectableIds}
           selected={selected}
           onToggle={handleToggle}
           onCheck={handleCheck}
@@ -182,6 +195,7 @@ interface TreeNodeRowProps {
   item: TreeNodeState;
   depth: number;
   selectable: boolean;
+  selectableIds?: string[];
   selected: string[];
   onToggle: (id: string, hasChildren: boolean) => void;
   onCheck: (id: string, checked: boolean) => void;
@@ -192,6 +206,7 @@ function TreeNodeRow({
   item,
   depth,
   selectable,
+  selectableIds,
   selected,
   onToggle,
   onCheck,
@@ -199,6 +214,8 @@ function TreeNodeRow({
 }: TreeNodeRowProps) {
   const { node, children, expanded, loading } = item;
   const isSelected = selected.includes(node.id);
+  const canSelect =
+    selectable && (!selectableIds || selectableIds.includes(node.id));
 
   return (
     <div>
@@ -234,7 +251,7 @@ function TreeNodeRow({
         </button>
 
         {/* Checkbox */}
-        {selectable && (
+        {canSelect && (
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) =>
@@ -253,7 +270,7 @@ function TreeNodeRow({
             }
             if (node.has_children) {
               onToggle(node.id, true);
-            } else if (selectable) {
+            } else if (canSelect) {
               onCheck(node.id, !isSelected);
             }
           }}
@@ -273,6 +290,7 @@ function TreeNodeRow({
               item={child}
               depth={depth + 1}
               selectable={selectable}
+              selectableIds={selectableIds}
               selected={selected}
               onToggle={onToggle}
               onCheck={onCheck}

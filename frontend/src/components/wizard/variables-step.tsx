@@ -5,24 +5,20 @@ import { Button } from "@/components/ui/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Chip } from "@/components/ui/chip";
 import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
-import type { VariableMetadata } from "@/lib/api";
-import {
-  DOMAIN_ORDER, DOMAIN_GROUP_LABEL, groupByDomain, BOUNDARY_INFO,
-  type DomainGroupKey,
-} from "@/lib/variable-grouping";
+import { BOUNDARY_INFO } from "@/lib/variable-grouping";
 import { useColumnMeta } from "@/lib/use-column-meta";
+import { OntologyTree } from "@/components/ontology-tree";
+import { CatalogDetail } from "@/components/catalog-detail";
 import { ErrorCard } from "./error-card";
 import { LoadingCard } from "./loading-card";
 import { SchemaMismatchBanner } from "./schema-mismatch-banner";
 
 const EXPECTED_VARIABLE_SCHEMA_VERSION = 1;
-// Domain groups rendered in order, with any unmapped variables last.
-const GROUP_ORDER: DomainGroupKey[] = [...DOMAIN_ORDER, "other"];
+// Root of the exposure taxonomy — the tree is scoped to this subtree so the
+// user browses only Spatial & Contextual Exposome (not Person/Time/etc.).
+const EXPOSOME_ROOT = "000093_2";
 
 interface VariablesStepProps {
   onComplete: (selectedVariables: string[]) => void;
@@ -37,8 +33,25 @@ export function VariablesStep({
   const { catalog, error: loadError } = useVariableCatalog();
   const colMeta = useColumnMeta();
   const [selected, setSelected] = useState<string[]>(initialSelection);
-  // variable key whose definition + outcomes are shown in the right-hand panel.
-  const [focused, setFocused] = useState<string | null>(null);
+  // ontology node id currently shown in the right-hand detail panel.
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+
+  // Map between ontology node ids and variable keys (only variables with an
+  // ontology_id are selectable in the tree).
+  const nodeIdToVarKey = useMemo(() => {
+    const m: Record<string, string> = {};
+    if (catalog) {
+      for (const [key, v] of Object.entries(catalog.variables)) {
+        if (v.ontology_id) m[v.ontology_id] = key;
+      }
+    }
+    return m;
+  }, [catalog]);
+
+  const selectableIds = useMemo(
+    () => Object.keys(nodeIdToVarKey),
+    [nodeIdToVarKey],
+  );
 
   useEffect(() => {
     if (!catalog) return;
@@ -46,13 +59,8 @@ export function VariablesStep({
     setSelected((prev) => prev.filter((k) => known.has(k)));
   }, [catalog]);
 
-  const grouped = useMemo(
-    () => (catalog ? groupByDomain(catalog.variables) : null),
-    [catalog],
-  );
-
   if (loadError) return <ErrorCard message={loadError} />;
-  if (!catalog || !grouped) {
+  if (!catalog) {
     return <LoadingCard message="Loading exposure catalog..." />;
   }
   if (catalog.schema_version !== EXPECTED_VARIABLE_SCHEMA_VERSION) {
@@ -65,123 +73,85 @@ export function VariablesStep({
     );
   }
 
-  const toggleSelection = (key: string) =>
-    setSelected((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
-    );
-
   const canContinue = selected.length >= 1;
-  const focusedMeta = focused ? catalog.variables[focused] ?? null : null;
 
-  const renderRow = ([key, meta]: [string, VariableMetadata]) => {
-    const isSel = selected.includes(key);
-    const isFocused = focused === key;
-    const nOut = meta.value_cols.length;
-    return (
-      <div
-        key={key}
-        onClick={() => {
-          toggleSelection(key);
-          setFocused(key);
-        }}
-        className={cn(
-          "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/60",
-          isSel && "bg-primary/10",
-          isFocused && "ring-1 ring-inset ring-primary/40",
-        )}
-      >
-        <Checkbox
-          checked={isSel}
-          onCheckedChange={() => {
-            toggleSelection(key);
-            setFocused(key);
-          }}
-          onClick={(e) => e.stopPropagation()}
-          className="shrink-0"
-        />
-        <span className="min-w-0 flex-1 truncate text-sm text-foreground/90">
-          {meta.label}
-        </span>
-        <span className="shrink-0 text-[10px] text-muted-foreground">
-          {nOut} outcome{nOut === 1 ? "" : "s"}
-        </span>
-        <span
-          className="shrink-0"
-          title={`${BOUNDARY_INFO[meta.boundary].name} — ${BOUNDARY_INFO[meta.boundary].blurb}`}
-        >
-          <Chip variant="outline">{meta.boundary}</Chip>
-        </span>
-      </div>
-    );
-  };
+  // Selected variable keys -> their ontology node ids (for the tree's checkboxes).
+  const selectedNodeIds = selected
+    .map((k) => catalog.variables[k]?.ontology_id)
+    .filter((id): id is string => Boolean(id));
+
+  const focusedVarKey = focusedNodeId ? nodeIdToVarKey[focusedNodeId] : undefined;
+  const focusedVarMeta = focusedVarKey ? catalog.variables[focusedVarKey] : null;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">Data Catalog</CardTitle>
         <CardDescription>
-          Browse the available exposures, grouped by environmental domain and
-          linked to the SPACESCANS ontology. Click an exposure to read its
-          definition; check the ones to compute for your cohort.
+          Browse the Spatial &amp; Contextual Exposome ontology. Expand a branch
+          to see its exposures and their outcomes; check an exposure to compute
+          it for your cohort. Click any node to read its definition.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-5 md:min-h-[32rem] md:flex-row">
-          {/* Left: selectable, domain-grouped exposure list */}
-          <div className="space-y-4 md:w-1/3 md:shrink-0">
-            {GROUP_ORDER.map((group) => {
-              const entries = grouped[group];
-              if (!entries || entries.length === 0) return null;
-              return (
-                <section key={group} className="space-y-1">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {DOMAIN_GROUP_LABEL[group]}
-                  </h3>
-                  <div className="space-y-0.5">
-                    {entries.map(renderRow)}
-                  </div>
-                </section>
-              );
-            })}
+          {/* Left: scoped, selectable ontology tree */}
+          <div className="md:w-2/5 md:shrink-0">
+            <div className="max-h-[32rem] overflow-y-auto rounded-lg border p-2">
+              <OntologyTree
+                rootId={EXPOSOME_ROOT}
+                selectable
+                selectableIds={selectableIds}
+                selected={selectedNodeIds}
+                onSelectionChange={(ids) =>
+                  setSelected(
+                    ids
+                      .map((id) => nodeIdToVarKey[id])
+                      .filter((k): k is string => Boolean(k)),
+                  )
+                }
+                onNodeClick={setFocusedNodeId}
+              />
+            </div>
           </div>
 
-          {/* Right: ontology definition + outcomes for the focused exposure.
-              Outcomes are read-only here — selection stays at the variable
-              level (checking the row on the left brings ALL its outcomes). */}
+          {/* Right: detail. Variable nodes show the full metadata card;
+              other nodes (domains, outcomes) show their ontology definition. */}
           <div className="min-w-0 flex-1">
-            {focusedMeta ? (
+            {focusedVarMeta ? (
               <div className="rounded-lg border bg-card p-5">
-                <h3 className="text-lg font-semibold">{focusedMeta.label}</h3>
+                <h3 className="text-lg font-semibold">{focusedVarMeta.label}</h3>
                 <dl className="mt-3 grid grid-cols-[8rem_1fr] gap-x-3 gap-y-2 text-sm">
                   <dt className="font-medium text-muted-foreground">Data Source</dt>
                   <dd className="text-foreground/90">
-                    {focusedMeta.data_source ?? "—"}
+                    {focusedVarMeta.data_source ?? "—"}
                   </dd>
 
                   <dt className="font-medium text-muted-foreground">Spatial Scale</dt>
                   <dd
                     className="text-foreground/90"
-                    title={BOUNDARY_INFO[focusedMeta.boundary].blurb}
+                    title={BOUNDARY_INFO[focusedVarMeta.boundary].blurb}
                   >
-                    {BOUNDARY_INFO[focusedMeta.boundary].name} ({focusedMeta.boundary})
+                    {BOUNDARY_INFO[focusedVarMeta.boundary].name} (
+                    {focusedVarMeta.boundary})
                   </dd>
 
                   <dt className="font-medium text-muted-foreground">Temporal</dt>
                   <dd className="text-foreground/90">
-                    {focusedMeta.temporal === "static"
+                    {focusedVarMeta.temporal === "static"
                       ? "Static — any study period"
                       : "Time-varying"}
                   </dd>
 
                   <dt className="font-medium text-muted-foreground">Years Available</dt>
                   <dd className="text-foreground/90">
-                    {focusedMeta.temporal === "static"
-                      ? `${focusedMeta.coverage_years[0]} vintage`
-                      : `${focusedMeta.coverage_years[0]}–${focusedMeta.coverage_years[1]}`}
+                    {focusedVarMeta.temporal === "static"
+                      ? `${focusedVarMeta.coverage_years[0]} vintage`
+                      : `${focusedVarMeta.coverage_years[0]}–${focusedVarMeta.coverage_years[1]}`}
                   </dd>
 
                   <dt className="font-medium text-muted-foreground">Unit</dt>
-                  <dd className="text-foreground/90">{focusedMeta.display_unit}</dd>
+                  <dd className="text-foreground/90">{focusedVarMeta.display_unit}</dd>
                 </dl>
 
                 <div className="mt-3">
@@ -189,16 +159,16 @@ export function VariablesStep({
                     Description
                   </h4>
                   <p className="text-sm leading-relaxed text-foreground/90">
-                    {focusedMeta.description}
+                    {focusedVarMeta.description}
                   </p>
                 </div>
 
                 <div className="mt-3">
                   <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Outcomes ({focusedMeta.value_cols.length})
+                    Outcomes ({focusedVarMeta.value_cols.length})
                   </h4>
                   <ul className="space-y-1.5">
-                    {focusedMeta.value_cols.map((col) => {
+                    {focusedVarMeta.value_cols.map((col) => {
                       const m = colMeta(col);
                       return (
                         <li
@@ -223,9 +193,9 @@ export function VariablesStep({
                     })}
                   </ul>
                 </div>
-                {focusedMeta.ontology_id && (
+                {focusedVarMeta.ontology_id && (
                   <a
-                    href={`/catalog?node=${encodeURIComponent(focusedMeta.ontology_id)}`}
+                    href={`/catalog?node=${encodeURIComponent(focusedVarMeta.ontology_id)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
@@ -235,15 +205,18 @@ export function VariablesStep({
                   </a>
                 )}
               </div>
+            ) : focusedNodeId ? (
+              <CatalogDetail selectedId={focusedNodeId} />
             ) : (
               <div className="flex h-full min-h-[20rem] items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                Select an exposure on the left to read its definition and outcomes.
+                Select a node on the left to read its definition. Checkboxes mark
+                the exposures you can compute.
               </div>
             )}
           </div>
         </div>
 
-        <div className="mt-6 flex justify-between">
+        <div className="mt-6 flex items-center justify-between">
           {onBack ? (
             <Button variant="outline" onClick={onBack} size="lg">
               <ArrowLeft className="size-4" /> Back
@@ -251,13 +224,18 @@ export function VariablesStep({
           ) : (
             <span />
           )}
-          <Button
-            onClick={() => onComplete(selected)}
-            disabled={!canContinue}
-            size="lg"
-          >
-            Next <ArrowRight className="size-4" />
-          </Button>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">
+              {selected.length} selected
+            </span>
+            <Button
+              onClick={() => onComplete(selected)}
+              disabled={!canContinue}
+              size="lg"
+            >
+              Next <ArrowRight className="size-4" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
