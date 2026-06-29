@@ -4,7 +4,6 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from app.auth import get_current_user
 from app import task_manager
-from app.task_manager import TaskBusyError
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -104,9 +103,9 @@ def save_config(task_id: str, config: ConfigRequest, user: dict = Depends(get_cu
 def start_task(task_id: str, user: dict = Depends(get_current_user)):
     _verify_ownership(task_id, user)
     try:
+        # Returns {"status": "running", ...} if started now, or
+        # {"status": "queued"} if another task holds the run-lock (#1).
         return task_manager.start_task(task_id)
-    except TaskBusyError as exc:
-        raise HTTPException(status_code=409, detail=str(exc))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

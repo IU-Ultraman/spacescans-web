@@ -44,13 +44,14 @@ def _get_client():
     return client, token, Path(tmp)
 
 
-def test_start_returns_409_when_busy():
-    """Externally hold .run_lock; POST /start must return 409, not 500/200."""
+def test_start_enqueues_when_busy():
+    """#1 serial queue: externally hold .run_lock; POST /start must enqueue
+    (200 + status 'queued'), not reject with 409."""
     client, token, data_dir = _get_client()
     headers = {"Authorization": f"Bearer {token}"}
 
     # Create a task with config + input so start_task reaches the lock probe.
-    resp = client.post("/api/tasks", json={"task_name": "lock-409"}, headers=headers)
+    resp = client.post("/api/tasks", json={"task_name": "lock-queue"}, headers=headers)
     assert resp.status_code == 200, resp.text
     task_id = resp.json()["id"]
 
@@ -77,11 +78,10 @@ def test_start_returns_409_when_busy():
     fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
     try:
         resp = client.post(f"/api/tasks/{task_id}/start", headers=headers)
-        assert resp.status_code == 409, (
-            f"expected 409 TaskBusyError, got {resp.status_code}: {resp.text}"
+        assert resp.status_code == 200, (
+            f"expected 200 enqueue, got {resp.status_code}: {resp.text}"
         )
-        body = resp.json()
-        assert "another task" in body["detail"].lower(), body
+        assert resp.json()["status"] == "queued", resp.text
     finally:
         fcntl.flock(fd, fcntl.LOCK_UN)
         os.close(fd)

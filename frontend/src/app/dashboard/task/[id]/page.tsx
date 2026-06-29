@@ -15,6 +15,7 @@ import {
   XCircle,
   Settings,
   ExternalLink,
+  Clock,
 } from "lucide-react";
 
 export default function TaskDetailPage() {
@@ -126,20 +127,38 @@ export default function TaskDetailPage() {
     fetchLogs();
   }, [id, task?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Poll status and logs when running
+  // Poll status (+ logs while running) whenever the task is in flight.
+  // #1: "queued" tasks poll too, so the view flips to running/finished on its
+  //     own once the serial queue promotes them.
+  // #7: polling pauses while the tab is hidden and resumes — with an immediate
+  //     fetch — when it becomes visible again, so a backgrounded tab stops
+  //     hammering the backend every 2s.
   useEffect(() => {
-    if (!task || task.status !== "running") return;
+    const inFlight = task?.status === "running" || task?.status === "queued";
+    if (!inFlight) return;
+    const isRunning = task?.status === "running";
 
-    pollRef.current = setInterval(async () => {
+    const pollStatus = async () => {
       try {
         const status = await api.getStatus(id);
         setTaskStatus(status);
         setTask((prev) =>
           prev
-            ? { ...prev, status: status.status, progress: status.progress }
+            ? {
+                ...prev,
+                status: status.status,
+                progress: status.progress,
+                queue_position: status.queue_position,
+              }
             : prev,
         );
-        if (status.progress !== undefined) {
+        if (status.status === "queued") {
+          setStatusMessage(
+            status.queue_position != null
+              ? `Queued — #${status.queue_position} in line`
+              : "Queued — waiting for the running task to finish",
+          );
+        } else if (status.progress !== undefined) {
           setStatusMessage(
             `Progress: ${Math.round((status.progress ?? 0) * 100)}%`,
           );
@@ -147,9 +166,9 @@ export default function TaskDetailPage() {
       } catch {
         // Ignore transient errors
       }
-    }, 2000);
+    };
 
-    logPollRef.current = setInterval(async () => {
+    const pollLogs = async () => {
       try {
         const newLogs = (await api.getLogs(
           id,
@@ -158,18 +177,46 @@ export default function TaskDetailPage() {
         if (newLogs.length > 0) {
           setLogs((prev) => [...prev, ...newLogs]);
           lastTimestampRef.current = newLogs[newLogs.length - 1].ts;
-          // Use the last log message as status message
           const lastMsg = newLogs[newLogs.length - 1].msg;
           if (lastMsg) setStatusMessage(lastMsg);
         }
       } catch {
         // Ignore transient errors
       }
-    }, 2000);
+    };
+
+    const start = () => {
+      if (pollRef.current || logPollRef.current) return; // already polling
+      pollStatus(); // immediate tick so a resumed tab refreshes at once
+      pollRef.current = setInterval(pollStatus, 2000);
+      if (isRunning) {
+        pollLogs();
+        logPollRef.current = setInterval(pollLogs, 2000);
+      }
+    };
+
+    const stop = () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      if (logPollRef.current) {
+        clearInterval(logPollRef.current);
+        logPollRef.current = null;
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) stop();
+      else start();
+    };
+
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      if (logPollRef.current) clearInterval(logPollRef.current);
+      document.removeEventListener("visibilitychange", onVisibility);
+      stop();
     };
   }, [id, task?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -236,6 +283,30 @@ export default function TaskDetailPage() {
       </div>
 
       {/* Status-specific content */}
+      {task.status === "queued" && (
+        <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 p-6">
+          <div className="flex items-start gap-4">
+            <Clock className="mt-0.5 size-6 shrink-0 text-violet-500" />
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-violet-600 dark:text-violet-400">
+                Queued
+                {task.queue_position != null && (
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    #{task.queue_position} in line
+                  </span>
+                )}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                The pipeline runs one task at a time. This task starts
+                automatically as soon as the current run finishes — you can
+                leave this page and come back. To drop it from the queue,
+                delete it from the dashboard.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {task.status === "running" && (
         <>
           <ProgressPanel

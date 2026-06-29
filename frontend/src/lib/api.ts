@@ -50,10 +50,12 @@ async function request<T>(
 export interface Task {
   id: string;
   task_name: string;
-  status: "not_started" | "running" | "finished" | "error" | "cancelled";
+  status: "not_started" | "queued" | "running" | "finished" | "error" | "cancelled";
   progress?: number;
   created_at: string;
   error_message?: string;
+  /** 1-based position in the global serial queue (present only when status is "queued"). */
+  queue_position?: number | null;
   variables?: string[];
   /** Spatial buffer from the saved config (radius + raster grid in meters). */
   buffer?: { size: number; raster_res_m: number } | null;
@@ -89,9 +91,11 @@ export interface LogEntry {
  * (or non-experiment task flows) still parse.
  */
 export interface TaskStatus {
-  status: "not_started" | "running" | "finished" | "error" | "cancelled";
+  status: "not_started" | "queued" | "running" | "finished" | "error" | "cancelled";
   progress?: number;
   message?: string;
+  /** 1-based position in the global serial queue (present only when status is "queued"). */
+  queue_position?: number | null;
   /** Currently executing step name (e.g. "csv_to_parquet", "c3_bg", "c4_ndi", "c4_wi", "merge"). */
   current_step?: string;
   /** Total number of variable pipeline steps (excludes csv_to_parquet and merge). */
@@ -284,9 +288,10 @@ export const api = {
     }),
 
   startTask: (id: string) =>
-    request<Task>(`/api/tasks/${id}/start`, {
-      method: "POST",
-    }),
+    request<{ status: "running" | "queued"; task_id?: string; pid?: number }>(
+      `/api/tasks/${id}/start`,
+      { method: "POST" },
+    ),
 
   stopTask: (id: string) =>
     request<{ status: string }>(`/api/tasks/${id}/stop`, {

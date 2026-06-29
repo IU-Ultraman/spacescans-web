@@ -48,6 +48,22 @@ def create_app() -> FastAPI:
         except Exception as exc:  # pragma: no cover - defensive
             _log.error("pipeline version probe failed at startup: %r", exc)
 
+        # #1 serial queue: a background promoter starts the earliest-queued
+        # task as soon as the run-lock frees, so the queue advances even when
+        # no client is polling list/status.
+        import asyncio
+        from app import task_manager
+
+        async def _promote_loop():
+            while True:
+                await asyncio.sleep(3)
+                try:
+                    task_manager._promote_queue()
+                except Exception:  # pragma: no cover - defensive
+                    _log.exception("queue promotion failed")
+
+        asyncio.create_task(_promote_loop())
+
     @app.get("/api/health")
     async def health():
         return {"status": "ok"}

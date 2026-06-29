@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type TaskStatus = "not_started" | "running" | "finished" | "error" | "cancelled";
+type TaskStatus = "not_started" | "queued" | "running" | "finished" | "error" | "cancelled";
 
 const statusConfig: Record<
   TaskStatus,
@@ -11,6 +11,11 @@ const statusConfig: Record<
     label: "Not Started",
     className:
       "bg-muted text-muted-foreground border-muted-foreground/20",
+  },
+  queued: {
+    label: "Queued",
+    className:
+      "bg-violet-500/10 text-violet-600 border-violet-500/20 dark:text-violet-400",
   },
   running: {
     label: "Running",
@@ -57,6 +62,9 @@ export function StatusBadge({ status, progress, className }: StatusBadgeProps) {
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-blue-500 opacity-75" />
           <span className="relative inline-flex size-2 rounded-full bg-blue-500" />
         </span>
+      )}
+      {status === "queued" && (
+        <span className="mr-1 inline-flex size-2 rounded-full bg-violet-500" />
       )}
       {config.label}
       {status === "running" && progress != null && (

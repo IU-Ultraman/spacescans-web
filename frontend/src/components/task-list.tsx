@@ -61,6 +61,7 @@ function ActionButton({ task }: { task: Task }) {
           View Results
         </Link>
       );
+    case "queued":
     case "running":
       return (
         <Link
@@ -183,25 +184,51 @@ export function TaskList() {
   }, []);
 
   useEffect(() => {
-    const anyRunning = tasks.some((t) => t.status === "running");
-    if (anyRunning && !intervalRef.current) {
-      intervalRef.current = setInterval(async () => {
-        try {
-          const next = await api.listTasks();
-          setTasks(next);
-        } catch {
-          // swallow polling errors; the next tick will retry
-        }
-      }, 5000);
-    } else if (!anyRunning && intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    return () => {
+    // Poll while anything is in flight — queued tasks need polling too so the
+    // dashboard reflects promotion to "running" without a manual refresh.
+    // #7: don't poll while the tab is hidden; refetch immediately on return.
+    const anyActive = tasks.some(
+      (t) => t.status === "running" || t.status === "queued",
+    );
+
+    const refresh = async () => {
+      try {
+        setTasks(await api.listTasks());
+      } catch {
+        // swallow polling errors; the next tick will retry
+      }
+    };
+    const startPolling = () => {
+      if (intervalRef.current) return;
+      intervalRef.current = setInterval(refresh, 5000);
+    };
+    const stopPolling = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+    };
+
+    if (!anyActive) {
+      stopPolling();
+      return;
+    }
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        refresh(); // immediate catch-up on return
+        startPolling();
+      }
+    };
+
+    if (!document.hidden) startPolling();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      stopPolling();
     };
   }, [tasks]);
 
@@ -304,6 +331,7 @@ export function TaskList() {
           className="rounded-md border bg-background px-2 py-1.5 text-sm"
         >
           <option value="all">All statuses</option>
+          <option value="queued">Queued</option>
           <option value="running">Running</option>
           <option value="finished">Finished</option>
           <option value="error">Error</option>
@@ -371,6 +399,11 @@ export function TaskList() {
                         value={task.progress * 100}
                         className="w-32"
                       />
+                    )}
+                    {task.status === "queued" && task.queue_position != null && (
+                      <span className="text-xs text-muted-foreground">
+                        #{task.queue_position} in queue
+                      </span>
                     )}
                   </div>
                 </TableCell>

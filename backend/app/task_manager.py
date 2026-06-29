@@ -9,6 +9,7 @@ import os
 import signal
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from datetime import datetime, timezone
 import app.config
@@ -184,11 +185,10 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
     return {"row_count": n_total, "variables": out_vars}
 
 
-class TaskBusyError(RuntimeError):
-    """Raised by start_task when another task currently holds .run_lock."""
-
-    def __init__(self):
-        super().__init__("another task is already running")
+# Serializes dispatcher spawns within this process so the run-lock probe and
+# the Popen that follows it stay atomic: start_task (a user click) and the
+# background promoter may both try to launch, but never two runners at once.
+_spawn_lock = threading.Lock()
 
 
 def _task_dir(task_id: str) -> Path:
@@ -290,6 +290,8 @@ def list_tasks(user_id: int) -> list[dict]:
     tasks = []
     if not app.config.settings.TASKS_DIR.exists():
         return tasks
+    _promote_queue()  # opportunistic: dashboard polling drives the serial queue
+    positions = _queue_positions()
     for task_dir in sorted(app.config.settings.TASKS_DIR.iterdir()):
         meta_path = task_dir / "meta.json"
         if not meta_path.exists():
@@ -300,6 +302,8 @@ def list_tasks(user_id: int) -> list[dict]:
         _reap_if_dead(task_dir)
         _flatten_status_into_meta(meta, _read_status(task_dir))
         _attach_variables(meta, task_dir)
+        if meta.get("status") == "queued":
+            meta["queue_position"] = positions.get(meta["id"])
         tasks.append(meta)
     return tasks
 
@@ -312,6 +316,8 @@ def get_task(task_id: str) -> dict | None:
     _reap_if_dead(task_dir)
     _flatten_status_into_meta(meta, _read_status(task_dir))
     _attach_variables(meta, task_dir)
+    if meta.get("status") == "queued":
+        meta["queue_position"] = _queue_positions().get(task_id)
     return meta
 
 def delete_task(task_id: str):
@@ -356,42 +362,34 @@ def save_config(task_id: str, config: dict):
     config["input_file"] = "input.csv"
     (task_dir / "config.json").write_text(json.dumps(config, indent=2))
 
-def start_task(task_id: str) -> dict:
-    """Sprint 3: Popen the supervisor and return its pid synchronously.
+def _run_lock_free() -> bool:
+    """True when DATA_DIR/.run_lock is not held by any runner right now.
 
-    Replaces the Sprint 2 single-runner spawn. The request thread now Popens
-    `python -m app.dispatcher run <task_id>` (in a new session) and returns
-    immediately with the supervisor pid. The supervisor sequentially spawns
-    each per-experiment runner.
-
-    Sprint 4 F2: synchronously probe DATA_DIR/.run_lock before Popen. If
-    another task currently holds it, raise TaskBusyError so the router can
-    map to HTTP 409. The probe releases immediately — the runner will
-    re-acquire the lock for real inside its own process.
+    Probe-and-release: the dispatcher subprocess re-acquires the lock for real
+    inside its own process (Sprint 4 F2), so this only answers the question
+    "is a task currently running?".
     """
-    task_dir = _task_dir(task_id)
-    if not (task_dir / "config.json").exists():
-        raise FileNotFoundError(f"config.json missing for task {task_id}")
-
     lock_path = app.config.settings.DATA_DIR / ".run_lock"
     lock_path.touch(exist_ok=True)
-    probe_fd = os.open(str(lock_path), os.O_RDWR)
+    fd = os.open(str(lock_path), os.O_RDWR)
     try:
         try:
-            fcntl.flock(probe_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as exc:
-            raise TaskBusyError() from exc
-        finally:
-            # Release immediately — the runner will re-acquire.
-            fcntl.flock(probe_fd, fcntl.LOCK_UN)
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return False
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        return True
     finally:
-        os.close(probe_fd)
+        os.close(fd)
 
-    cmd = [
-        sys.executable,
-        "-m", "app.dispatcher",
-        "run", task_id,
-    ]
+
+def _spawn_dispatcher(task_id: str, task_dir: Path) -> dict:
+    """Popen `python -m app.dispatcher run <task_id>` and stamp status=running.
+
+    Caller MUST hold _spawn_lock so the run-lock probe in _try_spawn and this
+    Popen cannot interleave with a competing spawn.
+    """
+    cmd = [sys.executable, "-m", "app.dispatcher", "run", task_id]
     proc = subprocess.Popen(
         cmd,
         cwd=str(app.config.settings.BASE_DIR),
@@ -400,14 +398,90 @@ def start_task(task_id: str) -> dict:
         start_new_session=True,
     )
     # Stamp status='running' synchronously, in the same write that records the
-    # supervisor pid. The dispatcher subprocess re-affirms 'running' once it has
-    # booted (heavy imports take seconds), but the client navigates to the task
-    # detail page the instant this call returns — and that page only begins
-    # polling when status is already 'running'. Without this, the freshly
-    # started task is observable as 'not_started' (rendered "Not Configured
-    # Yet") for the whole boot window, and the page never re-polls out of it.
+    # supervisor pid. The client navigates to the task detail page the instant
+    # this returns, and that page only begins polling once status is 'running'
+    # (the dispatcher re-affirms 'running' after its heavy imports finish).
     _write_status(task_dir, status="running", pid=proc.pid)
-    return {"pid": proc.pid, "task_id": task_id}
+    return {"pid": proc.pid, "task_id": task_id, "status": "running"}
+
+
+def _try_spawn(task_id: str, task_dir: Path) -> dict | None:
+    """Spawn the dispatcher iff the run-lock is free; else return None.
+    Atomic within this process via _spawn_lock."""
+    with _spawn_lock:
+        if not _run_lock_free():
+            return None
+        return _spawn_dispatcher(task_id, task_dir)
+
+
+def _queue_positions() -> dict[str, int]:
+    """Map task_id -> 1-based position among ALL queued tasks, ordered by
+    queued_at ascending. The pipeline runs one task at a time, so the queue is
+    global across users."""
+    if not app.config.settings.TASKS_DIR.exists():
+        return {}
+    queued: list[tuple[str, str]] = []
+    for task_dir in app.config.settings.TASKS_DIR.iterdir():
+        if not (task_dir / "status.json").exists():
+            continue
+        st = _read_status(task_dir)
+        if st.get("status") == "queued":
+            queued.append(
+                (st.get("queued_at") or "", task_dir.name.replace("task-", "", 1))
+            )
+    queued.sort()
+    return {tid: i + 1 for i, (_, tid) in enumerate(queued)}
+
+
+def _promote_queue() -> None:
+    """Start the earliest-queued task if the run-lock is free; no-op otherwise.
+
+    Safe to call from request threads (list/status reads) and the startup
+    background loop — _try_spawn serializes the spawn and re-checks the lock,
+    so at most one runner is ever launched.
+    """
+    if not app.config.settings.TASKS_DIR.exists():
+        return
+    queued: list[tuple[str, Path]] = []
+    for task_dir in app.config.settings.TASKS_DIR.iterdir():
+        if not (task_dir / "status.json").exists():
+            continue
+        st = _read_status(task_dir)
+        if st.get("status") == "queued":
+            queued.append((st.get("queued_at") or "", task_dir))
+    if not queued:
+        return
+    queued.sort(key=lambda x: x[0])
+    _, earliest = queued[0]
+    task_id = earliest.name.replace("task-", "", 1)
+    if (earliest / "config.json").exists():
+        _try_spawn(task_id, earliest)
+
+
+def start_task(task_id: str) -> dict:
+    """Start the task now if the run-lock is free, else enqueue it (status
+    "queued").
+
+    The pipeline runs one task at a time behind the global DATA_DIR/.run_lock.
+    #1 (serial queue): rather than reject a concurrent start with 409, record
+    status "queued"; the background promoter — and opportunistic promotion on
+    list/status reads — starts the earliest-queued task the moment the lock
+    frees. No rejection, FIFO by queued_at.
+    """
+    task_dir = _task_dir(task_id)
+    if not (task_dir / "config.json").exists():
+        raise FileNotFoundError(f"config.json missing for task {task_id}")
+
+    info = _try_spawn(task_id, task_dir)
+    if info is not None:
+        return info
+    _write_status(
+        task_dir,
+        status="queued",
+        queued_at=datetime.now(timezone.utc).isoformat(),
+        pid=None,
+    )
+    return {"task_id": task_id, "status": "queued"}
 
 def stop_task(task_id: str) -> dict:
     """Sprint 4 F1a: SIGTERM ONLY the recorded per-experiment runner pids
@@ -471,8 +545,12 @@ def stop_task(task_id: str) -> dict:
 
 def get_status(task_id: str) -> dict:
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
+    _promote_queue()  # opportunistic: task-page polling drives the serial queue
     _reap_if_dead(task_dir)
-    return _read_status(task_dir)
+    st = _read_status(task_dir)
+    if st.get("status") == "queued":
+        st["queue_position"] = _queue_positions().get(task_id)
+    return st
 
 def get_logs(task_id: str, since: str | None = None) -> list[dict]:
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"

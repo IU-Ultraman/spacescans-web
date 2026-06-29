@@ -164,8 +164,9 @@ def test_save_config_default_experiment_is_bg_ndi_wi(monkeypatch, tmp_path):
     assert saved["experiment"] == "bg_ndi_wi"
 
 
-def test_start_lock_returns_409_when_busy(monkeypatch, tmp_path):
-    """Acquire the lock from outside, then call start_task and expect TaskBusyError."""
+def test_start_enqueues_when_busy(monkeypatch, tmp_path):
+    """#1 serial queue: with the run-lock held, start_task enqueues the task
+    (status 'queued') instead of raising."""
     import io, importlib, fcntl, os, app.config, app.task_manager
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
@@ -180,7 +181,9 @@ def test_start_lock_returns_409_when_busy(monkeypatch, tmp_path):
     fd = os.open(str(lock_path), os.O_RDWR)
     fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
-    from app.task_manager import create_task, save_config, start_task, TaskBusyError
+    from app.task_manager import (
+        create_task, save_config, start_task, _read_status, _task_dir,
+    )
     meta = create_task(user_id=1, task_name="t")
     save_config(meta["id"], {
         "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
@@ -190,8 +193,9 @@ def test_start_lock_returns_409_when_busy(monkeypatch, tmp_path):
     (app.config.settings.TASKS_DIR / f"task-{meta['id']}" / "input.csv").write_text(
         "pid,startDate,endDate,longitude,latitude\nP1,2017-01-01,2017-06-30,-93.0,45.0\n"
     )
-    with pytest.raises(TaskBusyError):
-        start_task(meta["id"])
+    out = start_task(meta["id"])
+    assert out["status"] == "queued"
+    assert _read_status(_task_dir(meta["id"]))["status"] == "queued"
 
     fcntl.flock(fd, fcntl.LOCK_UN)
     os.close(fd)
