@@ -88,7 +88,7 @@ function ActionButton({ task }: { task: Task }) {
           className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
         >
           <Settings2 className="size-3.5" />
-          Configure
+          Open
         </Link>
       );
   }

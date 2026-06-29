@@ -311,17 +311,26 @@ export default function TaskDetailPage() {
       {task.status === "not_started" && (
         <div className="rounded-lg border border-dashed p-8 text-center">
           <Settings className="mx-auto mb-3 size-10 text-muted-foreground/50" />
-          <h2 className="text-lg font-semibold">Not Configured Yet</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            This task hasn&apos;t been configured. Set up the task parameters to
-            get started.
+          <h2 className="text-lg font-semibold">Setup not completed</h2>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            This task was created but its setup was never finished, so there is
+            nothing to run yet. Task setup happens in the New Task flow — start
+            a new task there, or delete this one from the dashboard.
           </p>
-          <Link
-            href={`/dashboard/task/${id}/configure`}
-            className="mt-4 inline-flex items-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
-          >
-            Configure Task
-          </Link>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <Link
+              href="/dashboard/task/new"
+              className="inline-flex items-center rounded-lg bg-primary px-2.5 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Start a new task
+            </Link>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+            >
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
       )}
 
