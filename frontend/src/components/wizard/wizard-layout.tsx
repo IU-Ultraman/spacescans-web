@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Check } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 
 const STEPS = [
   { label: "Select Exposures", description: "Pick exposures" },
@@ -18,6 +19,15 @@ interface WizardLayoutProps {
 export function WizardLayout({ currentStep, children }: WizardLayoutProps) {
   return (
     <div className="mx-auto max-w-7xl">
+      {/* Exit back to the task dashboard (available on every step) */}
+      <Link
+        href="/dashboard"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Dashboard
+      </Link>
+
       {/* Stepper */}
       <nav aria-label="Wizard steps" className="mb-8">
         <ol className="flex items-center">
