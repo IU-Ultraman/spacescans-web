@@ -254,9 +254,10 @@ function TreeNodeRow({
         {canSelect && (
           <Checkbox
             checked={isSelected}
-            onCheckedChange={(checked) =>
-              onCheck(node.id, checked === true)
-            }
+            onCheckedChange={(checked) => {
+              onCheck(node.id, checked === true);
+              onNodeClick?.(node.id); // focus the node so the detail panel follows
+            }}
             className="shrink-0"
           />
         )}
