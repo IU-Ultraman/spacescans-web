@@ -1,0 +1,32 @@
+[
+  {
+    "id": "SPACESCANS_VC_dist_area_m",
+    "label": "Distance to area feature",
+    "definition": "Distance in meters to the nearest NHD area feature. (Result column: dist_area_m.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_dist_coast_m",
+    "label": "Distance to coastline",
+    "definition": "Distance in meters to the nearest coastline (99999 for inland addresses). (Result column: dist_coast_m.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_dist_flow_m",
+    "label": "Distance to flowline",
+    "definition": "Distance in meters to the nearest NHD flowline. (Result column: dist_flow_m.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_dist_blue_m",
+    "label": "Distance to nearest blue feature",
+    "definition": "Distance in meters to the nearest combined blue feature (flowline, waterbody, area, or coast). (Result column: dist_blue_m.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_dist_water_m",
+    "label": "Distance to waterbody",
+    "definition": "Distance in meters to the nearest NHD waterbody. (Result column: dist_water_m.)",
+    "has_children": false
+  }
+]

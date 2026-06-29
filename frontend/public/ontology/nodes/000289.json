@@ -1,0 +1,20 @@
+[
+  {
+    "id": "SPACESCANS_VC_l50dba_imp",
+    "label": "Noise \u2014 alternative scenario (imp)",
+    "definition": "Alternative-scenario daytime L50 transportation-noise surface (dBA); exact scenario pending verification against the BTS source. (Result column: l50dba_imp.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_l50dba_nat",
+    "label": "Noise \u2014 alternative scenario (nat)",
+    "definition": "Alternative-scenario daytime L50 transportation-noise surface (dBA); exact scenario pending verification against the BTS source. (Result column: l50dba_nat.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_l50dba_exi",
+    "label": "Noise \u2014 existing conditions",
+    "definition": "Existing-conditions daytime road+aviation transportation-noise surface, L50 dBA. (Result column: l50dba_exi.)",
+    "has_children": false
+  }
+]

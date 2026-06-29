@@ -3,7 +3,7 @@
     "id": "000294",
     "label": "Food_Access_Exposome",
     "definition": "",
-    "has_children": false
+    "has_children": true
   },
   {
     "id": "000293",
@@ -15,12 +15,12 @@
     "id": "SPACESCANS_Road_Proximity",
     "label": "Road_Proximity",
     "definition": "Distance from a residence to the nearest TIGER/Line primary, secondary, and combined primary+secondary roads.",
-    "has_children": false
+    "has_children": true
   },
   {
     "id": "SPACESCANS_Walkability",
     "label": "Walkability",
     "definition": "EPA National Walkability Index ranking neighborhoods on walkability characteristics such as intersection density, transit proximity, and employment mix.",
-    "has_children": false
+    "has_children": true
   }
 ]

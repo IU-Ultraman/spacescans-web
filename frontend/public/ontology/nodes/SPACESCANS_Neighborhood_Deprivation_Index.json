@@ -1,0 +1,8 @@
+[
+  {
+    "id": "SPACESCANS_VC_ndi",
+    "label": "NDI score",
+    "definition": "Neighborhood Deprivation Index \u2014 composite socioeconomic deprivation score (z-score). (Result column: ndi.)",
+    "has_children": false
+  }
+]

@@ -3,12 +3,12 @@
     "id": "SPACESCANS_Community_Organization_Density",
     "label": "Community_Organization_Density",
     "definition": "Per-capita density of community organization categories (religious, civic, business, etc.) from US Census ZIP Business Patterns.",
-    "has_children": false
+    "has_children": true
   },
   {
     "id": "SPACESCANS_Neighborhood_Deprivation_Index",
     "label": "Neighborhood_Deprivation_Index",
     "definition": "Composite measure of neighborhood-level socioeconomic deprivation derived from US Census ACS variables.",
-    "has_children": false
+    "has_children": true
   }
 ]

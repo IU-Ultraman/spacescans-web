@@ -1,0 +1,8 @@
+[
+  {
+    "id": "SPACESCANS_VC_value",
+    "label": "Night-time radiance",
+    "definition": "Annual mean night-time light radiance (nanowatts/cm^2/sr) from the VIIRS Day/Night Band. (Result column: value.)",
+    "has_children": false
+  }
+]

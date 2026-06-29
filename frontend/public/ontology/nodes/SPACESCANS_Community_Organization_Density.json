@@ -1,0 +1,62 @@
+[
+  {
+    "id": "SPACESCANS_VC_r_bowling",
+    "label": "Bowling centers",
+    "definition": "Number of establishments in bowling centers per 10,000 population. (Result column: r_bowling.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_r_business",
+    "label": "Business associations",
+    "definition": "Number of establishments in business associations per 10,000 population. (Result column: r_business.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_r_civic",
+    "label": "Civic & social associations",
+    "definition": "Number of establishments in civic and social associations per 10,000 population. (Result column: r_civic.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_r_recreational",
+    "label": "Fitness & recreational sports centers",
+    "definition": "Number of establishments in fitness and recreational sports centers per 10,000 population. (Result column: r_recreational.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_r_golf",
+    "label": "Golf courses & country clubs",
+    "definition": "Number of establishments in golf courses and country clubs per 10,000 population. (Result column: r_golf.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_r_labor",
+    "label": "Labor organizations",
+    "definition": "Number of establishments in labor organizations per 10,000 population. (Result column: r_labor.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_r_political",
+    "label": "Political organizations",
+    "definition": "Number of establishments in political organizations per 10,000 population. (Result column: r_political.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_r_professional",
+    "label": "Professional organizations",
+    "definition": "Number of establishments in professional organizations per 10,000 population. (Result column: r_professional.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_r_religious",
+    "label": "Religious organizations",
+    "definition": "Number of establishments in religious organizations per 10,000 population. (Result column: r_religious.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_r_sports",
+    "label": "Sports teams & clubs",
+    "definition": "Number of establishments in sports teams and clubs per 10,000 population. (Result column: r_sports.)",
+    "has_children": false
+  }
+]

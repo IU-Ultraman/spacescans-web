@@ -1,0 +1,26 @@
+[
+  {
+    "id": "SPACESCANS_VC_LATracts1",
+    "label": "Low-access tract (1 mi)",
+    "definition": "Flag for low-access tract at 1 mile. (Result column: LATracts1.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_LILATracts_1And10",
+    "label": "Low-income & low-access tract (1/10 mi)",
+    "definition": "Flag for low-income, low-access tracts at 1 mile (urban) / 10 miles (rural). (Result column: LILATracts_1And10.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_LowIncomeTracts",
+    "label": "Low-income tract",
+    "definition": "Flag for low-income tract. (Result column: LowIncomeTracts.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_HUNVFlag",
+    "label": "Low-vehicle-access tract",
+    "definition": "Flag for a tract where >=100 households have no vehicle and are beyond half a mile from a supermarket. (Result column: HUNVFlag.)",
+    "has_children": false
+  }
+]

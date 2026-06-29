@@ -26,8 +26,11 @@ def _seed(base: Path):
     (base / "nodes" / "000292.json").write_text(json.dumps([
         {"id": "000294", "label": "Food_Access_Exposome", "definition": "", "has_children": False},
     ]))
+    # Natural's existing SPACEO leaves that gain value_col children.
     (base / "nodes" / "000094_2.json").write_text(json.dumps([
         {"id": "000289", "label": "Noise", "definition": "", "has_children": False},
+        {"id": "000290", "label": "Light_at_Night", "definition": "", "has_children": False},
+        {"id": "000288", "label": "Ultraviolet_Radiation", "definition": "", "has_children": False},
     ]))
 
 
@@ -92,3 +95,44 @@ def test_child_lists_sorted_by_label(tmp_path):
     for f in (tmp_path / "nodes").glob("*.json"):
         labels = [c["label"] for c in json.loads(f.read_text())]
         assert labels == sorted(labels), f"{f.name} not sorted: {labels}"
+
+
+def test_value_col_nodes_attached_under_variable_nodes(tmp_path):
+    from scripts.extend_ontology import extend_ontology, VALUE_COL_NODES
+
+    _seed(tmp_path)
+    extend_ontology(tmp_path)
+
+    meta = json.loads((tmp_path / "metadata.json").read_text())
+    search_ids = {it["id"] for it in json.loads((tmp_path / "search-index.json").read_text())}
+
+    # All ~32 value_col nodes land in metadata + search, with a "Result column:"
+    # provenance suffix.
+    assert len(VALUE_COL_NODES) == 32
+    for n in VALUE_COL_NODES:
+        assert n["id"] in meta, n["id"]
+        assert n["id"] in search_ids, n["id"]
+        assert "(Result column:" in meta[n["id"]]["definition"]
+
+    # Spot-check placement: cbp outcome under Community_Organization_Density,
+    # noise outcome under Noise (000289).
+    cbp_children = {c["id"] for c in json.loads(
+        (tmp_path / "nodes" / "SPACESCANS_Community_Organization_Density.json").read_text())}
+    assert "SPACESCANS_VC_r_religious" in cbp_children
+    assert len(cbp_children) == 10
+    noise_children = {c["id"] for c in json.loads(
+        (tmp_path / "nodes" / "000289.json").read_text())}
+    assert {"SPACESCANS_VC_l50dba_exi", "SPACESCANS_VC_l50dba_imp",
+            "SPACESCANS_VC_l50dba_nat"} == noise_children
+
+    # Every variable node now reads has_children == True in its domain file.
+    natural = {c["id"]: c for c in json.loads((tmp_path / "nodes" / "000094_2.json").read_text())}
+    for vid in ("000289", "000290", "000288", "SPACESCANS_Bluespace"):
+        assert natural[vid]["has_children"] is True, vid
+    built = {c["id"]: c for c in json.loads((tmp_path / "nodes" / "000292.json").read_text())}
+    for vid in ("000294", "SPACESCANS_Walkability", "SPACESCANS_Road_Proximity"):
+        assert built[vid]["has_children"] is True, vid
+    social = {c["id"]: c for c in json.loads((tmp_path / "nodes" / "000295.json").read_text())}
+    for vid in ("SPACESCANS_Neighborhood_Deprivation_Index",
+                "SPACESCANS_Community_Organization_Density"):
+        assert social[vid]["has_children"] is True, vid

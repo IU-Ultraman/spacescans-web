@@ -9,13 +9,13 @@
     "id": "SPACESCANS_Bluespace",
     "label": "Bluespace",
     "definition": "Distance from a residence to the nearest NHD surface-water feature (flowline, waterbody, area feature, coastline, and combined blue feature).",
-    "has_children": false
+    "has_children": true
   },
   {
     "id": "000290",
     "label": "Light_at_Night",
     "definition": "",
-    "has_children": false
+    "has_children": true
   },
   {
     "id": "000291",
@@ -27,12 +27,12 @@
     "id": "000289",
     "label": "Noise",
     "definition": "",
-    "has_children": false
+    "has_children": true
   },
   {
     "id": "000288",
     "label": "Ultraviolet_Radiation",
     "definition": "",
-    "has_children": false
+    "has_children": true
   }
 ]

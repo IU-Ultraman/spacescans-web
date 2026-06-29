@@ -1,0 +1,20 @@
+[
+  {
+    "id": "SPACESCANS_VC_dist_pri",
+    "label": "Distance to primary road",
+    "definition": "Distance in meters to the nearest TIGER/Line primary road (S1100). (Result column: dist_pri.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_dist_prisec",
+    "label": "Distance to primary/secondary road",
+    "definition": "Distance in meters to the nearest TIGER/Line primary or secondary road. (Result column: dist_prisec.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_dist_sec",
+    "label": "Distance to secondary road",
+    "definition": "Distance in meters to the nearest TIGER/Line secondary road (S1200). (Result column: dist_sec.)",
+    "has_children": false
+  }
+]

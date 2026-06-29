@@ -9318,5 +9318,165 @@
     "id": "SPACESCANS_Bluespace",
     "label": "Bluespace",
     "definition": "Distance from a residence to the nearest NHD surface-water feature (flowline, waterbody, area feature, coastline, and combined blue feature)."
+  },
+  "SPACESCANS_VC_r_religious": {
+    "id": "SPACESCANS_VC_r_religious",
+    "label": "Religious organizations",
+    "definition": "Number of establishments in religious organizations per 10,000 population. (Result column: r_religious.)"
+  },
+  "SPACESCANS_VC_r_civic": {
+    "id": "SPACESCANS_VC_r_civic",
+    "label": "Civic & social associations",
+    "definition": "Number of establishments in civic and social associations per 10,000 population. (Result column: r_civic.)"
+  },
+  "SPACESCANS_VC_r_business": {
+    "id": "SPACESCANS_VC_r_business",
+    "label": "Business associations",
+    "definition": "Number of establishments in business associations per 10,000 population. (Result column: r_business.)"
+  },
+  "SPACESCANS_VC_r_political": {
+    "id": "SPACESCANS_VC_r_political",
+    "label": "Political organizations",
+    "definition": "Number of establishments in political organizations per 10,000 population. (Result column: r_political.)"
+  },
+  "SPACESCANS_VC_r_professional": {
+    "id": "SPACESCANS_VC_r_professional",
+    "label": "Professional organizations",
+    "definition": "Number of establishments in professional organizations per 10,000 population. (Result column: r_professional.)"
+  },
+  "SPACESCANS_VC_r_labor": {
+    "id": "SPACESCANS_VC_r_labor",
+    "label": "Labor organizations",
+    "definition": "Number of establishments in labor organizations per 10,000 population. (Result column: r_labor.)"
+  },
+  "SPACESCANS_VC_r_bowling": {
+    "id": "SPACESCANS_VC_r_bowling",
+    "label": "Bowling centers",
+    "definition": "Number of establishments in bowling centers per 10,000 population. (Result column: r_bowling.)"
+  },
+  "SPACESCANS_VC_r_recreational": {
+    "id": "SPACESCANS_VC_r_recreational",
+    "label": "Fitness & recreational sports centers",
+    "definition": "Number of establishments in fitness and recreational sports centers per 10,000 population. (Result column: r_recreational.)"
+  },
+  "SPACESCANS_VC_r_golf": {
+    "id": "SPACESCANS_VC_r_golf",
+    "label": "Golf courses & country clubs",
+    "definition": "Number of establishments in golf courses and country clubs per 10,000 population. (Result column: r_golf.)"
+  },
+  "SPACESCANS_VC_r_sports": {
+    "id": "SPACESCANS_VC_r_sports",
+    "label": "Sports teams & clubs",
+    "definition": "Number of establishments in sports teams and clubs per 10,000 population. (Result column: r_sports.)"
+  },
+  "SPACESCANS_VC_LILATracts_1And10": {
+    "id": "SPACESCANS_VC_LILATracts_1And10",
+    "label": "Low-income & low-access tract (1/10 mi)",
+    "definition": "Flag for low-income, low-access tracts at 1 mile (urban) / 10 miles (rural). (Result column: LILATracts_1And10.)"
+  },
+  "SPACESCANS_VC_LATracts1": {
+    "id": "SPACESCANS_VC_LATracts1",
+    "label": "Low-access tract (1 mi)",
+    "definition": "Flag for low-access tract at 1 mile. (Result column: LATracts1.)"
+  },
+  "SPACESCANS_VC_HUNVFlag": {
+    "id": "SPACESCANS_VC_HUNVFlag",
+    "label": "Low-vehicle-access tract",
+    "definition": "Flag for a tract where >=100 households have no vehicle and are beyond half a mile from a supermarket. (Result column: HUNVFlag.)"
+  },
+  "SPACESCANS_VC_LowIncomeTracts": {
+    "id": "SPACESCANS_VC_LowIncomeTracts",
+    "label": "Low-income tract",
+    "definition": "Flag for low-income tract. (Result column: LowIncomeTracts.)"
+  },
+  "SPACESCANS_VC_ndi": {
+    "id": "SPACESCANS_VC_ndi",
+    "label": "NDI score",
+    "definition": "Neighborhood Deprivation Index \u2014 composite socioeconomic deprivation score (z-score). (Result column: ndi.)"
+  },
+  "SPACESCANS_VC_NatWalkInd": {
+    "id": "SPACESCANS_VC_NatWalkInd",
+    "label": "National Walkability Index",
+    "definition": "Relative walkability from the EPA National Walkability Index (1-20). (Result column: NatWalkInd.)"
+  },
+  "SPACESCANS_VC_l50dba_exi": {
+    "id": "SPACESCANS_VC_l50dba_exi",
+    "label": "Noise \u2014 existing conditions",
+    "definition": "Existing-conditions daytime road+aviation transportation-noise surface, L50 dBA. (Result column: l50dba_exi.)"
+  },
+  "SPACESCANS_VC_l50dba_imp": {
+    "id": "SPACESCANS_VC_l50dba_imp",
+    "label": "Noise \u2014 alternative scenario (imp)",
+    "definition": "Alternative-scenario daytime L50 transportation-noise surface (dBA); exact scenario pending verification against the BTS source. (Result column: l50dba_imp.)"
+  },
+  "SPACESCANS_VC_l50dba_nat": {
+    "id": "SPACESCANS_VC_l50dba_nat",
+    "label": "Noise \u2014 alternative scenario (nat)",
+    "definition": "Alternative-scenario daytime L50 transportation-noise surface (dBA); exact scenario pending verification against the BTS source. (Result column: l50dba_nat.)"
+  },
+  "SPACESCANS_VC_value": {
+    "id": "SPACESCANS_VC_value",
+    "label": "Night-time radiance",
+    "definition": "Annual mean night-time light radiance (nanowatts/cm^2/sr) from the VIIRS Day/Night Band. (Result column: value.)"
+  },
+  "SPACESCANS_VC_uvddc": {
+    "id": "SPACESCANS_VC_uvddc",
+    "label": "Daily DNA-damage UV dose",
+    "definition": "Daily DNA-damage-weighted ultraviolet dose. (Result column: uvddc.)"
+  },
+  "SPACESCANS_VC_uvdec": {
+    "id": "SPACESCANS_VC_uvdec",
+    "label": "Daily erythemal UV dose",
+    "definition": "Daily erythemally-weighted ultraviolet dose. (Result column: uvdec.)"
+  },
+  "SPACESCANS_VC_uvdvc": {
+    "id": "SPACESCANS_VC_uvdvc",
+    "label": "Daily vitamin-D UV dose",
+    "definition": "Daily vitamin-D-weighted ultraviolet dose. (Result column: uvdvc.)"
+  },
+  "SPACESCANS_VC_uvief": {
+    "id": "SPACESCANS_VC_uvief",
+    "label": "UV index at noon",
+    "definition": "Ultraviolet index at local solar noon. (Result column: uvief.)"
+  },
+  "SPACESCANS_VC_dist_flow_m": {
+    "id": "SPACESCANS_VC_dist_flow_m",
+    "label": "Distance to flowline",
+    "definition": "Distance in meters to the nearest NHD flowline. (Result column: dist_flow_m.)"
+  },
+  "SPACESCANS_VC_dist_water_m": {
+    "id": "SPACESCANS_VC_dist_water_m",
+    "label": "Distance to waterbody",
+    "definition": "Distance in meters to the nearest NHD waterbody. (Result column: dist_water_m.)"
+  },
+  "SPACESCANS_VC_dist_area_m": {
+    "id": "SPACESCANS_VC_dist_area_m",
+    "label": "Distance to area feature",
+    "definition": "Distance in meters to the nearest NHD area feature. (Result column: dist_area_m.)"
+  },
+  "SPACESCANS_VC_dist_coast_m": {
+    "id": "SPACESCANS_VC_dist_coast_m",
+    "label": "Distance to coastline",
+    "definition": "Distance in meters to the nearest coastline (99999 for inland addresses). (Result column: dist_coast_m.)"
+  },
+  "SPACESCANS_VC_dist_blue_m": {
+    "id": "SPACESCANS_VC_dist_blue_m",
+    "label": "Distance to nearest blue feature",
+    "definition": "Distance in meters to the nearest combined blue feature (flowline, waterbody, area, or coast). (Result column: dist_blue_m.)"
+  },
+  "SPACESCANS_VC_dist_pri": {
+    "id": "SPACESCANS_VC_dist_pri",
+    "label": "Distance to primary road",
+    "definition": "Distance in meters to the nearest TIGER/Line primary road (S1100). (Result column: dist_pri.)"
+  },
+  "SPACESCANS_VC_dist_sec": {
+    "id": "SPACESCANS_VC_dist_sec",
+    "label": "Distance to secondary road",
+    "definition": "Distance in meters to the nearest TIGER/Line secondary road (S1200). (Result column: dist_sec.)"
+  },
+  "SPACESCANS_VC_dist_prisec": {
+    "id": "SPACESCANS_VC_dist_prisec",
+    "label": "Distance to primary/secondary road",
+    "definition": "Distance in meters to the nearest TIGER/Line primary or secondary road. (Result column: dist_prisec.)"
   }
 }

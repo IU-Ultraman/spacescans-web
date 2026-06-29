@@ -1,0 +1,8 @@
+[
+  {
+    "id": "SPACESCANS_VC_NatWalkInd",
+    "label": "National Walkability Index",
+    "definition": "Relative walkability from the EPA National Walkability Index (1-20). (Result column: NatWalkInd.)",
+    "has_children": false
+  }
+]

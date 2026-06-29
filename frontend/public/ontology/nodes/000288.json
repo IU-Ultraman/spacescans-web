@@ -1,0 +1,26 @@
+[
+  {
+    "id": "SPACESCANS_VC_uvddc",
+    "label": "Daily DNA-damage UV dose",
+    "definition": "Daily DNA-damage-weighted ultraviolet dose. (Result column: uvddc.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_uvdec",
+    "label": "Daily erythemal UV dose",
+    "definition": "Daily erythemally-weighted ultraviolet dose. (Result column: uvdec.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_uvdvc",
+    "label": "Daily vitamin-D UV dose",
+    "definition": "Daily vitamin-D-weighted ultraviolet dose. (Result column: uvdvc.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_uvief",
+    "label": "UV index at noon",
+    "definition": "Ultraviolet index at local solar noon. (Result column: uvief.)",
+    "has_children": false
+  }
+]
