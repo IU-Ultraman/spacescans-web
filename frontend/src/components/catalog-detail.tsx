@@ -6,7 +6,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
@@ -103,9 +102,6 @@ export function CatalogDetail({ selectedId }: CatalogDetailProps) {
         <CardTitle className="text-xl">
           {entry.label.replace(/_/g, " ")}
         </CardTitle>
-        <CardDescription className="font-mono text-xs">
-          {entry.id}
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {entry.definition && (
