@@ -236,10 +236,17 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
 
       {/* Legend */}
       {data && Object.keys(data).length > 0 && (
-        <div className="mt-3 flex items-center gap-2 text-[10px] text-muted-foreground">
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
           <span className="font-mono tabular-nums">{range.lo.toFixed(2)}</span>
           <div className="h-2 flex-1 rounded-full bg-gradient-to-r from-[hsl(160_30%_90%)] via-[hsl(160_55%_60%)] to-[hsl(160_80%_32%)]" />
           <span className="font-mono tabular-nums">{range.hi.toFixed(2)}</span>
+          <span className="ml-2 inline-flex items-center gap-1">
+            <span
+              className="inline-block size-3 rounded-[3px] ring-1 ring-border"
+              style={{ background: "hsl(220 14% 92%)" }}
+            />
+            no data
+          </span>
         </div>
       )}
     </div>

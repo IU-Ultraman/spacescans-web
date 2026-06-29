@@ -304,7 +304,7 @@ export function TaskList() {
             {visibleTasks.map((task) => (
               <TableRow
                 key={task.id}
-                className="group cursor-pointer transition-colors"
+                className="group transition-colors hover:bg-muted/40"
               >
                 <TableCell className="pl-6">
                   <span className="font-medium text-foreground">

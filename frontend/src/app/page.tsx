@@ -1,8 +1,22 @@
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
+      {/* Top nav */}
+      <header className="absolute inset-x-0 top-0 z-10">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-end gap-3 px-6">
+          <ThemeToggle />
+          <Link
+            href="/login"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Log in
+          </Link>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         {/* Subtle gradient background */}
@@ -53,7 +67,7 @@ export default function Home() {
 
           <div className="mt-14 grid gap-8 sm:grid-cols-3">
             {/* Feature 1 */}
-            <div className="rounded-xl bg-card p-6 ring-1 ring-foreground/10">
+            <div className="rounded-xl bg-card p-6 ring-1 ring-foreground/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <div className="mb-4 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -81,7 +95,7 @@ export default function Home() {
             </div>
 
             {/* Feature 2 */}
-            <div className="rounded-xl bg-card p-6 ring-1 ring-foreground/10">
+            <div className="rounded-xl bg-card p-6 ring-1 ring-foreground/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <div className="mb-4 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -109,7 +123,7 @@ export default function Home() {
             </div>
 
             {/* Feature 3 */}
-            <div className="rounded-xl bg-card p-6 ring-1 ring-foreground/10">
+            <div className="rounded-xl bg-card p-6 ring-1 ring-foreground/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <div className="mb-4 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

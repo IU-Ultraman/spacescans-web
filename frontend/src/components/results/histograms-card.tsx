@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
+  CartesianGrid,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -66,10 +67,21 @@ function HistogramTile({ hist, meta }: { hist: HistogramData; meta: ColumnMeta |
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
-            margin={{ top: 4, right: 4, bottom: 4, left: 4 }}
+            margin={{ top: 4, right: 4, bottom: 0, left: -18 }}
           >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={false}
+              stroke="hsl(var(--border))"
+            />
             <XAxis dataKey="range" hide />
-            <YAxis hide />
+            <YAxis
+              width={30}
+              allowDecimals={false}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+            />
             <Tooltip
               cursor={{ fill: "rgba(0,0,0,0.04)" }}
               content={({ active, payload }) => {
@@ -83,7 +95,7 @@ function HistogramTile({ hist, meta }: { hist: HistogramData; meta: ColumnMeta |
                 );
               }}
             />
-            <Bar dataKey="count" fill="hsl(217 91% 60%)" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="count" fill="hsl(160 64% 42%)" radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

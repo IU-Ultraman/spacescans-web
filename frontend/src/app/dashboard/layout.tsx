@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { clearToken, getEmail, isAuthenticated } from "@/lib/auth";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { LogOut } from "lucide-react";
 
 export default function DashboardLayout({
@@ -52,8 +53,11 @@ export default function DashboardLayout({
             SPACESCANS
           </Link>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{email}</span>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              {email}
+            </span>
+            <ThemeToggle />
             <Separator orientation="vertical" className="h-5" />
             <Button
               variant="ghost"
