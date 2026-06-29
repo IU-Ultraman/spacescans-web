@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { WizardLayout } from "@/components/wizard/wizard-layout";
 import { UploadStep, type DataSummary } from "@/components/wizard/upload-step";
 import { BufferStep, type BufferConfig } from "@/components/wizard/buffer-step";
@@ -13,6 +13,18 @@ export default function NewTaskPage() {
   const [dataSummary, setDataSummary] = useState<DataSummary | null>(null);
   const [bufferConfig, setBufferConfig] = useState<BufferConfig | null>(null);
   const [selectedVariables, setSelectedVariables] = useState<string[]>([]);
+
+  // Unsaved-progress guard: any exposure picked or moved past step 1.
+  const hasProgress = step > 0 || selectedVariables.length > 0;
+  useEffect(() => {
+    if (!hasProgress) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasProgress]);
 
   // Catalog-first flow: Select Exposures → Upload → Buffer → Review.
   const handleVariablesComplete = (variables: string[]) => {
@@ -32,7 +44,7 @@ export default function NewTaskPage() {
   };
 
   return (
-    <WizardLayout currentStep={step}>
+    <WizardLayout currentStep={step} confirmExit={hasProgress}>
       {step === 0 && (
         <VariablesStep
           onComplete={handleVariablesComplete}
@@ -46,6 +58,7 @@ export default function NewTaskPage() {
           onBack={() => setStep(0)}
           initialTaskId={taskId}
           initialSummary={dataSummary}
+          selectedVariables={selectedVariables}
         />
       )}
 

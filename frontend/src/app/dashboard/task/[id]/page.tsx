@@ -35,6 +35,45 @@ export default function TaskDetailPage() {
   const lastTimestampRef = useRef<string | undefined>(undefined);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const logPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wasRunningRef = useRef(false);
+  const notifiedRef = useRef(false);
+
+  // Notify when a task we watched running reaches a terminal state — so a user
+  // who navigated away (backgrounded tab) finds out. document.title always
+  // updates; a browser Notification fires too if the user granted permission.
+  useEffect(() => {
+    if (!task) return;
+    if (task.status === "running") {
+      wasRunningRef.current = true;
+      notifiedRef.current = false;
+      try {
+        if (typeof Notification !== "undefined" && Notification.permission === "default") {
+          Notification.requestPermission().catch(() => {});
+        }
+      } catch {
+        /* requestPermission may be unavailable/blocked — fine */
+      }
+      return;
+    }
+    if (
+      (task.status === "finished" || task.status === "error") &&
+      wasRunningRef.current &&
+      !notifiedRef.current
+    ) {
+      notifiedRef.current = true;
+      const ok = task.status === "finished";
+      document.title = `${ok ? "✓ Done" : "⚠ Failed"} — ${task.task_name}`;
+      try {
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification(`SPACESCANS — task ${ok ? "finished" : "failed"}`, {
+            body: task.task_name,
+          });
+        }
+      } catch {
+        /* Notification construction can throw on some platforms — ignore */
+      }
+    }
+  }, [task?.status, task?.task_name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch the task on mount. We also pull status.json so that already-running
   // or already-finished tasks render their step-list immediately (the polling

@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/card";
 import { api, ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useVariableCatalog } from "@/lib/use-variable-catalog";
+import { VariableCoveragePanel } from "./variable-coverage-panel";
 import {
   Upload,
   FileSpreadsheet,
@@ -59,11 +61,16 @@ interface UploadStepProps {
    *  second task. When both are set, the summary view is shown immediately. */
   initialTaskId?: string | null;
   initialSummary?: DataSummary | null;
+  /** Exposures chosen in the previous step — used to show coverage right
+   *  after upload instead of waiting until Review. */
+  selectedVariables?: string[];
 }
 
 export function UploadStep({
   onComplete, onBack, initialTaskId = null, initialSummary = null,
+  selectedVariables = [],
 }: UploadStepProps) {
+  const { catalog } = useVariableCatalog();
   const [taskName, setTaskName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -129,6 +136,36 @@ export function UploadStep({
     }
   };
 
+  // One-click: load the bundled demo cohort so a user without their own CSV
+  // can experience the full flow. Uploads to the existing task on revisit.
+  const handleUseDemo = async () => {
+    setUploading(true);
+    setError(null);
+    try {
+      const res = await fetch("/demo_cohort.csv");
+      if (!res.ok) throw new Error("demo fetch failed");
+      const text = await res.text();
+      const demoFile = new File([text], "demo_cohort.csv", { type: "text/csv" });
+      const name = taskName.trim() || "Demo cohort";
+      const id = taskId ?? (await api.createTask(name)).id;
+      const result = await api.uploadFile(id, demoFile);
+      setFile(demoFile);
+      setTaskId(id);
+      setDataSummary({
+        filename: "demo_cohort.csv",
+        row_count: result.row_count ?? 0,
+        columns: result.columns ?? [],
+        date_range: result.date_range,
+      });
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.detail : "Failed to load the demo cohort.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleNext = () => {
     if (taskId && dataSummary) {
       onComplete(taskId, dataSummary);
@@ -145,6 +182,17 @@ export function UploadStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Coverage scope notice — set expectations before uploading */}
+        <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400">
+          <Info className="mt-0.5 size-4 shrink-0" />
+          <p>
+            Exposures cover the <strong>contiguous US (CONUS)</strong> only, each
+            for specific years. Residences outside CONUS (or outside an
+            exposure&apos;s years) won&apos;t be linked — you&apos;ll see a
+            coverage check after uploading.
+          </p>
+        </div>
+
         {/* Task name */}
         <div className="space-y-2">
           <Label htmlFor="task-name">Task Name</Label>
@@ -304,6 +352,30 @@ export function UploadStep({
           </div>
         )}
 
+        {/* Demo cohort shortcut — try the flow without your own CSV */}
+        {!dataSummary && !uploading && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground">or</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleUseDemo}
+              className="w-full"
+              size="lg"
+            >
+              <FileSpreadsheet className="size-4" />
+              Try with a demo cohort (500 patients)
+            </Button>
+            <p className="text-center text-[11px] text-muted-foreground/70">
+              A 500-patient sample spread across the US — no file needed.
+            </p>
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <div className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
@@ -396,6 +468,28 @@ export function UploadStep({
                 </div>
               </CardContent>
             </Card>
+
+            {taskId && selectedVariables.length > 0 && (
+              <div className="rounded-lg border bg-muted/10 p-4">
+                <p className="text-sm font-medium text-foreground">
+                  Cohort coverage
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  How much of this cohort each selected exposure can cover. If a
+                  value is low, go back a step to adjust your exposures.
+                </p>
+                <div className="mt-3 space-y-2.5">
+                  {selectedVariables.map((key) => (
+                    <div key={key}>
+                      <div className="text-xs font-medium">
+                        {catalog?.variables[key]?.label ?? key}
+                      </div>
+                      <VariableCoveragePanel taskId={taskId} variableKey={key} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

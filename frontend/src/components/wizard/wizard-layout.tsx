@@ -14,14 +14,31 @@ const STEPS = [
 interface WizardLayoutProps {
   currentStep: number;
   children: React.ReactNode;
+  /** When true, leaving via "Back to Dashboard" asks for confirmation
+   *  (in-progress setup would be lost). */
+  confirmExit?: boolean;
 }
 
-export function WizardLayout({ currentStep, children }: WizardLayoutProps) {
+export function WizardLayout({
+  currentStep,
+  children,
+  confirmExit = false,
+}: WizardLayoutProps) {
   return (
     <div className="mx-auto max-w-7xl">
       {/* Exit back to the task dashboard (available on every step) */}
       <Link
         href="/dashboard"
+        onClick={(e) => {
+          if (
+            confirmExit &&
+            !window.confirm(
+              "Leave task setup? Your progress on this page will be lost.",
+            )
+          ) {
+            e.preventDefault();
+          }
+        }}
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-4" />

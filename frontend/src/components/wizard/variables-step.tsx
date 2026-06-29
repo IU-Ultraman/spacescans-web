@@ -80,15 +80,22 @@ export function VariablesStep({
     return (
       <div
         key={key}
-        onClick={() => setFocused(key)}
+        onClick={() => {
+          toggleSelection(key);
+          setFocused(key);
+        }}
         className={cn(
           "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/60",
-          isFocused && "bg-primary/5",
+          isSel && "bg-primary/10",
+          isFocused && "ring-1 ring-inset ring-primary/40",
         )}
       >
         <Checkbox
           checked={isSel}
-          onCheckedChange={() => toggleSelection(key)}
+          onCheckedChange={() => {
+            toggleSelection(key);
+            setFocused(key);
+          }}
           onClick={(e) => e.stopPropagation()}
           className="shrink-0"
         />

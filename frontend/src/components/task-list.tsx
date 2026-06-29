@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -100,6 +101,8 @@ export function TaskList() {
   const [confirmDelete, setConfirmDelete] = useState<Task | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | Task["status"]>("all");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { catalog } = useVariableCatalog();
 
@@ -240,10 +243,53 @@ export function TaskList() {
     );
   }
 
+  const visibleTasks = tasks
+    .filter((t) => statusFilter === "all" || t.status === statusFilter)
+    .filter((t) =>
+      t.task_name.toLowerCase().includes(query.trim().toLowerCase()),
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+
   return (
     <div className="space-y-6">
       <Header />
+
+      {/* Search + status filter */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Input
+          placeholder="Search tasks by name…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="max-w-xs"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) =>
+            setStatusFilter(e.target.value as "all" | Task["status"])
+          }
+          className="rounded-md border bg-background px-2 py-1.5 text-sm"
+        >
+          <option value="all">All statuses</option>
+          <option value="running">Running</option>
+          <option value="finished">Finished</option>
+          <option value="error">Error</option>
+          <option value="not_started">Not started</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {visibleTasks.length} of {tasks.length}
+        </span>
+      </div>
+
       <Card className="overflow-hidden p-0">
+        {visibleTasks.length === 0 ? (
+          <div className="py-16 text-center text-sm text-muted-foreground">
+            No tasks match your search or filter.
+          </div>
+        ) : (
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -255,7 +301,7 @@ export function TaskList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tasks.map((task) => (
+            {visibleTasks.map((task) => (
               <TableRow
                 key={task.id}
                 className="group cursor-pointer transition-colors"
@@ -318,6 +364,7 @@ export function TaskList() {
             ))}
           </TableBody>
         </Table>
+        )}
       </Card>
 
       <Dialog

@@ -19,8 +19,6 @@ interface StateMapCardProps {
   preview: ResultsPreview | null;
 }
 
-type Metric = "count" | "mean";
-
 interface StateBucketMap {
   [stateFips: string]: StateGeoBucket;
 }
@@ -47,7 +45,6 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
   }, [preview]);
 
   const [valueCol, setValueCol] = useState<string>("");
-  const [metric, setMetric] = useState<Metric>("count");
   const [data, setData] = useState<StateBucketMap | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -109,12 +106,12 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
     if (!data) return { lo: 0, hi: 0 };
     const values: number[] = [];
     for (const b of Object.values(data)) {
-      const v = metric === "count" ? b.count : b.mean;
+      const v = b.mean;
       if (v !== null && Number.isFinite(v)) values.push(v);
     }
     if (values.length === 0) return { lo: 0, hi: 0 };
     return { lo: Math.min(...values), hi: Math.max(...values) };
-  }, [data, metric]);
+  }, [data]);
 
   if (numericExposureCols.length === 0) return null;
 
@@ -122,7 +119,7 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
     if (!data) return "hsl(220 14% 92%)";
     const b = data[fips.padStart(2, "0")];
     if (!b) return "hsl(220 14% 92%)";
-    const v = metric === "count" ? b.count : b.mean;
+    const v = b.mean;
     if (v === null || !Number.isFinite(v)) return "hsl(220 14% 92%)";
     const span = range.hi - range.lo;
     const t = span > 0 ? (v - range.lo) / span : 0.5;
@@ -138,7 +135,8 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
         Geographic Distribution
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        Per-state aggregation across the cohort. Hover a state for details.
+        Per-state mean of the selected exposure across the cohort. Hover a
+        state for its mean and sample size.
       </p>
 
       {/* Toolbar */}
@@ -160,22 +158,9 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
             })}
           </select>
         </label>
-        <div className="flex overflow-hidden rounded-md border">
-          {(["count", "mean"] as Metric[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMetric(m)}
-              className={
-                "px-2 py-1 transition-colors " +
-                (metric === m
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-background text-muted-foreground hover:bg-muted")
-              }
-            >
-              {m}
-            </button>
-          ))}
-        </div>
+        <span className="text-[10px] text-muted-foreground">
+          per-state mean
+        </span>
         {loading && (
           <span className="text-[10px] text-muted-foreground">Loading…</span>
         )}
@@ -252,17 +237,9 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
       {/* Legend */}
       {data && Object.keys(data).length > 0 && (
         <div className="mt-3 flex items-center gap-2 text-[10px] text-muted-foreground">
-          <span className="font-mono tabular-nums">
-            {metric === "count"
-              ? range.lo.toLocaleString()
-              : range.lo.toFixed(2)}
-          </span>
+          <span className="font-mono tabular-nums">{range.lo.toFixed(2)}</span>
           <div className="h-2 flex-1 rounded-full bg-gradient-to-r from-[hsl(160_30%_90%)] via-[hsl(160_55%_60%)] to-[hsl(160_80%_32%)]" />
-          <span className="font-mono tabular-nums">
-            {metric === "count"
-              ? range.hi.toLocaleString()
-              : range.hi.toFixed(2)}
-          </span>
+          <span className="font-mono tabular-nums">{range.hi.toFixed(2)}</span>
         </div>
       )}
     </div>
