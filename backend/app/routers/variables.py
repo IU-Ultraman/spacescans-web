@@ -18,6 +18,7 @@ class VariableMetadataModel(BaseModel):
     coverage_region: Literal["CONUS", "US", "AK_HI"]
     experiment: str
     ontology_id: str | None = None
+    data_source: str | None = None
     temporal: Literal["static", "yearly"] = "yearly"
     variable_type: Literal["categorical", "continuous"]
     display_unit: str

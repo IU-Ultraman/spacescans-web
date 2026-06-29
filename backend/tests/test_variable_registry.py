@@ -1030,3 +1030,16 @@ def test_every_variable_links_to_an_existing_ontology_node():
         assert var in meta, f"missing variable {var}"
         assert meta[var].get("ontology_id") == want_id, var
         assert want_id in onto, f"{var} -> {want_id} not in ontology metadata"
+
+
+def test_every_variable_declares_a_data_source():
+    """FAIR metadata: every variable must name its originating dataset."""
+    import json
+    import pathlib
+
+    meta = json.loads(
+        pathlib.Path("app/data/variable_metadata.json").read_text()
+    )["variables"]
+    for var, m in meta.items():
+        ds = m.get("data_source")
+        assert isinstance(ds, str) and ds.strip(), f"{var} missing data_source"

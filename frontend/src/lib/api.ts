@@ -116,6 +116,8 @@ export interface VariableMetadata {
   experiment: string;
   /** Linked SPACESCANS ontology node id (see frontend/public/ontology). */
   ontology_id?: string;
+  /** Originating dataset, e.g. "US Census ACS (5-year)". */
+  data_source?: string;
   /** "static" products apply to any study period (no year restriction). */
   temporal?: 'static' | 'yearly';
   variable_type: 'categorical' | 'continuous';

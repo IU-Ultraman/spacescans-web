@@ -15,7 +15,6 @@ import {
   DOMAIN_ORDER, DOMAIN_GROUP_LABEL, groupByDomain, BOUNDARY_INFO,
   type DomainGroupKey,
 } from "@/lib/variable-grouping";
-import { CatalogDetail } from "@/components/catalog-detail";
 import { useColumnMeta } from "@/lib/use-column-meta";
 import { ErrorCard } from "./error-card";
 import { LoadingCard } from "./loading-card";
@@ -161,23 +160,49 @@ export function VariablesStep({
               level (checking the row on the left brings ALL its outcomes). */}
           <div className="min-w-0 flex-1">
             {focusedMeta ? (
-              <>
-                <CatalogDetail selectedId={focusedMeta.ontology_id ?? null} />
-                <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-                  <span className="font-medium text-foreground/80">
-                    Geographic resolution:
-                  </span>{" "}
-                  {BOUNDARY_INFO[focusedMeta.boundary].name} —{" "}
-                  {BOUNDARY_INFO[focusedMeta.boundary].blurb}
-                </p>
-                <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-                  <span className="font-medium text-foreground/80">
-                    Time coverage:
-                  </span>{" "}
-                  {focusedMeta.temporal === "static"
-                    ? "Static — applies to any study period (does not vary by year)."
-                    : `Varies by year (${focusedMeta.coverage_years[0]}–${focusedMeta.coverage_years[1]}).`}
-                </p>
+              <div className="rounded-lg border bg-card p-4">
+                <h3 className="text-base font-semibold">{focusedMeta.label}</h3>
+                <dl className="mt-3 grid grid-cols-[7.5rem_1fr] gap-x-3 gap-y-1.5 text-xs">
+                  <dt className="font-medium text-muted-foreground">Data Source</dt>
+                  <dd className="text-foreground/90">
+                    {focusedMeta.data_source ?? "—"}
+                  </dd>
+
+                  <dt className="font-medium text-muted-foreground">Spatial Scale</dt>
+                  <dd
+                    className="text-foreground/90"
+                    title={BOUNDARY_INFO[focusedMeta.boundary].blurb}
+                  >
+                    {BOUNDARY_INFO[focusedMeta.boundary].name} ({focusedMeta.boundary})
+                  </dd>
+
+                  <dt className="font-medium text-muted-foreground">Temporal</dt>
+                  <dd className="text-foreground/90">
+                    {focusedMeta.temporal === "static"
+                      ? "Static — any study period"
+                      : "Time-varying"}
+                  </dd>
+
+                  <dt className="font-medium text-muted-foreground">Years Available</dt>
+                  <dd className="text-foreground/90">
+                    {focusedMeta.temporal === "static"
+                      ? `${focusedMeta.coverage_years[0]} vintage`
+                      : `${focusedMeta.coverage_years[0]}–${focusedMeta.coverage_years[1]}`}
+                  </dd>
+
+                  <dt className="font-medium text-muted-foreground">Unit</dt>
+                  <dd className="text-foreground/90">{focusedMeta.display_unit}</dd>
+                </dl>
+
+                <div className="mt-3">
+                  <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Description
+                  </h4>
+                  <p className="text-xs leading-relaxed text-foreground/90">
+                    {focusedMeta.description}
+                  </p>
+                </div>
+
                 <div className="mt-3">
                   <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Outcomes ({focusedMeta.value_cols.length})
@@ -219,7 +244,7 @@ export function VariablesStep({
                     Open in full ontology
                   </a>
                 )}
-              </>
+              </div>
             ) : (
               <div className="flex h-full min-h-[20rem] items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
                 Select an exposure on the left to read its definition and outcomes.
