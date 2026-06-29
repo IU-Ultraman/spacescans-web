@@ -109,6 +109,7 @@ export function TaskList() {
   const [renameValue, setRenameValue] = useState("");
   const [renameBusy, setRenameBusy] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [cleaningStale, setCleaningStale] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { catalog } = useVariableCatalog();
 
@@ -155,6 +156,21 @@ export function TaskList() {
       );
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function handleCleanStale() {
+    setCleaningStale(true);
+    setDeleteError(null);
+    try {
+      await api.deleteStaleTasks();
+      setTasks(await api.listTasks());
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to clean up stale tasks",
+      );
+    } finally {
+      setCleaningStale(false);
     }
   }
 
@@ -311,6 +327,8 @@ export function TaskList() {
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
 
+  const staleCount = tasks.filter((t) => t.stale).length;
+
   return (
     <div className="space-y-6">
       <Header />
@@ -341,6 +359,18 @@ export function TaskList() {
         <span className="text-xs text-muted-foreground tabular-nums">
           {visibleTasks.length} of {tasks.length}
         </span>
+        {staleCount > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCleanStale}
+            disabled={cleaningStale}
+            className="ml-auto gap-1.5 text-amber-600 hover:text-amber-700 dark:text-amber-400"
+          >
+            <Trash2 className="size-3.5" />
+            {cleaningStale ? "Cleaning…" : `Clean up ${staleCount} stale`}
+          </Button>
+        )}
       </div>
 
       <Card className="overflow-hidden p-0">
@@ -403,6 +433,11 @@ export function TaskList() {
                     {task.status === "queued" && task.queue_position != null && (
                       <span className="text-xs text-muted-foreground">
                         #{task.queue_position} in queue
+                      </span>
+                    )}
+                    {task.stale && (
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                        <AlertCircle className="size-3" /> Stale — never started
                       </span>
                     )}
                   </div>

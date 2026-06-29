@@ -85,3 +85,35 @@ def test_start_enqueues_when_busy():
     finally:
         fcntl.flock(fd, fcntl.LOCK_UN)
         os.close(fd)
+
+
+def test_delete_stale_endpoint_removes_old_not_started():
+    """DELETE /api/tasks/stale removes the caller's old not_started tasks and
+    is not shadowed by the /{task_id} route."""
+    from datetime import datetime, timedelta, timezone
+
+    client, token, data_dir = _get_client()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    task_id = client.post(
+        "/api/tasks", json={"task_name": "old-one"}, headers=headers
+    ).json()["id"]
+    # Backdate created_at past the stale threshold.
+    meta_path = data_dir / "tasks" / f"task-{task_id}" / "meta.json"
+    meta = json.loads(meta_path.read_text())
+    meta["created_at"] = (
+        datetime.now(timezone.utc) - timedelta(hours=30)
+    ).isoformat()
+    meta_path.write_text(json.dumps(meta))
+
+    fresh_id = client.post(
+        "/api/tasks", json={"task_name": "fresh-one"}, headers=headers
+    ).json()["id"]
+
+    resp = client.delete("/api/tasks/stale", headers=headers)
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["deleted"] == 1
+
+    ids = {t["id"] for t in client.get("/api/tasks", headers=headers).json()}
+    assert task_id not in ids
+    assert fresh_id in ids

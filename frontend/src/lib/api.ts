@@ -56,6 +56,8 @@ export interface Task {
   error_message?: string;
   /** 1-based position in the global serial queue (present only when status is "queued"). */
   queue_position?: number | null;
+  /** True when a not_started task is old enough to be cleanup-eligible (#3). */
+  stale?: boolean;
   variables?: string[];
   /** Spatial buffer from the saved config (radius + raster grid in meters). */
   buffer?: { size: number; raster_res_m: number } | null;
@@ -221,6 +223,11 @@ export const api = {
 
   deleteTask: (id: string) =>
     request<{ status: string }>(`/api/tasks/${id}`, {
+      method: "DELETE",
+    }),
+
+  deleteStaleTasks: () =>
+    request<{ deleted: number }>(`/api/tasks/stale`, {
       method: "DELETE",
     }),
 

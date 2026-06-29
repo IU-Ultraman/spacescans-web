@@ -49,6 +49,13 @@ def rename_task(task_id: str, req: RenameTaskRequest,
 def list_tasks(user: dict = Depends(get_current_user)):
     return task_manager.list_tasks(user["id"])
 
+@router.delete("/stale")
+def delete_stale_tasks(user: dict = Depends(get_current_user)):
+    """#3: remove the caller's stale not_started tasks. Declared before the
+    /{task_id} routes so 'stale' isn't captured as a task id."""
+    removed = task_manager.delete_stale_tasks(user["id"])
+    return {"deleted": removed}
+
 @router.get("/{task_id}")
 def get_task(task_id: str, user: dict = Depends(get_current_user)):
     _verify_ownership(task_id, user)

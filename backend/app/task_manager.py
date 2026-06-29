@@ -11,7 +11,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import app.config
 
 
@@ -286,6 +286,32 @@ def _attach_variables(meta: dict, task_dir: Path) -> None:
         meta["buffer"] = None
 
 
+# #3: a not_started task left untouched this long is "stale" — surfaced to the
+# UI for one-click cleanup. Never auto-deleted.
+STALE_NOT_STARTED_HOURS = 24
+
+
+def _is_stale_not_started(meta: dict) -> bool:
+    """True when the task is not_started and older than STALE_NOT_STARTED_HOURS.
+
+    Requires meta["status"] to be set (call after _flatten_status_into_meta).
+    """
+    if meta.get("status") != "not_started":
+        return False
+    created = meta.get("created_at")
+    if not created:
+        return False
+    try:
+        created_dt = datetime.fromisoformat(created)
+    except ValueError:
+        return False
+    if created_dt.tzinfo is None:
+        created_dt = created_dt.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - created_dt > timedelta(
+        hours=STALE_NOT_STARTED_HOURS
+    )
+
+
 def list_tasks(user_id: int) -> list[dict]:
     tasks = []
     if not app.config.settings.TASKS_DIR.exists():
@@ -302,6 +328,7 @@ def list_tasks(user_id: int) -> list[dict]:
         _reap_if_dead(task_dir)
         _flatten_status_into_meta(meta, _read_status(task_dir))
         _attach_variables(meta, task_dir)
+        meta["stale"] = _is_stale_not_started(meta)
         if meta.get("status") == "queued":
             meta["queue_position"] = positions.get(meta["id"])
         tasks.append(meta)
@@ -316,6 +343,7 @@ def get_task(task_id: str) -> dict | None:
     _reap_if_dead(task_dir)
     _flatten_status_into_meta(meta, _read_status(task_dir))
     _attach_variables(meta, task_dir)
+    meta["stale"] = _is_stale_not_started(meta)
     if meta.get("status") == "queued":
         meta["queue_position"] = _queue_positions().get(task_id)
     return meta
@@ -324,6 +352,30 @@ def delete_task(task_id: str):
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
     if task_dir.exists():
         shutil.rmtree(task_dir)
+
+
+def delete_stale_tasks(user_id: int) -> int:
+    """Delete this user's stale not_started tasks (#3). Returns the count
+    removed. Never touches running/finished/queued tasks or other users."""
+    if not app.config.settings.TASKS_DIR.exists():
+        return 0
+    removed = 0
+    for task_dir in list(app.config.settings.TASKS_DIR.iterdir()):
+        meta_path = task_dir / "meta.json"
+        if not meta_path.exists():
+            continue
+        try:
+            meta = json.loads(meta_path.read_text())
+        except Exception:
+            continue
+        if meta.get("user_id") != user_id:
+            continue
+        _reap_if_dead(task_dir)
+        _flatten_status_into_meta(meta, _read_status(task_dir))
+        if _is_stale_not_started(meta):
+            shutil.rmtree(task_dir)
+            removed += 1
+    return removed
 
 def save_upload(task_id: str, file_content: bytes, filename: str) -> dict:
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
