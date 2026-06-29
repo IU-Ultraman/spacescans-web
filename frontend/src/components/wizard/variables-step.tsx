@@ -119,9 +119,9 @@ export function VariablesStep({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col gap-5 md:min-h-[24rem] md:flex-row">
+        <div className="flex flex-col gap-5 md:min-h-[32rem] md:flex-row">
           {/* Left: selectable, domain-grouped exposure list */}
-          <div className="space-y-4 md:w-2/5 md:shrink-0">
+          <div className="space-y-4 md:w-1/3 md:shrink-0">
             {GROUP_ORDER.map((group) => {
               const entries = grouped[group];
               if (!entries || entries.length === 0) return null;
@@ -130,26 +130,9 @@ export function VariablesStep({
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {DOMAIN_GROUP_LABEL[group]}
                   </h3>
-                  {entries.some(([, m]) => m.temporal !== "static") && (
-                    <div className="space-y-0.5">
-                      {entries
-                        .filter(([, m]) => m.temporal !== "static")
-                        .map(renderRow)}
-                    </div>
-                  )}
-                  {entries.some(([, m]) => m.temporal === "static") && (
-                    <div className="space-y-0.5 pt-1">
-                      <div className="px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
-                        Static{" "}
-                        <span className="font-normal normal-case text-muted-foreground/60">
-                          · applies to any study period
-                        </span>
-                      </div>
-                      {entries
-                        .filter(([, m]) => m.temporal === "static")
-                        .map(renderRow)}
-                    </div>
-                  )}
+                  <div className="space-y-0.5">
+                    {entries.map(renderRow)}
+                  </div>
                 </section>
               );
             })}
@@ -160,9 +143,9 @@ export function VariablesStep({
               level (checking the row on the left brings ALL its outcomes). */}
           <div className="min-w-0 flex-1">
             {focusedMeta ? (
-              <div className="rounded-lg border bg-card p-4">
-                <h3 className="text-base font-semibold">{focusedMeta.label}</h3>
-                <dl className="mt-3 grid grid-cols-[7.5rem_1fr] gap-x-3 gap-y-1.5 text-xs">
+              <div className="rounded-lg border bg-card p-5">
+                <h3 className="text-lg font-semibold">{focusedMeta.label}</h3>
+                <dl className="mt-3 grid grid-cols-[8rem_1fr] gap-x-3 gap-y-2 text-sm">
                   <dt className="font-medium text-muted-foreground">Data Source</dt>
                   <dd className="text-foreground/90">
                     {focusedMeta.data_source ?? "—"}
@@ -198,7 +181,7 @@ export function VariablesStep({
                   <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Description
                   </h4>
-                  <p className="text-xs leading-relaxed text-foreground/90">
+                  <p className="text-sm leading-relaxed text-foreground/90">
                     {focusedMeta.description}
                   </p>
                 </div>
