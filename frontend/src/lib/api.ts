@@ -220,6 +220,12 @@ export const api = {
       method: "DELETE",
     }),
 
+  renameTask: (id: string, task_name: string) =>
+    request<Task>(`/api/tasks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ task_name }),
+    }),
+
   getResultsPreview: (id: string, limit = 20) =>
     request<ResultsPreview>(`/api/tasks/${id}/results/preview?limit=${limit}`),
 

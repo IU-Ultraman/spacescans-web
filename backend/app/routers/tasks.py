@@ -12,6 +12,9 @@ router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 class CreateTaskRequest(BaseModel):
     task_name: str
 
+class RenameTaskRequest(BaseModel):
+    task_name: str
+
 class ConfigRequest(BaseModel):
     experiment: str | None = None
     buffer: dict
@@ -28,7 +31,20 @@ def _verify_ownership(task_id: str, user: dict):
 
 @router.post("")
 def create_task(req: CreateTaskRequest, user: dict = Depends(get_current_user)):
-    return task_manager.create_task(user["id"], req.task_name)
+    try:
+        return task_manager.create_task(user["id"], req.task_name)
+    except ValueError as e:
+        # Empty or duplicate name.
+        raise HTTPException(status_code=409, detail=str(e))
+
+@router.patch("/{task_id}")
+def rename_task(task_id: str, req: RenameTaskRequest,
+                user: dict = Depends(get_current_user)):
+    _verify_ownership(task_id, user)
+    try:
+        return task_manager.rename_task(task_id, user["id"], req.task_name)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 @router.get("")
 def list_tasks(user: dict = Depends(get_current_user)):

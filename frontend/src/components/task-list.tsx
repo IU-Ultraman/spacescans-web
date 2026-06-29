@@ -34,6 +34,7 @@ import {
   Activity,
   Inbox,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -103,11 +104,41 @@ export function TaskList() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Task["status"]>("all");
+  const [renaming, setRenaming] = useState<Task | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameBusy, setRenameBusy] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { catalog } = useVariableCatalog();
 
   function variableLabel(key: string): string {
     return catalog?.variables[key]?.label ?? key;
+  }
+
+  async function handleRename() {
+    if (!renaming) return;
+    const name = renameValue.trim();
+    if (!name) {
+      setRenameError("Task name is required");
+      return;
+    }
+    setRenameBusy(true);
+    setRenameError(null);
+    try {
+      const updated = await api.renameTask(renaming.id, name);
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === renaming.id ? { ...t, task_name: updated.task_name } : t,
+        ),
+      );
+      setRenaming(null);
+    } catch (err) {
+      setRenameError(
+        err instanceof Error ? err.message : "Failed to rename task",
+      );
+    } finally {
+      setRenameBusy(false);
+    }
   }
 
   async function handleDelete(task: Task) {
@@ -350,6 +381,19 @@ export function TaskList() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
+                        setRenameError(null);
+                        setRenameValue(task.task_name);
+                        setRenaming(task);
+                      }}
+                      title="Rename task"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
                         setDeleteError(null);
                         setConfirmDelete(task);
                       }}
@@ -418,6 +462,57 @@ export function TaskList() {
               disabled={deletingId !== null}
             >
               {deletingId !== null ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={renaming !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRenaming(null);
+            setRenameError(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename task</DialogTitle>
+            <DialogDescription>
+              Give this task a new name. Names must be unique.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleRename();
+            }}
+            placeholder="Task name"
+            autoFocus
+          />
+          {renameError && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {renameError}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRenaming(null);
+                setRenameError(null);
+              }}
+              disabled={renameBusy}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRename}
+              disabled={renameBusy || !renameValue.trim()}
+            >
+              {renameBusy ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

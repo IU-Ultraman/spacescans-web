@@ -493,3 +493,32 @@ def test_results_geo(monkeypatch, tmp_path):
     assert by_state["01"]["mean"] == 0.5
     assert by_state["12"]["count"] == 2
     assert by_state["12"]["mean"] == 1.5
+
+
+def test_create_task_rejects_duplicate_name():
+    client, token, _ = get_test_client()
+    h = auth_header(token)
+    assert client.post("/api/tasks", json={"task_name": "Dup"}, headers=h).status_code == 200
+    # Same name (case-insensitive, trimmed) for the same user -> 409.
+    dup = client.post("/api/tasks", json={"task_name": "  dup  "}, headers=h)
+    assert dup.status_code == 409
+    assert "already exists" in dup.json()["detail"]
+
+
+def test_rename_task():
+    client, token, _ = get_test_client()
+    h = auth_header(token)
+    tid = client.post("/api/tasks", json={"task_name": "Old"}, headers=h).json()["id"]
+    resp = client.patch(f"/api/tasks/{tid}", json={"task_name": "New"}, headers=h)
+    assert resp.status_code == 200
+    assert resp.json()["task_name"] == "New"
+    assert client.get(f"/api/tasks/{tid}", headers=h).json()["task_name"] == "New"
+
+
+def test_rename_rejects_duplicate_name():
+    client, token, _ = get_test_client()
+    h = auth_header(token)
+    client.post("/api/tasks", json={"task_name": "A"}, headers=h)
+    tid_b = client.post("/api/tasks", json={"task_name": "B"}, headers=h).json()["id"]
+    resp = client.patch(f"/api/tasks/{tid_b}", json={"task_name": "A"}, headers=h)
+    assert resp.status_code == 409

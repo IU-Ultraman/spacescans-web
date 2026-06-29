@@ -196,7 +196,33 @@ def _task_dir(task_id: str) -> Path:
     return app.config.settings.TASKS_DIR / f"task-{task_id}"
 
 
+def _name_taken(user_id: int, name: str, exclude_id: str | None = None) -> bool:
+    """Is `name` already used by another of this user's tasks?
+    Comparison is trimmed + case-insensitive."""
+    target = name.strip().lower()
+    if not target or not app.config.settings.TASKS_DIR.exists():
+        return False
+    for task_dir in app.config.settings.TASKS_DIR.iterdir():
+        meta_path = task_dir / "meta.json"
+        if not meta_path.exists():
+            continue
+        try:
+            meta = json.loads(meta_path.read_text())
+        except Exception:
+            continue
+        if meta.get("user_id") != user_id or meta.get("id") == exclude_id:
+            continue
+        if str(meta.get("task_name", "")).strip().lower() == target:
+            return True
+    return False
+
+
 def create_task(user_id: int, task_name: str) -> dict:
+    name = task_name.strip()
+    if not name:
+        raise ValueError("Task name is required")
+    if _name_taken(user_id, name):
+        raise ValueError(f"A task named '{name}' already exists")
     task_id = str(uuid.uuid4())
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
     task_dir.mkdir(parents=True)
@@ -204,11 +230,27 @@ def create_task(user_id: int, task_name: str) -> dict:
     meta = {
         "id": task_id,
         "user_id": user_id,
-        "task_name": task_name,
+        "task_name": name,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "data_summary": None,
     }
     (task_dir / "meta.json").write_text(json.dumps(meta, indent=2))
+    return meta
+
+
+def rename_task(task_id: str, user_id: int, new_name: str) -> dict:
+    """Rename a task (updates meta.json). Raises ValueError on empty or
+    duplicate (per-user) name."""
+    name = new_name.strip()
+    if not name:
+        raise ValueError("Task name is required")
+    if _name_taken(user_id, name, exclude_id=task_id):
+        raise ValueError(f"A task named '{name}' already exists")
+    task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
+    meta_path = task_dir / "meta.json"
+    meta = json.loads(meta_path.read_text())
+    meta["task_name"] = name
+    meta_path.write_text(json.dumps(meta, indent=2))
     return meta
 
 def _flatten_status_into_meta(meta: dict, status: dict) -> None:
