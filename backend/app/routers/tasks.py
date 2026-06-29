@@ -58,9 +58,20 @@ async def upload_file(task_id: str, file: UploadFile = File(...), user: dict = D
     _verify_ownership(task_id, user)
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only .csv files are accepted")
-    content = await file.read()
-    if len(content) > 100 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="File exceeds 100MB limit")
+    # Stream in chunks and abort as soon as the limit is exceeded, so an
+    # oversized upload isn't fully buffered into memory before being rejected.
+    max_bytes = 100 * 1024 * 1024
+    parts: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(status_code=413, detail="File exceeds 100MB limit")
+        parts.append(chunk)
+    content = b"".join(parts)
     try:
         summary = task_manager.save_upload(task_id, content, file.filename)
     except ValueError as e:

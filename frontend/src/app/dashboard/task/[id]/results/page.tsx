@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   Table as TableIcon,
   BarChart3,
+  Info,
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -179,6 +180,10 @@ export default function TaskResultsPage() {
     : "Unknown";
 
   const intermediates = intermediatesForStatus(taskStatus);
+  const exposureSummary =
+    preview?.summary?.filter((c) => !INPUT_COLUMNS.has(c.name)) ?? [];
+  const hasExposureCols = exposureSummary.length > 0;
+  const hasNumericExposure = exposureSummary.some((c) => c.dtype === "numeric");
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -452,6 +457,23 @@ export default function TaskResultsPage() {
           <StateMapCard taskId={id} preview={preview} />
         </VizErrorBoundary>
       )}
+
+      {/* Explain the absent charts when exposures are categorical-only */}
+      {task.status === "finished" &&
+        preview &&
+        hasExposureCols &&
+        !hasNumericExposure && (
+          <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground shadow-sm">
+            <div className="flex items-start gap-2.5">
+              <Info className="mt-0.5 size-4 shrink-0" />
+              <p>
+                This task&apos;s exposures are categorical (flags or codes), so
+                distribution histograms and the state map don&apos;t apply. See
+                the Result Preview and Column Summary above for the values.
+              </p>
+            </div>
+          </div>
+        )}
 
       {/* Download section */}
       <div className="rounded-lg border bg-card p-6 shadow-sm">

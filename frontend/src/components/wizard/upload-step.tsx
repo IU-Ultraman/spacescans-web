@@ -70,6 +70,7 @@ export function UploadStep({
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [dataSummary, setDataSummary] = useState<DataSummary | null>(initialSummary);
   const [taskId, setTaskId] = useState<string | null>(initialTaskId);
@@ -107,11 +108,12 @@ export function UploadStep({
     if (!file || !taskName.trim()) return;
 
     setUploading(true);
+    setProgress(0);
     setError(null);
 
     try {
       const task = await api.createTask(taskName.trim());
-      const result = await api.uploadFile(task.id, file);
+      const result = await api.uploadFile(task.id, file, setProgress);
       const summary: DataSummary = {
         filename: file.name,
         row_count: result.row_count ?? 0,
@@ -135,6 +137,7 @@ export function UploadStep({
   // can experience the full flow. Uploads to the existing task on revisit.
   const handleUseDemo = async () => {
     setUploading(true);
+    setProgress(0);
     setError(null);
     try {
       const res = await fetch("/demo_cohort.csv");
@@ -143,7 +146,7 @@ export function UploadStep({
       const demoFile = new File([text], "demo_cohort.csv", { type: "text/csv" });
       const name = taskName.trim() || "Demo cohort";
       const id = taskId ?? (await api.createTask(name)).id;
-      const result = await api.uploadFile(id, demoFile);
+      const result = await api.uploadFile(id, demoFile, setProgress);
       setFile(demoFile);
       setTaskId(id);
       setDataSummary({
@@ -385,9 +388,22 @@ export function UploadStep({
 
         {/* Loading */}
         {uploading && (
-          <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            Uploading and validating your data...
+          <div className="space-y-2 py-2">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span className="flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                {progress < 100
+                  ? "Uploading your data…"
+                  : "Validating your data…"}
+              </span>
+              <span className="font-mono tabular-nums">{progress}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-200"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
         )}
 

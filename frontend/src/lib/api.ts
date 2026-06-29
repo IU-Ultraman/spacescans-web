@@ -223,18 +223,53 @@ export const api = {
   getResultsPreview: (id: string, limit = 20) =>
     request<ResultsPreview>(`/api/tasks/${id}/results/preview?limit=${limit}`),
 
-  uploadFile: async (id: string, file: File) => {
-    const token = localStorage.getItem("token");
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch(`${API_BASE}/api/tasks/${id}/upload`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-    if (!res.ok) throw new ApiError(res.status, (await res.json()).detail);
-    return res.json();
-  },
+  // Uses XHR (not fetch) so we can report upload progress via onProgress.
+  uploadFile: (
+    id: string,
+    file: File,
+    onProgress?: (pct: number) => void,
+  ): Promise<{
+    row_count?: number;
+    columns?: string[];
+    date_range?: { min: string; max: string };
+  }> =>
+    new Promise((resolve, reject) => {
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const formData = new FormData();
+      formData.append("file", file);
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_BASE}/api/tasks/${id}/upload`);
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.upload.onprogress = (e) => {
+        if (onProgress && e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      };
+      xhr.onload = () => {
+        let body: Record<string, unknown> = {};
+        try {
+          body = JSON.parse(xhr.responseText);
+        } catch {
+          /* non-JSON response */
+        }
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(body);
+        } else {
+          reject(
+            new ApiError(
+              xhr.status,
+              (body.detail as string) ||
+                (body.error as string) ||
+                "Upload failed",
+            ),
+          );
+        }
+      };
+      xhr.onerror = () =>
+        reject(new ApiError(0, "Network error during upload"));
+      xhr.send(formData);
+    }),
 
   saveConfig: (id: string, config: Record<string, unknown>) =>
     request<Task>(`/api/tasks/${id}/config`, {

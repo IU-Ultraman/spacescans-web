@@ -255,6 +255,7 @@ def list_tasks(user_id: int) -> list[dict]:
         meta = json.loads(meta_path.read_text())
         if meta.get("user_id") != user_id:
             continue
+        _reap_if_dead(task_dir)
         _flatten_status_into_meta(meta, _read_status(task_dir))
         _attach_variables(meta, task_dir)
         tasks.append(meta)
@@ -266,6 +267,7 @@ def get_task(task_id: str) -> dict | None:
     if not meta_path.exists():
         return None
     meta = json.loads(meta_path.read_text())
+    _reap_if_dead(task_dir)
     _flatten_status_into_meta(meta, _read_status(task_dir))
     _attach_variables(meta, task_dir)
     return meta
@@ -427,6 +429,7 @@ def stop_task(task_id: str) -> dict:
 
 def get_status(task_id: str) -> dict:
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
+    _reap_if_dead(task_dir)
     return _read_status(task_dir)
 
 def get_logs(task_id: str, since: str | None = None) -> list[dict]:
@@ -450,34 +453,44 @@ def get_result_path(task_id: str) -> Path | None:
         return result_path
     return None
 
-def recover_orphaned_tasks():
-    """On startup, check for tasks stuck in 'running' state with dead PIDs.
+def _reap_if_dead(task_dir: Path) -> None:
+    """If a task still claims 'running' but its recorded (supervisor) pid is no
+    longer alive, mark it 'error'. Called before every status read so a task
+    whose dispatcher died without writing a terminal status self-heals on the
+    next poll instead of only at backend restart.
 
-    Only marks status="error" when the pre-existing status was "running" and
-    the recorded pid is no longer alive. Tasks that already wrote a terminal
-    status (cancelled / finished / error) before exiting are left untouched —
-    in particular, a task that was SIGTERMed via stop_task installs a handler
-    that writes status="cancelled" before exit, and we must preserve that.
+    Never overwrites a terminal status the orchestrator already wrote — a
+    SIGTERM-cancelled task writes 'cancelled' before exit, which we preserve.
     """
+    status_path = task_dir / "status.json"
+    if not status_path.exists():
+        return
+    try:
+        status = json.loads(status_path.read_text())
+    except Exception:
+        return
+    if status.get("status") != "running":
+        return
+    pid = status.get("pid")
+    if not pid:
+        return
+    try:
+        os.kill(pid, 0)  # 0 = liveness probe, doesn't actually signal
+    except OSError:
+        status["status"] = "error"
+        status["message"] = "Process terminated unexpectedly"
+        try:
+            status_path.write_text(json.dumps(status, indent=2))
+        except OSError:
+            pass
+
+
+def recover_orphaned_tasks():
+    """On startup, reap every task stuck 'running' with a dead pid."""
     if not app.config.settings.TASKS_DIR.exists():
         return
     for task_dir in app.config.settings.TASKS_DIR.iterdir():
-        status_path = task_dir / "status.json"
-        if not status_path.exists():
-            continue
-        status = json.loads(status_path.read_text())
-        # Only consider tasks still claiming "running"; never overwrite a
-        # terminal status that the orchestrator already wrote.
-        if status.get("status") != "running":
-            continue
-        pid = status.get("pid")
-        if pid:
-            try:
-                os.kill(pid, 0)  # Check if alive
-            except OSError:
-                status["status"] = "error"
-                status["message"] = "Process terminated unexpectedly"
-                status_path.write_text(json.dumps(status, indent=2))
+        _reap_if_dead(task_dir)
 
 def _read_status(task_dir: Path) -> dict:
     status_path = task_dir / "status.json"
