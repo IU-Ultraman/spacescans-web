@@ -15,6 +15,7 @@ import {
   type DomainGroupKey,
 } from "@/lib/variable-grouping";
 import { CatalogDetail } from "@/components/catalog-detail";
+import { useColumnMeta } from "@/lib/use-column-meta";
 import { ErrorCard } from "./error-card";
 import { LoadingCard } from "./loading-card";
 import { SchemaMismatchBanner } from "./schema-mismatch-banner";
@@ -34,8 +35,9 @@ export function VariablesStep({
   onComplete, onBack, initialSelection = [],
 }: VariablesStepProps) {
   const { catalog, error: loadError } = useVariableCatalog();
+  const colMeta = useColumnMeta();
   const [selected, setSelected] = useState<string[]>(initialSelection);
-  // ontology_id of the row whose definition is shown in the right-hand panel.
+  // variable key whose definition + outcomes are shown in the right-hand panel.
   const [focused, setFocused] = useState<string | null>(null);
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export function VariablesStep({
     );
 
   const canContinue = selected.length >= 1;
+  const focusedMeta = focused ? catalog.variables[focused] ?? null : null;
 
   return (
     <Card>
@@ -95,12 +98,12 @@ export function VariablesStep({
                   <div className="space-y-0.5">
                     {entries.map(([key, meta]) => {
                       const isSel = selected.includes(key);
-                      const isFocused =
-                        meta.ontology_id != null && focused === meta.ontology_id;
+                      const isFocused = focused === key;
+                      const nOut = meta.value_cols.length;
                       return (
                         <div
                           key={key}
-                          onClick={() => setFocused(meta.ontology_id ?? null)}
+                          onClick={() => setFocused(key)}
                           className={cn(
                             "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/60",
                             isFocused && "bg-primary/5",
@@ -115,6 +118,9 @@ export function VariablesStep({
                           <span className="min-w-0 flex-1 truncate text-sm text-foreground/90">
                             {meta.label}
                           </span>
+                          <span className="shrink-0 text-[10px] text-muted-foreground">
+                            {nOut} outcome{nOut === 1 ? "" : "s"}
+                          </span>
                           <Chip variant="outline">{meta.boundary}</Chip>
                         </div>
                       );
@@ -125,24 +131,58 @@ export function VariablesStep({
             })}
           </div>
 
-          {/* Right: ontology definition for the focused exposure */}
+          {/* Right: ontology definition + outcomes for the focused exposure.
+              Outcomes are read-only here — selection stays at the variable
+              level (checking the row on the left brings ALL its outcomes). */}
           <div className="min-w-0 flex-1">
-            {focused ? (
+            {focusedMeta ? (
               <>
-                <CatalogDetail selectedId={focused} />
-                <a
-                  href={`/catalog?node=${encodeURIComponent(focused)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
-                >
-                  <ExternalLink className="size-3" />
-                  Open in full ontology
-                </a>
+                <CatalogDetail selectedId={focusedMeta.ontology_id ?? null} />
+                <div className="mt-3">
+                  <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Outcomes ({focusedMeta.value_cols.length})
+                  </h4>
+                  <ul className="space-y-1.5">
+                    {focusedMeta.value_cols.map((col) => {
+                      const m = colMeta(col);
+                      return (
+                        <li
+                          key={col}
+                          className="rounded-md border bg-muted/20 px-2.5 py-1.5"
+                        >
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xs font-medium">
+                              {m?.label ?? col}
+                            </span>
+                            <span className="font-mono text-[10px] text-muted-foreground">
+                              {col}
+                            </span>
+                          </div>
+                          {m && (
+                            <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                              {m.definition}
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+                {focusedMeta.ontology_id && (
+                  <a
+                    href={`/catalog?node=${encodeURIComponent(focusedMeta.ontology_id)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    <ExternalLink className="size-3" />
+                    Open in full ontology
+                  </a>
+                )}
               </>
             ) : (
               <div className="flex h-full min-h-[20rem] items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                Select an exposure on the left to read its definition.
+                Select an exposure on the left to read its definition and outcomes.
               </div>
             )}
           </div>
