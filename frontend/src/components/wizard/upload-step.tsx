@@ -41,11 +41,6 @@ const OPTIONAL_COLUMNS: { name: string; type: string; desc: string }[] = [
   { name: "bg_geoid", type: "string (12)", desc: "state+county+tract+block-group GEOID" },
 ];
 
-const EXAMPLE_CSV = `pid,startDate,endDate,longitude,latitude,state_fips,county_fips,tract_geoid,bg_geoid
-PID0000001,2017-08-19,2017-11-11,-93.028635,45.088976,27,27123,27123040504,271230405042
-PID0000002,2017-03-24,2017-06-21,-95.345115,29.738952,48,48201,48201451601,482014516012
-PID0000003,2014-05-03,2014-07-25,-79.840332,36.105148,37,37147,37147002001,371470020012`;
-
 export interface DataSummary {
   filename: string;
   row_count: number;
@@ -282,15 +277,6 @@ export function UploadStep({
                 them.
               </p>
             </details>
-
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">
-                Example (matches the bundled demo cohort)
-              </p>
-              <pre className="overflow-x-auto rounded-md border bg-background p-3 text-xs text-foreground">
-                <code>{EXAMPLE_CSV}</code>
-              </pre>
-            </div>
           </div>
         )}
 
