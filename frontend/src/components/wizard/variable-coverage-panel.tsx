@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { api, type VarCoverage } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, AlertTriangle, AlertCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+  MapPin,
+  Calendar,
+} from "lucide-react";
 
 interface VariableCoveragePanelProps {
   taskId: string;
@@ -67,24 +73,35 @@ export function VariableCoveragePanel({
     >
       <div className="flex items-center gap-1.5 font-medium">
         <Icon className="size-3.5" />
-        {data.temporal === "static"
-          ? `${data.coverage_pct}% in CONUS coverage area`
-          : `${data.coverage_pct}% of your cohort covered`}
+        {data.coverage_pct}% of your cohort covered
       </div>
-      <div className="mt-0.5 text-muted-foreground">
-        {data.temporal === "static" ? (
-          <>
-            {data.patients_covered.toLocaleString()} /{" "}
-            {rowCount.toLocaleString()} in CONUS ({data.boundary}) — static
-            layer, applies to any study period
-          </>
-        ) : (
-          <>
-            {data.patients_covered.toLocaleString()} /{" "}
-            {rowCount.toLocaleString()} within {data.coverage_years[0]}-
-            {data.coverage_years[1]} + {data.boundary} on CONUS
-          </>
-        )}
+
+      {/* Geographic and temporal coverage shown as two separate dimensions —
+          static layers have no year restriction, so their Time row says so. */}
+      <div className="mt-1.5 space-y-1 text-muted-foreground">
+        <div className="flex items-start gap-1.5">
+          <MapPin className="mt-0.5 size-3 shrink-0" />
+          <span>
+            <span className="font-medium">Location:</span>{" "}
+            {data.patients_in_region.toLocaleString()} /{" "}
+            {rowCount.toLocaleString()} in the contiguous US ({data.boundary})
+          </span>
+        </div>
+        <div className="flex items-start gap-1.5">
+          <Calendar className="mt-0.5 size-3 shrink-0" />
+          <span>
+            <span className="font-medium">Time:</span>{" "}
+            {data.temporal === "static" ? (
+              <>any study period — static layer (no year restriction)</>
+            ) : (
+              <>
+                {data.patients_in_time_window.toLocaleString()} /{" "}
+                {rowCount.toLocaleString()} within {data.coverage_years[0]}–
+                {data.coverage_years[1]}
+              </>
+            )}
+          </span>
+        </div>
       </div>
       {data.warnings.map((w, i) => (
         <div key={i} className="mt-1">
