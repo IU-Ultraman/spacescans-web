@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, type Task, type TaskStatus, type ResultsPreview } from "@/lib/api";
 import { INPUT_COLUMNS } from "@/lib/result-columns";
+import { useColumnMeta } from "@/lib/use-column-meta";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { HistogramsCard } from "@/components/results/histograms-card";
@@ -71,6 +72,7 @@ export default function TaskResultsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params.id;
+  const colMeta = useColumnMeta();
 
   const [task, setTask] = useState<Task | null>(null);
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null);
@@ -253,11 +255,18 @@ export default function TaskResultsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  {preview.columns.map((col) => (
-                    <TableHead key={col} className="whitespace-nowrap text-xs font-medium">
-                      {col}
-                    </TableHead>
-                  ))}
+                  {preview.columns.map((col) => {
+                    const m = colMeta(col);
+                    return (
+                      <TableHead
+                        key={col}
+                        className="whitespace-nowrap text-xs font-medium"
+                        title={m ? `${m.label} — ${m.definition}` : undefined}
+                      >
+                        {col}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -320,7 +329,21 @@ export default function TaskResultsPage() {
                   const pct = total > 0 ? (col.non_null / total) * 100 : 0;
                   return (
                     <TableRow key={col.name}>
-                      <TableCell className="font-mono text-xs">{col.name}</TableCell>
+                      <TableCell className="text-xs">
+                        {(() => {
+                          const m = colMeta(col.name);
+                          return m ? (
+                            <span title={m.definition}>
+                              <span className="font-medium">{m.label}</span>
+                              <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
+                                {col.name}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="font-mono">{col.name}</span>
+                          );
+                        })()}
+                      </TableCell>
                       <TableCell>
                         <span
                           className={

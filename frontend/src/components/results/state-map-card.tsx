@@ -5,6 +5,7 @@ import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import * as topojson from "topojson-client";
 import { api, type ResultsPreview, type StateGeoBucket } from "@/lib/api";
 import { isInputColumn } from "@/lib/result-columns";
+import { useColumnMeta } from "@/lib/use-column-meta";
 import { Map as MapIcon } from "lucide-react";
 
 // Raw lng/lat states topojson. We let react-simple-maps' geoAlbersUsa
@@ -36,6 +37,7 @@ function interpolateColor(t: number): string {
 }
 
 export function StateMapCard({ taskId, preview }: StateMapCardProps) {
+  const colMeta = useColumnMeta();
   // Pick the first numeric exposure column as default.
   const numericExposureCols = useMemo(() => {
     if (!preview) return [];
@@ -146,13 +148,16 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
           <select
             value={valueCol}
             onChange={(e) => setValueCol(e.target.value)}
-            className="rounded-md border bg-background px-2 py-1 font-mono"
+            className="rounded-md border bg-background px-2 py-1"
           >
-            {numericExposureCols.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
+            {numericExposureCols.map((c) => {
+              const m = colMeta(c);
+              return (
+                <option key={c} value={c}>
+                  {m ? `${m.label} (${c})` : c}
+                </option>
+              );
+            })}
           </select>
         </label>
         <div className="flex overflow-hidden rounded-md border">

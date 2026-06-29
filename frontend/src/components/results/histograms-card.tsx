@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { api, type HistogramData } from "@/lib/api";
+import { useColumnMeta, type ColumnMeta } from "@/lib/use-column-meta";
 import { BarChart3 } from "lucide-react";
 
 interface HistogramsCardProps {
@@ -44,13 +45,20 @@ function toChartData(hist: HistogramData): BinPoint[] {
   return points;
 }
 
-function HistogramTile({ hist }: { hist: HistogramData }) {
+function HistogramTile({ hist, meta }: { hist: HistogramData; meta: ColumnMeta | null }) {
   const data = toChartData(hist);
   return (
     <div className="rounded-md border p-3">
-      <div className="flex items-baseline justify-between">
-        <span className="font-mono text-xs font-medium">{hist.name}</span>
-        <span className="text-[10px] text-muted-foreground tabular-nums">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="min-w-0 truncate" title={meta?.definition}>
+          <span className="text-xs font-medium">{meta?.label ?? hist.name}</span>
+          {meta && (
+            <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
+              {hist.name}
+            </span>
+          )}
+        </span>
+        <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
           n={hist.sample_size.toLocaleString()}
         </span>
       </div>
@@ -88,6 +96,7 @@ function HistogramTile({ hist }: { hist: HistogramData }) {
 }
 
 export function HistogramsCard({ taskId }: HistogramsCardProps) {
+  const colMeta = useColumnMeta();
   const [data, setData] = useState<HistogramData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -141,7 +150,7 @@ export function HistogramsCard({ taskId }: HistogramsCardProps) {
       </p>
       <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
         {data.map((hist) => (
-          <HistogramTile key={hist.name} hist={hist} />
+          <HistogramTile key={hist.name} hist={hist} meta={colMeta(hist.name)} />
         ))}
       </div>
     </div>
