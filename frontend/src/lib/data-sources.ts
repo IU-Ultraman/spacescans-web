@@ -21,6 +21,7 @@ export interface SelfServeDataset {
   name: string;
   usedBy: string;
   variableKeys: string[];
+  role: string;
   sourceName: string;
   sourceUrl: string;
   license: string;
@@ -35,6 +36,7 @@ export interface PresetDataset {
   key: string;
   name: string;
   variableKeys: string[];
+  role: string;
   artifact: string;
   origin: string;
 }
@@ -47,6 +49,7 @@ export const PRESET_DATASETS = raw.preset as PresetDataset[];
 export interface VariableDatasetLink {
   key: string;
   name: string;
+  role: string;
   kind: "self-serve" | "preset";
 }
 
@@ -56,12 +59,12 @@ export function datasetsForVariable(variableKey: string): VariableDatasetLink[] 
   const links: VariableDatasetLink[] = [];
   for (const d of SELF_SERVE_DATASETS) {
     if (d.variableKeys.includes(variableKey)) {
-      links.push({ key: d.key, name: d.name, kind: "self-serve" });
+      links.push({ key: d.key, name: d.name, role: d.role, kind: "self-serve" });
     }
   }
   for (const d of PRESET_DATASETS) {
     if (d.variableKeys.includes(variableKey)) {
-      links.push({ key: d.key, name: d.name, kind: "preset" });
+      links.push({ key: d.key, name: d.name, role: d.role, kind: "preset" });
     }
   }
   return links;

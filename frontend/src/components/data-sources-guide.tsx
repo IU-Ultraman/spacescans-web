@@ -18,24 +18,29 @@ export function SelfServeCard({ d }: { d: SelfServeDataset }) {
             Used by: {d.usedBy}
           </p>
         </div>
-        <span
-          className={
-            "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium " +
-            (d.access === "public"
-              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-              : "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400")
-          }
-        >
-          {d.access === "public" ? (
-            <>
-              <Globe className="size-3" /> Public
-            </>
-          ) : (
-            <>
-              <Lock className="size-3" /> Free account
-            </>
-          )}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+            {d.role}
+          </span>
+          <span
+            className={
+              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium " +
+              (d.access === "public"
+                ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400")
+            }
+          >
+            {d.access === "public" ? (
+              <>
+                <Globe className="size-3" /> Public
+              </>
+            ) : (
+              <>
+                <Lock className="size-3" /> Free account
+              </>
+            )}
+          </span>
+        </div>
       </div>
 
       <dl className="grid gap-x-6 gap-y-1 text-xs sm:grid-cols-[auto_1fr]">
@@ -104,7 +109,12 @@ export function SelfServeCard({ d }: { d: SelfServeDataset }) {
 export function PresetCard({ d }: { d: PresetDataset }) {
   return (
     <Card id={d.key} className="scroll-mt-20 space-y-1 p-4">
-      <h3 className="text-sm font-semibold text-foreground">{d.name}</h3>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-sm font-semibold text-foreground">{d.name}</h3>
+        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+          {d.role}
+        </span>
+      </div>
       <p className="text-xs">
         <code className="rounded bg-muted px-1 py-0.5">{d.artifact}</code>
       </p>

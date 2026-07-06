@@ -96,6 +96,8 @@ export function VariablesStep({
   const dataSetupLinks = focusedVarKey ? datasetsForVariable(focusedVarKey) : [];
   const dsDownload = dataSetupLinks.filter((l) => l.kind === "self-serve");
   const dsSupplied = dataSetupLinks.filter((l) => l.kind === "preset");
+  const dsHasGeometry = dataSetupLinks.some((l) => l.role.includes("geometry"));
+  const dsHasValues = dataSetupLinks.some((l) => l.role === "Exposure values");
 
   return (
     <>
@@ -214,6 +216,14 @@ export function VariablesStep({
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Data setup
                     </h4>
+                    {dsHasGeometry && dsHasValues && (
+                      <p className="text-[11px] leading-snug text-muted-foreground">
+                        The <span className="font-medium">boundary geometry</span>{" "}
+                        defines the spatial units (fixed, no years); the{" "}
+                        <span className="font-medium">values</span> dataset carries
+                        the yearly exposure. The pipeline joins them by geoid.
+                      </p>
+                    )}
                     {dsDownload.length > 0 && (
                       <div>
                         <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
@@ -225,10 +235,13 @@ export function VariablesStep({
                               <button
                                 type="button"
                                 onClick={() => setDsDialog(ds.key)}
-                                className="inline-flex items-center gap-1 text-left text-xs text-muted-foreground hover:text-foreground hover:underline"
+                                className="inline-flex items-center gap-1.5 text-left text-xs text-muted-foreground hover:text-foreground"
                               >
                                 <ExternalLink className="size-3 shrink-0" />
-                                {ds.name}
+                                <span className="hover:underline">{ds.name}</span>
+                                <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
+                                  {ds.role}
+                                </span>
                               </button>
                             </li>
                           ))}
@@ -246,10 +259,13 @@ export function VariablesStep({
                               <button
                                 type="button"
                                 onClick={() => setDsDialog(ds.key)}
-                                className="inline-flex items-center gap-1 text-left text-xs text-muted-foreground hover:text-foreground hover:underline"
+                                className="inline-flex items-center gap-1.5 text-left text-xs text-muted-foreground hover:text-foreground"
                               >
                                 <ExternalLink className="size-3 shrink-0" />
-                                {ds.name}
+                                <span className="hover:underline">{ds.name}</span>
+                                <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
+                                  {ds.role}
+                                </span>
                               </button>
                             </li>
                           ))}
