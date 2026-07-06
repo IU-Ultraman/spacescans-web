@@ -1,28 +1,79 @@
 {
   "selfServe": [
     {
-      "key": "tiger-boundaries",
-      "name": "Census TIGER/Line boundaries — County, Tract, ZCTA5 (2010)",
-      "usedBy": "County / Tract / ZCTA5 areal linkages + TIGER road-proximity base",
-      "variableKeys": ["cbp_zcta5", "tiger_proximity", "fara_tract"],
+      "key": "county-boundaries",
+      "name": "Census County boundaries (2010)",
+      "usedBy": "County areal linkage (CBP fallback) + TIGER road-proximity clip base",
+      "variableKeys": ["cbp_zcta5", "tiger_proximity"],
       "sourceName": "US Census Bureau — TIGER/Line 2010",
-      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2010/",
+      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2010/COUNTY/2010/",
       "license": "US federal public domain — free to use and redistribute (cite the Census Bureau).",
       "access": "public",
-      "size": "~600 MB + 51 per-state tract files",
+      "size": "~71 MB",
       "files": [
-        { "name": "tl_2010_us_county10.zip", "note": "national counties, ~71 MB" },
-        { "name": "tl_2010_us_zcta510.zip", "note": "national ZCTAs, ~500 MB" },
-        { "name": "tl_2010_{ss}_tract10.zip × 51", "note": "no national tract file — one per state (50 + DC)" }
+        { "name": "tl_2010_us_county10.zip", "note": "national counties (3,221)" }
       ],
-      "placeDir": [
-        "data_full/County_FL/C3/tl_2010_us_county10/",
-        "data_full/ZCTA5/C3/tl_2010_us_zcta510/",
-        "data_full/TRACT/C3/tl_2010_{ss}_tract10/  (one subfolder per state)"
-      ],
+      "placeDir": ["data_full/County_FL/C3/tl_2010_us_county10/"],
       "notes": [
-        "Unzip each archive; put the .shp in a subfolder whose name matches the file basename, with its .shx/.dbf/.prj sidecars alongside.",
+        "Unzip; put the .shp in a subfolder named after the file basename, with its .shx/.dbf/.prj sidecars alongside.",
         "No reprojection needed — the pipeline buffers/reprojects internally."
+      ]
+    },
+    {
+      "key": "tract-boundaries",
+      "name": "Census Tract boundaries (2010)",
+      "usedBy": "Tract areal linkage (FARA food access)",
+      "variableKeys": ["fara_tract"],
+      "sourceName": "US Census Bureau — TIGER/Line 2010",
+      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/",
+      "license": "US federal public domain — free to use and redistribute.",
+      "access": "public",
+      "size": "51 per-state files",
+      "files": [
+        { "name": "tl_2010_{ss}_tract10.zip × 51", "note": "no national tract file — one per state (50 states + DC)" }
+      ],
+      "placeDir": ["data_full/TRACT/C3/tl_2010_{ss}_tract10/  (one subfolder per state)"],
+      "notes": [
+        "There is no single national tract download — fetch all 51 statewide files (or just the states your cohort covers).",
+        "Unzip each into a subfolder named after the file basename (.shp + sidecars)."
+      ]
+    },
+    {
+      "key": "zcta5-boundaries",
+      "name": "Census ZCTA5 boundaries (2010)",
+      "usedBy": "ZCTA5 areal linkage (business-patterns / CBP)",
+      "variableKeys": ["cbp_zcta5"],
+      "sourceName": "US Census Bureau — TIGER/Line 2010",
+      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2010/ZCTA5/2010/",
+      "license": "US federal public domain — free to use and redistribute.",
+      "access": "public",
+      "size": "~500 MB",
+      "files": [
+        { "name": "tl_2010_us_zcta510.zip", "note": "national ZCTAs (~33,120)" }
+      ],
+      "placeDir": ["data_full/ZCTA5/C3/tl_2010_us_zcta510/"],
+      "notes": [
+        "Unzip into a subfolder named after the file basename (.shp + sidecars)."
+      ]
+    },
+    {
+      "key": "tiger-roads",
+      "name": "Census TIGER/Line roads",
+      "usedBy": "TIGER road proximity (distance to nearest road)",
+      "variableKeys": ["tiger_proximity"],
+      "sourceName": "US Census Bureau — TIGER/Line (ROADS)",
+      "sourceUrl": "https://www2.census.gov/geo/tiger/",
+      "license": "US federal public domain — free to use and redistribute.",
+      "access": "public",
+      "size": "per-county × per-year (varies with cohort)",
+      "files": [
+        { "name": "tl_{year}_{county_fips}_roads.zip", "note": "per county, per year — for the counties/years your cohort spans" }
+      ],
+      "placeDir": ["data_full/TIGER/C4/"],
+      "notes": [
+        "Road shapefiles live under each TIGER{year}/ROADS/ on the Census file server.",
+        "Place per-year road zips under data_full/TIGER/C4/tiger{year}_roads/ — the reader scans that directory.",
+        "Also needs the County boundaries (above) as a clip base."
       ]
     },
     {
