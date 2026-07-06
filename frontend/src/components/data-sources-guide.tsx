@@ -7,16 +7,23 @@ import { SELF_SERVE_DATASETS, PRESET_DATASETS } from "@/lib/data-sources";
  * /dashboard/data-setup page and inline (collapsed) under Select Exposures.
  * Pure presentational — no hooks — so it works in both server and client trees.
  */
-export function DataSourcesGuide() {
+export function DataSourcesGuide({ only }: { only?: string }) {
+  const selfServe = only
+    ? SELF_SERVE_DATASETS.filter((d) => d.key === only)
+    : SELF_SERVE_DATASETS;
+  const preset = only
+    ? PRESET_DATASETS.filter((d) => d.key === only)
+    : PRESET_DATASETS;
   return (
     <div className="space-y-8">
       {/* Self-serve public datasets */}
+      {selfServe.length > 0 && (
       <section className="space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Self-serve datasets ({SELF_SERVE_DATASETS.length})
+          Self-serve datasets ({selfServe.length})
         </h2>
         <div className="grid gap-4">
-          {SELF_SERVE_DATASETS.map((d) => (
+          {selfServe.map((d) => (
             <Card key={d.key} id={d.key} className="scroll-mt-20 space-y-4 p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -114,8 +121,10 @@ export function DataSourcesGuide() {
           ))}
         </div>
       </section>
+      )}
 
       {/* Preprocessed derivatives */}
+      {preset.length > 0 && (
       <section className="space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Preprocessed datasets — supplied by the deployer
@@ -129,7 +138,7 @@ export function DataSourcesGuide() {
           Self-serve steps are out of scope for now.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          {PRESET_DATASETS.map((d) => (
+          {preset.map((d) => (
             <Card key={d.key} id={d.key} className="scroll-mt-20 space-y-1 p-4">
               <h3 className="text-sm font-semibold text-foreground">{d.name}</h3>
               <p className="text-xs">
@@ -140,6 +149,7 @@ export function DataSourcesGuide() {
           ))}
         </div>
       </section>
+      )}
     </div>
   );
 }

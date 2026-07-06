@@ -212,7 +212,7 @@ export function VariablesStep({
                           {dsDownload.map((ds) => (
                             <li key={ds.key}>
                               <a
-                                href={`/dashboard/data-setup#${ds.key}`}
+                                href={`/dashboard/data-setup?dataset=${ds.key}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
@@ -234,7 +234,7 @@ export function VariablesStep({
                           {dsSupplied.map((ds) => (
                             <li key={ds.key}>
                               <a
-                                href={`/dashboard/data-setup#${ds.key}`}
+                                href={`/dashboard/data-setup?dataset=${ds.key}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
