@@ -83,6 +83,9 @@ export function VariablesStep({
 
   const focusedVarKey = focusedNodeId ? nodeIdToVarKey[focusedNodeId] : undefined;
   const focusedVarMeta = focusedVarKey ? catalog.variables[focusedVarKey] : null;
+  const dataSetupLinks = focusedVarKey ? datasetsForVariable(focusedVarKey) : [];
+  const dsDownload = dataSetupLinks.filter((l) => l.kind === "self-serve");
+  const dsSupplied = dataSetupLinks.filter((l) => l.kind === "preset");
 
   return (
     <Card>
@@ -195,31 +198,55 @@ export function VariablesStep({
                   </ul>
                 </div>
 
-                {focusedVarKey && datasetsForVariable(focusedVarKey).length > 0 && (
-                  <div className="mt-4 border-t pt-3">
-                    <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {dataSetupLinks.length > 0 && (
+                  <div className="mt-4 space-y-2 border-t pt-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Data setup
                     </h4>
-                    <ul className="space-y-1">
-                      {datasetsForVariable(focusedVarKey).map((ds) => (
-                        <li key={ds.key}>
-                          <a
-                            href={`/dashboard/data-setup#${ds.key}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
-                          >
-                            <ExternalLink className="size-3 shrink-0" />
-                            {ds.name}
-                            {ds.kind === "preset" && (
-                              <span className="text-[10px]">
-                                (supplied by deployer)
-                              </span>
-                            )}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
+                    {dsDownload.length > 0 && (
+                      <div>
+                        <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                          To download
+                        </p>
+                        <ul className="space-y-0.5">
+                          {dsDownload.map((ds) => (
+                            <li key={ds.key}>
+                              <a
+                                href={`/dashboard/data-setup#${ds.key}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                              >
+                                <ExternalLink className="size-3 shrink-0" />
+                                {ds.name}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {dsSupplied.length > 0 && (
+                      <div>
+                        <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                          Supplied by deployer
+                        </p>
+                        <ul className="space-y-0.5">
+                          {dsSupplied.map((ds) => (
+                            <li key={ds.key}>
+                              <a
+                                href={`/dashboard/data-setup#${ds.key}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                              >
+                                <ExternalLink className="size-3 shrink-0" />
+                                {ds.name}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
