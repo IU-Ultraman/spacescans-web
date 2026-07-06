@@ -17,7 +17,7 @@ export function DataSourcesGuide() {
         </h2>
         <div className="grid gap-4">
           {SELF_SERVE_DATASETS.map((d) => (
-            <Card key={d.key} className="space-y-4 p-5">
+            <Card key={d.key} id={d.key} className="scroll-mt-20 space-y-4 p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-semibold text-foreground">{d.name}</h3>
@@ -130,7 +130,7 @@ export function DataSourcesGuide() {
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {PRESET_DATASETS.map((d) => (
-            <Card key={d.name} className="space-y-1 p-4">
+            <Card key={d.key} id={d.key} className="scroll-mt-20 space-y-1 p-4">
               <h3 className="text-sm font-semibold text-foreground">{d.name}</h3>
               <p className="text-xs">
                 <code className="rounded bg-muted px-1 py-0.5">{d.artifact}</code>

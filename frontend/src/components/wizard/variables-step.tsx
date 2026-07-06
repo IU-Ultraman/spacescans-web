@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import { BOUNDARY_INFO } from "@/lib/variable-grouping";
 import { useColumnMeta } from "@/lib/use-column-meta";
 import { OntologyTree } from "@/components/ontology-tree";
 import { CatalogDetail } from "@/components/catalog-detail";
-import { DataSourcesGuide } from "@/components/data-sources-guide";
+import { datasetsForVariable } from "@/lib/data-sources";
 import { ErrorCard } from "./error-card";
 import { LoadingCard } from "./loading-card";
 import { SchemaMismatchBanner } from "./schema-mismatch-banner";
@@ -194,6 +194,34 @@ export function VariablesStep({
                     })}
                   </ul>
                 </div>
+
+                {focusedVarKey && datasetsForVariable(focusedVarKey).length > 0 && (
+                  <div className="mt-4 border-t pt-3">
+                    <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Data setup
+                    </h4>
+                    <ul className="space-y-1">
+                      {datasetsForVariable(focusedVarKey).map((ds) => (
+                        <li key={ds.key}>
+                          <a
+                            href={`/dashboard/data-setup#${ds.key}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                          >
+                            <ExternalLink className="size-3 shrink-0" />
+                            {ds.name}
+                            {ds.kind === "preset" && (
+                              <span className="text-[10px]">
+                                (supplied by deployer)
+                              </span>
+                            )}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ) : focusedNodeId ? (
               <CatalogDetail selectedId={focusedNodeId} />
@@ -205,15 +233,6 @@ export function VariablesStep({
             )}
           </div>
         </div>
-
-        <details className="mt-6 rounded-lg border bg-muted/30 p-4">
-          <summary className="cursor-pointer select-none text-sm font-medium text-foreground">
-            Preparing the exposure datasets — where to download &amp; where to put them
-          </summary>
-          <div className="mt-4">
-            <DataSourcesGuide />
-          </div>
-        </details>
 
         <div className="mt-6 flex items-center justify-between">
           {onBack ? (

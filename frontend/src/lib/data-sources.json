@@ -4,6 +4,7 @@
       "key": "tiger-boundaries",
       "name": "Census TIGER/Line boundaries — County, Tract, ZCTA5 (2010)",
       "usedBy": "County / Tract / ZCTA5 areal linkages + TIGER road-proximity base",
+      "variableKeys": ["cbp_zcta5", "tiger_proximity", "fara_tract"],
       "sourceName": "US Census Bureau — TIGER/Line 2010",
       "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2010/",
       "license": "US federal public domain — free to use and redistribute (cite the Census Bureau).",
@@ -28,6 +29,7 @@
       "key": "bg-boundaries",
       "name": "Census Block Group boundaries — 2010 + 2020 vintages",
       "usedBy": "NDI + EPA Walkability areal linkages (block-group level)",
+      "variableKeys": ["ndi", "walkability"],
       "sourceName": "US Census Bureau — TIGER/Line",
       "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2024/BG/",
       "license": "US federal public domain — free to use and redistribute.",
@@ -50,6 +52,7 @@
       "key": "noise",
       "name": "Soundscape noise — L50 dBA (CONUS)",
       "usedBy": "Noise exposure (grid)",
+      "variableKeys": ["noise"],
       "sourceName": "US National Park Service — Geospatial sound modeling (Mennitt et al.)",
       "sourceUrl": "https://irma.nps.gov/DataStore/Reference/Profile/2217356",
       "license": "US federal public domain.",
@@ -71,6 +74,7 @@
       "key": "nhdplus",
       "name": "USGS NHDPlus High Resolution — National Release 2",
       "usedBy": "NHD bluespace (distance to water)",
+      "variableKeys": ["nhd_bluespace"],
       "sourceName": "USGS — National Hydrography",
       "sourceUrl": "https://www.usgs.gov/national-hydrography/access-national-hydrography-products",
       "license": "US federal public domain.",
@@ -89,6 +93,7 @@
       "key": "vnl",
       "name": "VIIRS Nighttime Lights — VNL v2.1 (2013–2019)",
       "usedBy": "Night-time lights exposure (grid)",
+      "variableKeys": ["vnl"],
       "sourceName": "NOAA / Colorado School of Mines — Earth Observation Group (EOG)",
       "sourceUrl": "https://eogdata.mines.edu/products/vnl/",
       "license": "Free for research/education; redistributable with attribution.",
@@ -107,6 +112,7 @@
       "key": "temis",
       "name": "KNMI TEMIS UV — daily UV index / dose (2013–2019)",
       "usedBy": "TEMIS UV exposure (grid)",
+      "variableKeys": ["temis"],
       "sourceName": "KNMI — TEMIS",
       "sourceUrl": "https://www.temis.nl/uvradiation/UVarchive.php",
       "license": "Publicly available (attribute KNMI/TEMIS).",
@@ -125,22 +131,30 @@
   ],
   "preset": [
     {
+      "key": "ndi-artifact",
       "name": "Neighborhood Deprivation Index (NDI)",
+      "variableKeys": ["ndi"],
       "artifact": "ndi_bg_acs5_..._xgboost.rds",
       "origin": "Built from Census ACS 5-year via an xgboost model — no public download."
     },
     {
+      "key": "cbp-artifact",
       "name": "Community Organization Density (CBP / ZBP)",
+      "variableKeys": ["cbp_zcta5"],
       "artifact": "cbp/zbp_nationwide_*.Rda",
       "origin": "Derived from Census County / ZIP Business Patterns (raw CBP/ZBP are public)."
     },
     {
+      "key": "walkability-artifact",
       "name": "EPA Walkability Index",
+      "variableKeys": ["walkability"],
       "artifact": "epawalkind_nationwide_2016_2021.Rda",
       "origin": "Converted from the EPA Smart Location Database (raw SLD is public)."
     },
     {
+      "key": "fara-artifact",
       "name": "USDA Food Access (FARA)",
+      "variableKeys": ["fara_tract"],
       "artifact": "fara_nationwide_2010_2019_interpolated.Rda",
       "origin": "Interpolated from USDA ERS Food Access Research Atlas (raw FARA is public)."
     }
