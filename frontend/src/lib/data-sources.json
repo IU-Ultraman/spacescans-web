@@ -12,7 +12,7 @@
       "access": "public",
       "size": "~71 MB",
       "files": [
-        { "name": "tl_2010_us_county10.zip", "note": "national counties (3,221)" }
+        { "name": "tl_2010_us_county10.zip", "note": "the single NATIONAL file (not the per-state tl_2010_{ss}_county10 in the same folder)" }
       ],
       "placeDir": ["data_full/County_FL/C3/tl_2010_us_county10/"],
       "notes": [
@@ -32,11 +32,12 @@
       "access": "public",
       "size": "51 per-state files",
       "files": [
-        { "name": "tl_2010_{ss}_tract10.zip × 51", "note": "no national tract file — one per state (50 states + DC)" }
+        { "name": "tl_2010_{ss}_tract10.zip × 51", "note": "STATEWIDE files — 2-digit state FIPS (not the 5-digit per-county files)" }
       ],
       "placeDir": ["data_full/TRACT/C3/tl_2010_{ss}_tract10/  (one subfolder per state)"],
       "notes": [
-        "There is no single national tract download — fetch all 51 statewide files (or just the states your cohort covers).",
+        "The TIGER2010/TRACT/2010/ folder lists BOTH per-county files (5-digit FIPS, e.g. tl_2010_06037_tract10.zip) and statewide files (2-digit FIPS, e.g. tl_2010_06_tract10.zip). Download the STATEWIDE (2-digit) ones — the pipeline expects tl_2010_{ss}_tract10.",
+        "No single national tract file — fetch all 51 statewide files (or just the states your cohort covers).",
         "Unzip each into a subfolder named after the file basename (.shp + sidecars)."
       ]
     },
@@ -101,6 +102,7 @@
       ],
       "notes": [
         "Fastest for 2020: run `bash scripts/download_bg_2020_shapefiles.sh` from the repo root (idempotent).",
+        "For 2010, the TIGER2010/BG/2010/ folder has both 5-digit per-county and 2-digit statewide files — grab the statewide tl_2010_{ss}_bg10.",
         "Join column differs: GEOID10 (2010) vs GEOID (2024). If your download exposes GEOID20, edit join_col in bg_us_2020_demo.yaml."
       ]
     },
