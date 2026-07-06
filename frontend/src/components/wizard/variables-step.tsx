@@ -12,6 +12,14 @@ import { useColumnMeta } from "@/lib/use-column-meta";
 import { OntologyTree } from "@/components/ontology-tree";
 import { CatalogDetail } from "@/components/catalog-detail";
 import { datasetsForVariable } from "@/lib/data-sources";
+import { DatasetDetail } from "@/components/data-sources-guide";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ErrorCard } from "./error-card";
 import { LoadingCard } from "./loading-card";
 import { SchemaMismatchBanner } from "./schema-mismatch-banner";
@@ -36,6 +44,8 @@ export function VariablesStep({
   const [selected, setSelected] = useState<string[]>(initialSelection);
   // ontology node id currently shown in the right-hand detail panel.
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  // dataset key whose acquisition detail is shown in a dialog (null = closed).
+  const [dsDialog, setDsDialog] = useState<string | null>(null);
 
   // Map between ontology node ids and variable keys (only variables with an
   // ontology_id are selectable in the tree).
@@ -88,6 +98,7 @@ export function VariablesStep({
   const dsSupplied = dataSetupLinks.filter((l) => l.kind === "preset");
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">Data Catalog</CardTitle>
@@ -211,15 +222,14 @@ export function VariablesStep({
                         <ul className="space-y-0.5">
                           {dsDownload.map((ds) => (
                             <li key={ds.key}>
-                              <a
-                                href={`/dashboard/data-setup?dataset=${ds.key}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                              <button
+                                type="button"
+                                onClick={() => setDsDialog(ds.key)}
+                                className="inline-flex items-center gap-1 text-left text-xs text-muted-foreground hover:text-foreground hover:underline"
                               >
                                 <ExternalLink className="size-3 shrink-0" />
                                 {ds.name}
-                              </a>
+                              </button>
                             </li>
                           ))}
                         </ul>
@@ -233,15 +243,14 @@ export function VariablesStep({
                         <ul className="space-y-0.5">
                           {dsSupplied.map((ds) => (
                             <li key={ds.key}>
-                              <a
-                                href={`/dashboard/data-setup?dataset=${ds.key}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                              <button
+                                type="button"
+                                onClick={() => setDsDialog(ds.key)}
+                                className="inline-flex items-center gap-1 text-left text-xs text-muted-foreground hover:text-foreground hover:underline"
                               >
                                 <ExternalLink className="size-3 shrink-0" />
                                 {ds.name}
-                              </a>
+                              </button>
                             </li>
                           ))}
                         </ul>
@@ -284,5 +293,18 @@ export function VariablesStep({
         </div>
       </CardContent>
     </Card>
+
+    <Dialog open={!!dsDialog} onOpenChange={(open) => !open && setDsDialog(null)}>
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Data setup</DialogTitle>
+          <DialogDescription>
+            How to obtain this dataset and where to place it on the server.
+          </DialogDescription>
+        </DialogHeader>
+        {dsDialog && <DatasetDetail datasetKey={dsDialog} />}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
