@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import { BOUNDARY_INFO } from "@/lib/variable-grouping";
 import { useColumnMeta } from "@/lib/use-column-meta";
@@ -193,17 +193,6 @@ export function VariablesStep({
                     })}
                   </ul>
                 </div>
-                {focusedVarMeta.ontology_id && (
-                  <a
-                    href={`/catalog?node=${encodeURIComponent(focusedVarMeta.ontology_id)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
-                  >
-                    <ExternalLink className="size-3" />
-                    Open in full ontology
-                  </a>
-                )}
               </div>
             ) : focusedNodeId ? (
               <CatalogDetail selectedId={focusedNodeId} />
