@@ -11,6 +11,7 @@ import { BOUNDARY_INFO } from "@/lib/variable-grouping";
 import { useColumnMeta } from "@/lib/use-column-meta";
 import { OntologyTree } from "@/components/ontology-tree";
 import { CatalogDetail } from "@/components/catalog-detail";
+import { DataSourcesGuide } from "@/components/data-sources-guide";
 import { ErrorCard } from "./error-card";
 import { LoadingCard } from "./loading-card";
 import { SchemaMismatchBanner } from "./schema-mismatch-banner";
@@ -204,6 +205,15 @@ export function VariablesStep({
             )}
           </div>
         </div>
+
+        <details className="mt-6 rounded-lg border bg-muted/30 p-4">
+          <summary className="cursor-pointer select-none text-sm font-medium text-foreground">
+            Preparing the exposure datasets — where to download &amp; where to put them
+          </summary>
+          <div className="mt-4">
+            <DataSourcesGuide />
+          </div>
+        </details>
 
         <div className="mt-6 flex items-center justify-between">
           {onBack ? (
