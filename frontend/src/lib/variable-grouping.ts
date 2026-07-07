@@ -83,10 +83,20 @@ export const SPATIAL_METHOD_INFO: Record<
   },
 };
 
-// The visible "Linked as" label. For areal exposures, name the actual boundary
+// Concise per-boundary unit for the areal "Linked as" phrasing — ZCTA5's full
+// name ("ZIP Code Tabulation Area") is too long to read inline, so use the tag.
+const AREAL_UNIT: Record<BoundaryKey, string> = {
+  Point: '',
+  BG: 'Block Group',
+  Tract: 'Census Tract',
+  ZCTA5: 'ZCTA5',
+  County: 'County',
+};
+
+// The visible "Linked as" label. For areal exposures, name the boundary
 // (e.g. "Area-weighted from Census Tract") rather than a generic "Census areas".
 export function linkedAsLabel(method: SpatialMethod, boundary: BoundaryKey): string {
-  if (method === 'areal') return `Area-weighted from ${BOUNDARY_LABEL[boundary]}`;
+  if (method === 'areal') return `Area-weighted from ${AREAL_UNIT[boundary]}`;
   return SPATIAL_METHOD_INFO[method].label;
 }
 

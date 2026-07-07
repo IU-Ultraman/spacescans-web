@@ -150,7 +150,7 @@ Walk-through:
 
 1. **3-card variables-step render.** Reach the Variables step. Confirm 3 cards rendered, grouped by boundary:
    - "Block Group" section: NDI, EPA Walkability Index.
-   - "ZIP Code Tabulation Area" section: Community Organization Density (ZBP).
+   - "ZIP Code Tabulation Area" section: Community Organization Density.
    Each card shows: label, description, unit chip, year-range chip, boundary chip.
 
 2. **Coverage panel mount.** Tick any single card. The coverage panel mounts inline and issues `GET /api/tasks/<id>/coverage?variables=<key>`. The response now includes the `boundary` chip.
@@ -191,7 +191,7 @@ Pre-flight:
 1. Variables-step renders 4 cards grouped by boundary:
    - "Block Group" section: NDI, EPA Walkability Index, TIGER Road
      Proximity
-   - "ZCTA5" section: Community Organization Density (ZBP)
+   - "ZCTA5" section: Community Organization Density
    Each card shows label, description, unit chip, year-range chip,
    boundary chip. The TIGER card's unit chip reads "meters",
    year-range "2013–2019", boundary "BG".
@@ -239,8 +239,8 @@ Pre-flight:
 
 1. Variables-step renders 5 cards grouped by boundary:
    - "Block Group" section: NDI, EPA Walkability Index, TIGER Road
-     Proximity, NHD Bluespace (water-body distance) — **4 cards**.
-   - "ZCTA5" section: Community Organization Density (ZBP) — **1 card**.
+     Proximity, NHD Bluespace — **4 cards**.
+   - "ZCTA5" section: Community Organization Density — **1 card**.
    Each card shows label, description, unit chip, year-range chip,
    boundary chip. The NHD card's unit chip reads "meters", year-range
    "2024–2024", boundary "BG".
@@ -300,9 +300,9 @@ Pre-flight:
 
 1. Variables-step renders 6 cards grouped by boundary:
    - "Block Group" section: NDI, EPA Walkability Index, TIGER Road
-     Proximity, NHD Bluespace (water-body distance), BTS Transportation
+     Proximity, NHD Bluespace, NPS Soundscape
      Noise (L50 dBA) — **5 cards**.
-   - "ZCTA5" section: Community Organization Density (ZBP) — **1 card**.
+   - "ZCTA5" section: Community Organization Density — **1 card**.
    Each card shows label, description, unit chip, year-range chip,
    boundary chip. The noise card's unit chip reads "dBA", year-range
    "2020–2020", boundary "BG".
@@ -363,9 +363,9 @@ Pre-flight:
 
 1. Variables-step renders 8 cards grouped by boundary:
    - "Block Group" section: NDI, EPA Walkability Index, TIGER Road
-     Proximity, NHD Bluespace, BTS Transportation Noise (L50 dBA),
-     VIIRS Night-time Lights (VNL), TEMIS UV Exposure — **7 cards**.
-   - "ZCTA5" section: Community Organization Density (ZBP) — **1 card**.
+     Proximity, NHD Bluespace, NPS Soundscape Noise (L50 dBA),
+     VIIRS Nighttime Lights (VNL), TEMIS UV Exposure — **7 cards**.
+   - "ZCTA5" section: Community Organization Density — **1 card**.
    Each card shows label, description, unit chip, year-range chip,
    boundary chip. The VNL card's unit chip reads "radiance", year-range
    "2013–2019", boundary "BG". The TEMIS card's unit chip reads "UV
@@ -439,9 +439,9 @@ Pre-flight:
 1. Variables-step renders 9 cards grouped by boundary in
    `BOUNDARY_ORDER` (`BG → ZCTA5 → Tract → County`):
    - "Block Group" section: NDI, EPA Walkability Index, TIGER Road
-     Proximity, NHD Bluespace, BTS Transportation Noise (L50 dBA),
-     VIIRS Night-time Lights (VNL), TEMIS UV Exposure — **7 cards**.
-   - "ZCTA5" section: Community Organization Density (ZBP) — **1 card**.
+     Proximity, NHD Bluespace, NPS Soundscape Noise (L50 dBA),
+     VIIRS Nighttime Lights (VNL), TEMIS UV Exposure — **7 cards**.
+   - "ZCTA5" section: Community Organization Density — **1 card**.
    - "Tract" section: FARA Food Access (Tract) — **1 card** (NEW).
    The FARA card shows label "FARA Food Access (Tract)", year-range
    "2013–2019", boundary "Tract", unit "binary flags". The Tract
