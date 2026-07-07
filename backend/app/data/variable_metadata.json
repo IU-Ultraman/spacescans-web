@@ -47,7 +47,7 @@
     },
     "tiger_proximity": {
       "label": "TIGER Road Proximity",
-      "description": "Per-residence (270 m buffer) annual distance (meters) to the nearest TIGER/Line primary road (S1100), secondary road (S1200), and primary+secondary combined, from US Census TIGER/Line shapefiles. Computed at each address, not aggregated to a Census area.",
+      "description": "Per-residence (default 270 m buffer) annual distance (meters) to the nearest TIGER/Line primary road (S1100), secondary road (S1200), and primary+secondary combined, from US Census TIGER/Line shapefiles. Computed at each address, not aggregated to a Census area.",
       "boundary": "Point",
       "coverage_years": [2013, 2019],
       "coverage_region": "CONUS",
@@ -60,7 +60,7 @@
     },
     "nhd_bluespace": {
       "label": "NHD Bluespace (water-body distance)",
-      "description": "Per-residence (270 m buffer) static distance (meters) to the nearest NHD flowline (dist_flow_m), waterbody (dist_water_m), area-feature (dist_area_m), coastline (dist_coast_m; 99999 for inland addresses), and combined blue-feature (dist_blue_m), from NHDPlus_H National Release 2 GDB (static product, 2024 vintage). Computed at each address, not aggregated to a Census area.",
+      "description": "Per-residence (default 270 m buffer) static distance (meters) to the nearest NHD flowline (dist_flow_m), waterbody (dist_water_m), area-feature (dist_area_m), coastline (dist_coast_m; 99999 for inland addresses), and combined blue-feature (dist_blue_m), from NHDPlus_H National Release 2 GDB (static product, 2024 vintage). Computed at each address, not aggregated to a Census area.",
       "boundary": "Point",
       "coverage_years": [2024, 2024],
       "coverage_region": "CONUS",
@@ -74,7 +74,7 @@
     },
     "noise": {
       "label": "BTS Transportation Noise (L50 dBA)",
-      "description": "Per-residence (270 m buffer) static daytime road+aviation noise exposure in L50 dBA (existing/imp/nat scenarios) sampled from the US DOT BTS Transportation Noise CONUS raster (270 m grid, static product). l50dba_exi is the existing-conditions surface; l50dba_imp and l50dba_nat are alternative-scenario surfaces.",
+      "description": "Per-residence (default 270 m buffer) static daytime road+aviation noise exposure in L50 dBA (existing/imp/nat scenarios) sampled from the US DOT BTS Transportation Noise CONUS raster (270 m grid, static product). l50dba_exi is the existing-conditions surface; l50dba_imp and l50dba_nat are alternative-scenario surfaces.",
       "boundary": "Point",
       "coverage_years": [2020, 2020],
       "coverage_region": "CONUS",
@@ -88,7 +88,7 @@
     },
     "vnl": {
       "label": "VIIRS Night-time Lights (VNL)",
-      "description": "Per-residence (270 m buffer) annual mean radiance sampled from the NOAA VIIRS Day/Night Band Nighttime Lights global v21 product (270 m grid, gridded raster linkage). Single value column 'value' carries the annual masked composite radiance in nanowatts/cm^2/sr.",
+      "description": "Per-residence (default 270 m buffer) annual mean radiance sampled from the NOAA VIIRS Day/Night Band Nighttime Lights global v21 product (270 m grid, gridded raster linkage). Single value column 'value' carries the annual masked composite radiance in nanowatts/cm^2/sr.",
       "boundary": "Point",
       "coverage_years": [2013, 2019],
       "coverage_region": "CONUS",
@@ -101,7 +101,7 @@
     },
     "temis": {
       "label": "TEMIS UV Exposure",
-      "description": "Per-residence (270 m buffer) annual mean daily UV exposure sampled from KNMI TEMIS UV products (270 m grid, daily raster, gridded linkage). Four value columns: uvddc (daily DNA-damage UV dose), uvdec (daily erythemal UV dose), uvdvc (daily vitamin-D UV dose), uvief (UV index at noon).",
+      "description": "Per-residence (default 270 m buffer) annual mean daily UV exposure sampled from KNMI TEMIS UV products (270 m grid, daily raster, gridded linkage). Four value columns: uvddc (daily DNA-damage UV dose), uvdec (daily erythemal UV dose), uvdvc (daily vitamin-D UV dose), uvief (UV index at noon).",
       "boundary": "Point",
       "coverage_years": [2013, 2019],
       "coverage_region": "CONUS",

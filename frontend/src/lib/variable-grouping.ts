@@ -1,8 +1,8 @@
 import type { VariableCatalog, VariableMetadata } from './api';
 
-// Ordered finest → coarsest: a residential Point (a 270 m buffer around the
-// address — finer than any Census area) precedes Block Group ⊂ Census Tract ⊂
-// County, with ZCTA5 (ZIP-code area, ~tract-to-county scale) placed after Tract.
+// Ordered finest → coarsest: a residential Point (a buffer around the address,
+// 270 m by default — finer than any Census area) precedes Block Group ⊂ Census
+// Tract ⊂ County, with ZCTA5 (ZIP-code area, ~tract-to-county scale) after Tract.
 export const BOUNDARY_ORDER = ['Point', 'BG', 'Tract', 'ZCTA5', 'County'] as const;
 export type BoundaryKey = typeof BOUNDARY_ORDER[number];
 
@@ -26,10 +26,10 @@ export const BOUNDARY_INFO: Record<
   { name: string; abbr: string | null; blurb: string }
 > = {
   Point: {
-    name: 'Residential point (270 m buffer)',
+    name: 'Residential point (default 270 m buffer)',
     abbr: null,
     blurb:
-      'Assigned at each residence directly — the exposure is sampled within a 270 m buffer around the address (from a raster grid or a hydrography layer), not aggregated to a Census area. Finer and more local than a block group.',
+      'Assigned at each residence directly — the exposure is sampled within a buffer around the address (270 m by default, adjustable in the buffer step), from a raster grid or a hydrography layer, not aggregated to a Census area. Finer and more local than a block group.',
   },
   BG: {
     name: 'Block Group',
