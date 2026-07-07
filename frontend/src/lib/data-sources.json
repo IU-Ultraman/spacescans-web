@@ -218,7 +218,8 @@
       "variableKeys": ["ndi"],
       "role": "Exposure values",
       "artifact": "ndi_bg_acs5_..._xgboost.rds",
-      "origin": "Built from Census ACS 5-year via an xgboost model — no public download."
+      "origin": "Built from Census ACS 5-year via an xgboost model — no public download.",
+      "placeDir": ["data_full/BG_NDI/C4/"]
     },
     {
       "key": "cbp-artifact",
@@ -226,7 +227,8 @@
       "variableKeys": ["cbp_zcta5"],
       "role": "Exposure values",
       "artifact": "zbp_nationwide_*.Rda + cbp_nationwide_*.Rda",
-      "origin": "Derived from Census ZIP + County Business Patterns (raw ZBP/CBP are public). ZBP gives ZCTA5-level density; patients whose ZIP has no ZBP row fall back to their county's CBP — so BOTH files are needed. The fallback also reuses the ZBP linkage output internally (auto-generated per run, not a download)."
+      "origin": "Derived from Census ZIP + County Business Patterns (raw ZBP/CBP are public). ZBP gives ZCTA5-level density; patients whose ZIP has no ZBP row fall back to their county's CBP — so BOTH files are needed. The fallback also reuses the ZBP linkage output internally (auto-generated per run, not a download).",
+      "placeDir": ["data/CBP/C4/"]
     },
     {
       "key": "walkability-artifact",
@@ -234,7 +236,8 @@
       "variableKeys": ["walkability"],
       "role": "Exposure values",
       "artifact": "epawalkind_nationwide_2016_2021.Rda",
-      "origin": "Converted from the EPA Smart Location Database (raw SLD is public). The pipeline uses the 2016 year as a static index; the file's 2021 rows are filtered out."
+      "origin": "Converted from the EPA Smart Location Database (raw SLD is public). The pipeline uses the 2016 year as a static index; the file's 2021 rows are filtered out.",
+      "placeDir": ["data_full/BG_WI/C4/"]
     },
     {
       "key": "fara-artifact",
@@ -242,7 +245,8 @@
       "variableKeys": ["fara_tract"],
       "role": "Exposure values",
       "artifact": "fara_nationwide_2010_2019_interpolated.Rda",
-      "origin": "Interpolated from USDA ERS Food Access Research Atlas (raw FARA is public)."
+      "origin": "Interpolated from USDA ERS Food Access Research Atlas (raw FARA is public).",
+      "placeDir": ["data_full/FARA/C4/"]
     }
   ]
 }

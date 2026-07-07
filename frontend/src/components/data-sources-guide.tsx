@@ -119,6 +119,19 @@ export function PresetCard({ d }: { d: PresetDataset }) {
         <code className="rounded bg-muted px-1 py-0.5">{d.artifact}</code>
       </p>
       <p className="text-xs text-muted-foreground">{d.origin}</p>
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pt-1 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1 font-medium">
+          <FolderInput className="size-3" /> Place in
+        </span>
+        {d.placeDir.map((p) => (
+          <code
+            key={p}
+            className="break-all rounded bg-muted px-1 py-0.5 text-foreground"
+          >
+            {p}
+          </code>
+        ))}
+      </div>
       <p className="pt-1 text-[11px] text-muted-foreground">
         Supplied by the deployer — not downloadable from an official site.
       </p>

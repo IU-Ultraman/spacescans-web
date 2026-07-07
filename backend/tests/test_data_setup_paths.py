@@ -61,8 +61,10 @@ def test_data_setup_place_dirs_match_configs():
     catalog = json.loads(_DATA_SOURCES_JSON.read_text())
 
     missing: list[str] = []
-    for d in catalog["selfServe"]:
-        for place in d["placeDir"]:
+    # Both self-serve (public download) and preset (deployer-supplied) datasets
+    # declare where their files land; both must match a real pipeline input path.
+    for d in catalog["selfServe"] + catalog["preset"]:
+        for place in d.get("placeDir", []):
             # Stable prefix up to the first {placeholder}; the exact
             # per-state/var/year suffix varies, but the prefix must exist verbatim.
             prefix = place.split("{")[0].rstrip("/ ")

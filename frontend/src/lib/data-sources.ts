@@ -39,6 +39,7 @@ export interface PresetDataset {
   role: string;
   artifact: string;
   origin: string;
+  placeDir: string[];
 }
 
 export const SELF_SERVE_DATASETS = raw.selfServe as SelfServeDataset[];
