@@ -26,7 +26,7 @@ export const BOUNDARY_INFO: Record<
   { name: string; abbr: string | null; blurb: string }
 > = {
   Point: {
-    name: 'Residential point (default 270 m buffer)',
+    name: 'Residential point',
     abbr: null,
     blurb:
       'Assigned at each residence directly — the exposure is sampled within a buffer around the address (270 m by default, adjustable in the buffer step), from a raster grid or a hydrography layer, not aggregated to a Census area. Finer and more local than a block group.',
