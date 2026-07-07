@@ -50,7 +50,7 @@
     },
     "tiger_proximity": {
       "spatial_method": "proximity",
-      "label": "TIGER Road Proximity",
+      "label": "TIGER Road Distance",
       "description": "Per-residence annual distance (meters) to the nearest TIGER/Line primary road (S1100), secondary road (S1200), and primary+secondary combined, from US Census TIGER/Line shapefiles. Computed at each address, not aggregated to a Census area.",
       "boundary": "Point",
       "coverage_years": [2013, 2019],

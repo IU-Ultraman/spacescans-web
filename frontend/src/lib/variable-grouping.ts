@@ -39,7 +39,7 @@ export const BOUNDARY_INFO: Record<
   },
   Tract: {
     name: 'Census Tract',
-    abbr: 'Tract',
+    abbr: null,
     blurb:
       'Neighborhood-sized Census area (~1,200–8,000 people), made of several block groups. This exposure is assigned at tract resolution.',
   },
@@ -51,7 +51,7 @@ export const BOUNDARY_INFO: Record<
   },
   County: {
     name: 'County',
-    abbr: 'County',
+    abbr: null,
     blurb:
       'County-level area — the coarsest resolution here. This exposure is assigned per county.',
   },
@@ -82,6 +82,13 @@ export const SPATIAL_METHOD_INFO: Record<
       'The straight-line distance from the exact home address to the nearest feature (water, road). No buffer is used.',
   },
 };
+
+// The visible "Linked as" label. For areal exposures, name the actual boundary
+// (e.g. "Area-weighted from Census Tract") rather than a generic "Census areas".
+export function linkedAsLabel(method: SpatialMethod, boundary: BoundaryKey): string {
+  if (method === 'areal') return `Area-weighted from ${BOUNDARY_LABEL[boundary]}`;
+  return SPATIAL_METHOD_INFO[method].label;
+}
 
 export function groupByBoundary(
   variables: Record<string, VariableMetadata>,

@@ -30,7 +30,7 @@ const STEP_SUFFIX_LABEL: Record<string, string> = {
   ndi: "Neighborhood Deprivation",
   wi: "Walkability",
   zcta5_cbp: "Community Organizations",
-  tiger_roads: "Road Proximity",
+  tiger_roads: "Road Distance",
   nhd_bluespace: "Bluespace",
   noise: "Noise",
   temis: "UV Exposure",
