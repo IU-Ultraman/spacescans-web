@@ -82,28 +82,44 @@
       ]
     },
     {
-      "key": "bg-boundaries",
-      "name": "Census Block Group boundaries — 2010 + 2020 vintages",
-      "usedBy": "NDI + EPA Walkability areal linkages (block-group level)",
-      "variableKeys": ["ndi", "walkability"],
+      "key": "bg-boundaries-2010",
+      "name": "Census Block Group boundaries — 2010 vintage",
+      "usedBy": "EPA Walkability + NDI (ACS periods with end year < 2020)",
+      "variableKeys": ["walkability", "ndi"],
       "role": "Boundary geometry",
-      "sourceName": "US Census Bureau — TIGER/Line",
+      "sourceName": "US Census Bureau — TIGER/Line 2010",
+      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2010/BG/2010/",
+      "license": "US federal public domain — free to use and redistribute.",
+      "access": "public",
+      "size": "per-state (50 + DC)",
+      "files": [
+        { "name": "tl_2010_{ss}_bg10.zip × 51", "note": "statewide files — 2-digit state FIPS (not the 5-digit per-county files)" }
+      ],
+      "placeDir": ["data_full/BG_FL/C3/tiger2010_bg10_states/tl_2010_{ss}_bg10/"],
+      "notes": [
+        "The TIGER2010/BG/2010/ folder has both 5-digit per-county and 2-digit statewide files — grab the statewide tl_2010_{ss}_bg10.",
+        "Unzip each into a subfolder named after the file basename (.shp + sidecars); join column is GEOID10."
+      ]
+    },
+    {
+      "key": "bg-boundaries-2020",
+      "name": "Census Block Group boundaries — 2020 vintage (TIGER 2024)",
+      "usedBy": "NDI only (ACS periods with end year ≥ 2020)",
+      "variableKeys": ["ndi"],
+      "role": "Boundary geometry",
+      "sourceName": "US Census Bureau — TIGER/Line 2024 (2020 BG vintage)",
       "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2024/BG/",
       "license": "US federal public domain — free to use and redistribute.",
       "access": "public",
-      "size": "~750 MB (2020) + per-state 2010",
+      "size": "~750 MB (51 states)",
       "files": [
-        { "name": "tl_2024_{ss}_bg.zip × 51", "note": "2020 vintage — or just run the bundled script" },
-        { "name": "tl_2010_{ss}_bg10.zip × 51", "note": "2010 vintage, state-level (not per-county)" }
+        { "name": "tl_2024_{ss}_bg.zip × 51", "note": "or just run the bundled download script" }
       ],
-      "placeDir": [
-        "data_full/BG_FL/C3/tiger2024_bg_states/tl_2024_{ss}_bg/",
-        "data_full/BG_FL/C3/tiger2010_bg10_states/tl_2010_{ss}_bg10/"
-      ],
+      "placeDir": ["data_full/BG_FL/C3/tiger2024_bg_states/tl_2024_{ss}_bg/"],
       "notes": [
-        "Fastest for 2020: run `bash scripts/download_bg_2020_shapefiles.sh` from the repo root (idempotent).",
-        "For 2010, the TIGER2010/BG/2010/ folder has both 5-digit per-county and 2-digit statewide files — grab the statewide tl_2010_{ss}_bg10.",
-        "Join column differs: GEOID10 (2010) vs GEOID (2024). If your download exposes GEOID20, edit join_col in bg_us_2020_demo.yaml."
+        "Fastest: run `bash scripts/download_bg_2020_shapefiles.sh` from the repo root (idempotent).",
+        "Join column is GEOID (some products expose GEOID20 — if so, edit join_col in bg_us_2020_demo.yaml).",
+        "Only NDI needs this — its ACS 2020-2024 periods use 2020-Census BG boundaries; walkability does not."
       ]
     },
     {
