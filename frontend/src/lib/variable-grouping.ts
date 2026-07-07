@@ -29,7 +29,7 @@ export const BOUNDARY_INFO: Record<
     name: 'Residential point',
     abbr: null,
     blurb:
-      'Assigned at each residence directly — the exposure is sampled within a buffer around the address (270 m by default, adjustable in the buffer step), from a raster grid or a hydrography layer, not aggregated to a Census area. Finer and more local than a block group.',
+      'Assigned at each residence directly, not aggregated to a Census area. A raster exposure (noise, lights, UV) is averaged within a small buffer around the address; a proximity exposure (water, roads) is the straight-line distance from the address to the nearest feature — no buffer involved. Finer and more local than a block group.',
   },
   BG: {
     name: 'Block Group',
