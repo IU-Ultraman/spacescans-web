@@ -78,8 +78,7 @@
       "notes": [
         "Go into each year's ROADS folder — TIGER{year}/ROADS/tl_{year}_{SSCCC}_roads.zip (e.g. TIGER2013/ROADS/tl_2013_13139_roads.zip). The other folders under TIGER{year}/ are different layers (COUNTY/TRACT/…) — you want ROADS.",
         "One zip per county; grab only the counties your cohort spans, for each year 2013–2019. (The linked URL shows 2019 — swap the year for the others.)",
-        "Place them under data_full/TIGER/C4/tiger{year}_roads/ — the reader scans that directory.",
-        "Also needs the County boundaries (above) as a clip base."
+        "Place them under data_full/TIGER/C4/tiger{year}_roads/ — the reader scans that directory."
       ]
     },
     {
