@@ -69,7 +69,7 @@ export function SelfServeCard({ d }: { d: SelfServeDataset }) {
         <ul className="space-y-0.5">
           {d.files.map((f) => (
             <li key={f.name} className="text-xs">
-              <code className="rounded bg-muted px-1 py-0.5">{f.name}</code>
+              <code className="break-all rounded bg-muted px-1 py-0.5">{f.name}</code>
               {f.note && (
                 <span className="ml-1.5 text-muted-foreground">— {f.note}</span>
               )}
@@ -97,7 +97,7 @@ export function SelfServeCard({ d }: { d: SelfServeDataset }) {
         {d.notes.map((n, i) => (
           <li key={i} className="flex gap-1.5 text-xs text-muted-foreground">
             <Info className="mt-0.5 size-3 shrink-0" />
-            <span>{n}</span>
+            <span className="min-w-0 break-words">{n}</span>
           </li>
         ))}
       </ul>
