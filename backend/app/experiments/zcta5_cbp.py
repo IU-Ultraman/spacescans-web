@@ -42,15 +42,32 @@ _C3_STEP = PipelineStep(
     is_c3=True,
 )
 
-_VARIABLE_TO_STEP = {
-    "cbp_zcta5": PipelineStep(
-        name="c4_zcta5_cbp",
-        template_relpath="c4/zcta5_cbp_demo.yaml",
-        is_c3=False,
-    ),
-}
+# County C3 weights, for the CBP fallback: patients whose ZIP has no ZBP row
+# fall back to their county's CBP. Matches the full pipeline's county_cbp chain.
+_C3_COUNTY_STEP = PipelineStep(
+    name="c3_county",
+    template_relpath="c3/county_us_demo.yaml",
+    is_c3=True,
+)
+# C4 ZBP (primary, ZCTA5 level), then the county-CBP fallback C4 which consumes
+# the ZBP output as its exposure.zbp_file (C4-feeds-C4).
+_C4_ZBP_STEP = PipelineStep(
+    name="c4_zcta5_cbp",
+    template_relpath="c4/zcta5_cbp_demo.yaml",
+    is_c3=False,
+)
+_C4_FALLBACK_STEP = PipelineStep(
+    name="c4_county_cbp",
+    template_relpath="c4/county_cbp_demo.yaml",
+    is_c3=False,
+)
 
-_PARQUET_MAP = {"cbp_zcta5": "c4_zcta5_cbp.parquet"}
+# cbp_zcta5 remains the only exposed variable (used for the unknown-check).
+_VARIABLE_TO_STEP = {"cbp_zcta5": _C4_ZBP_STEP}
+
+# The final cbp_zcta5 value is the fallback output: ZBP for patients with a ZBP
+# row, county CBP for those missing it.
+_PARQUET_MAP = {"cbp_zcta5": "c4_county_cbp.parquet"}
 
 
 def plan(config: dict) -> list[PipelineStep]:
@@ -64,11 +81,9 @@ def plan(config: dict) -> list[PipelineStep]:
     unknown = [v for v in variables if v not in _VARIABLE_TO_STEP]
     if unknown:
         raise ValueError(f"unknown variable(s): {', '.join(unknown)}")
-    steps: list[PipelineStep] = [_C3_STEP]
-    for v in ("cbp_zcta5",):
-        if v in variables:
-            steps.append(_VARIABLE_TO_STEP[v])
-    return steps
+    # cbp_zcta5 needs the full CBP-fallback chain: ZCTA5 + County C3 weights,
+    # then ZBP C4, then the county-CBP fallback C4 (which reads the ZBP output).
+    return [_C3_STEP, _C3_COUNTY_STEP, _C4_ZBP_STEP, _C4_FALLBACK_STEP]
 
 
 _FIPS_STR_COLS = ("state_fips", "county_fips", "tract_geoid", "bg_geoid", "zcta5")
@@ -117,6 +132,23 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     cfg["buffer"]["patient_file"] = str(task_dir / "input.parquet")
     cfg["buffer"]["buffer_m"] = user_config["buffer"]["size"]
     # NOTE: intentionally NO `cfg["buffer"]["raster_res_m"] = ...` here.
+    if not step.is_c3:
+        # C4: rewrite source.file (the C3 weights table) to this task's C3
+        # output, so C4 area-weights the uploaded cohort — not the demo weights.
+        # c4_county_cbp uses the county C3; c4_zcta5_cbp uses the ZCTA5 C3.
+        c3_name = (
+            _C3_COUNTY_STEP.name
+            if step.name == _C4_FALLBACK_STEP.name
+            else _C3_STEP.name
+        )
+        if isinstance(cfg.get("source"), dict):
+            cfg["source"]["file"] = str(task_dir / "output" / f"{c3_name}.parquet")
+        # C4-feeds-C4: the county-CBP fallback reads the ZBP C4 output as its
+        # exposure.zbp_file (patients missing ZBP fall back to county CBP).
+        if step.name == _C4_FALLBACK_STEP.name and isinstance(cfg.get("exposure"), dict):
+            cfg["exposure"]["zbp_file"] = str(
+                task_dir / "output" / f"{_C4_ZBP_STEP.name}.parquet"
+            )
     if "time" in cfg:
         cfg["time"]["output_grouping"] = "episode"
     cfg["output"]["path"] = str(task_dir / "output" / f"{step.name}.parquet")
@@ -162,7 +194,8 @@ def _cache_key(input_parquet: Path, step: PipelineStep, user_config: dict) -> st
     sha = _hash_input_parquet(input_parquet)
     buf = user_config["buffer"]["size"]
     raster = user_config["buffer"]["raster_res_m"]
-    return f"{sha[:8]}__{_BOUNDARY}__b{buf}m__r{raster}m"
+    boundary = "COUNTY" if step.name == _C3_COUNTY_STEP.name else _BOUNDARY
+    return f"{sha[:8]}__{boundary}__b{buf}m__r{raster}m"
 
 
 def _write_cache_meta(path: Path, **fields) -> None:
@@ -369,7 +402,8 @@ def run(task_dir: Path, variables: list[str] | None = None) -> int:
                     _write_cache_meta(
                         cache_path.with_suffix(".meta.json"),
                         sha_full=_hash_input_parquet(task_dir / "input.parquet"),
-                        boundary=_BOUNDARY,
+                        boundary=("COUNTY" if step.name == _C3_COUNTY_STEP.name
+                                  else _BOUNDARY),
                         buffer_m=config["buffer"]["size"],
                         raster_res_m=config["buffer"]["raster_res_m"],
                         input_row_count=_count_input_rows(task_dir / "input.csv"),
