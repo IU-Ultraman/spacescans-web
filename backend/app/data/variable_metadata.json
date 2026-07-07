@@ -65,7 +65,7 @@
     "nhd_bluespace": {
       "spatial_method": "proximity",
       "label": "NHD Bluespace",
-      "description": "Per-residence static distance (meters) to the nearest NHD flowline (dist_flow_m), waterbody (dist_water_m), area-feature (dist_area_m), coastline (dist_coast_m; 99999 for inland addresses), and combined blue-feature (dist_blue_m), from NHDPlus_H National Release 2 GDB (static product, 2024 vintage). Computed at each address, not aggregated to a Census area.",
+      "description": "Per-residence static distance (meters) to the nearest NHD flowline (dist_flow_m), waterbody (dist_water_m), area-feature (dist_area_m), coastline (dist_coast_m; empty for inland addresses with no coastline nearby), and combined blue-feature (dist_blue_m), from NHDPlus_H National Release 2 GDB (static product, 2024 vintage). Computed at each address, not aggregated to a Census area.",
       "boundary": "Point",
       "coverage_years": [2024, 2024],
       "coverage_region": "CONUS",
