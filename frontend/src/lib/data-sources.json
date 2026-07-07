@@ -230,7 +230,7 @@
       "variableKeys": ["walkability"],
       "role": "Exposure values",
       "artifact": "epawalkind_nationwide_2016_2021.Rda",
-      "origin": "Converted from the EPA Smart Location Database (raw SLD is public)."
+      "origin": "Converted from the EPA Smart Location Database (raw SLD is public). The pipeline uses the 2016 year as a static index; the file's 2021 rows are filtered out."
     },
     {
       "key": "fara-artifact",
