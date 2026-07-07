@@ -14,6 +14,11 @@ class VariableMetadataModel(BaseModel):
     label: str
     description: str
     boundary: Literal["Point", "BG", "ZCTA5", "Tract", "County"]
+    # Which C3 method the exposure uses — drives the variable-aware Buffer step.
+    # areal = buffer∩polygon (buffer + raster grid); grid = buffer∩raster cells
+    # (buffer only); proximity = distance from the point (no buffer). Optional
+    # for back-compat with older metadata fixtures.
+    spatial_method: Literal["areal", "grid", "proximity"] | None = None
     coverage_years: tuple[int, int]
     coverage_region: Literal["CONUS", "US", "AK_HI"]
     experiment: str

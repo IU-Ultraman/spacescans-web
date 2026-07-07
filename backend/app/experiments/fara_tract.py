@@ -108,8 +108,8 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
       1. On the C4 step, rewrite cfg["source"]["file"] (NOT exposure.file —
          FARA uses exposure for the .Rda static panel; the C3 output is the
          buffer/weight table joined on GEOID10).
-      2. C3 uses the Tract template's pre-existing raster_res_m=25 — we do
-         NOT inject buffer.raster_res_m on either step.
+      2. On the C3 step, inject buffer.raster_res_m so the tract-polygon
+         rasterization honors the user's grid resolution (areal parity).
     """
     template_path = (
         app.config.settings.SPACESCANS_CONFIG_TEMPLATES_DIR / step.template_relpath
@@ -122,9 +122,9 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     cfg["buffer"]["buffer_m"] = user_config["buffer"]["size"]
 
     if step.is_c3:
-        # C3: nothing extra to wire — boundary_overlap_fast reads from the
-        # bundled TIGER tract shapefile set (cohort-independent).
-        pass
+        # C3: boundary_overlap_fast rasterizes the tract polygons to measure
+        # buffer∩polygon overlap — honor the user's grid resolution.
+        cfg["buffer"]["raster_res_m"] = user_config["buffer"]["raster_res_m"]
     else:
         # C4: rewrite source.file to point at this task's C3 output.
         # Spec R4 mitigation: guard against unexpected source shape.
@@ -166,16 +166,17 @@ def _hash_input_parquet(path: Path) -> str:
 
 
 def _cache_key(input_parquet: Path, step: PipelineStep, user_config: dict) -> str:
-    """Format: ``<sha8>__TRACT_FARA__b<buffer>m`` — no raster suffix.
+    """Format: ``<sha8>__TRACT_FARA__b<buffer>m__r<raster>m``.
 
-    Boundary tag TRACT_FARA isolates the FARA-cohort C3 cache from any
-    future Tract-boundary experiments. The Tract C3 template hard-codes
-    raster_res_m=25 (see c3/tract_us_demo.yaml), so omitting the raster
-    suffix is safe — varying the raster would require a template fork.
+    Boundary tag TRACT_FARA isolates the FARA-cohort C3 cache from any future
+    Tract-boundary experiments. The raster suffix pins the grid resolution used
+    to rasterize the tract polygons — the C3 now honors the user's setting, so
+    two raster values must not collide in the cache.
     """
     sha = _hash_input_parquet(input_parquet)
     buf = user_config["buffer"]["size"]
-    return f"{sha[:8]}__{_BOUNDARY}__b{buf}m"
+    raster = user_config["buffer"]["raster_res_m"]
+    return f"{sha[:8]}__{_BOUNDARY}__b{buf}m__r{raster}m"
 
 
 def _write_cache_meta(path: Path, **fields) -> None:

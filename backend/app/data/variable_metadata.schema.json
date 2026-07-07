@@ -27,6 +27,10 @@
               "type": "string",
               "enum": ["Point", "BG", "ZCTA5", "Tract", "County"]
             },
+            "spatial_method": {
+              "type": "string",
+              "enum": ["areal", "grid", "proximity"]
+            },
             "coverage_years": {
               "type": "array",
               "items": {"type": "integer", "minimum": 1900, "maximum": 2100},

@@ -134,6 +134,10 @@ export interface VariableMetadata {
   label: string;
   description: string;
   boundary: 'Point' | 'BG' | 'ZCTA5' | 'Tract' | 'County';
+  /** C3 method — drives the Buffer step. areal = buffer∩polygon (buffer +
+   * grid); grid = buffer∩raster cells (buffer only); proximity = distance from
+   * the point, no buffer. */
+  spatial_method?: 'areal' | 'grid' | 'proximity';
   coverage_years: [number, number];
   coverage_region: 'CONUS' | 'US' | 'AK_HI';
   experiment: string;

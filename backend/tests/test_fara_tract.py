@@ -191,8 +191,9 @@ def test_cache_key_contains_tract_fara_boundary(task_dir: Path) -> None:
     parts = key.split("__")
     assert parts[1] == "TRACT_FARA"
     assert parts[2] == "b270m"
-    # No raster suffix — tract C3 template hard-codes raster_res_m=25.
-    assert len(parts) == 3
+    # Raster suffix pins the grid resolution — the C3 now honors the user's setting.
+    assert parts[3] == "r25m"
+    assert len(parts) == 4
 
 
 def test_merge_results_emits_result_fara_tract_csv(

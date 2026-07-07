@@ -67,6 +67,7 @@ export default function NewTaskPage() {
           onComplete={handleBufferComplete}
           onBack={() => setStep(1)}
           initialConfig={bufferConfig ?? undefined}
+          selectedVariables={selectedVariables}
         />
       )}
 

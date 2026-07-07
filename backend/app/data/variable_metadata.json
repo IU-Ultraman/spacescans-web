@@ -2,6 +2,7 @@
   "schema_version": 1,
   "variables": {
     "ndi": {
+      "spatial_method": "areal",
       "label": "Neighborhood Deprivation Index (NDI)",
       "description": "Composite measure of neighborhood-level socioeconomic deprivation from US Census ACS variables.",
       "boundary": "BG",
@@ -15,6 +16,7 @@
       "value_cols": ["ndi"]
     },
     "walkability": {
+      "spatial_method": "areal",
       "label": "EPA Walkability Index",
       "description": "EPA National Walkability Index ranking neighborhoods on walkability characteristics (intersection density, transit proximity, employment mix).",
       "boundary": "BG",
@@ -29,6 +31,7 @@
       "value_cols": ["NatWalkInd"]
     },
     "cbp_zcta5": {
+      "spatial_method": "areal",
       "label": "Community Organization Density (ZBP)",
       "description": "Per-capita density of 10 community organization categories (religious, civic, business, political, professional, labor, bowling, recreational, golf, sports) at the ZIP Code Tabulation Area level from Census Zip Business Patterns.",
       "boundary": "ZCTA5",
@@ -46,6 +49,7 @@
       ]
     },
     "tiger_proximity": {
+      "spatial_method": "proximity",
       "label": "TIGER Road Proximity",
       "description": "Per-residence annual distance (meters) to the nearest TIGER/Line primary road (S1100), secondary road (S1200), and primary+secondary combined, from US Census TIGER/Line shapefiles. Computed at each address, not aggregated to a Census area.",
       "boundary": "Point",
@@ -59,6 +63,7 @@
       "value_cols": ["dist_pri", "dist_sec", "dist_prisec"]
     },
     "nhd_bluespace": {
+      "spatial_method": "proximity",
       "label": "NHD Bluespace (water-body distance)",
       "description": "Per-residence static distance (meters) to the nearest NHD flowline (dist_flow_m), waterbody (dist_water_m), area-feature (dist_area_m), coastline (dist_coast_m; 99999 for inland addresses), and combined blue-feature (dist_blue_m), from NHDPlus_H National Release 2 GDB (static product, 2024 vintage). Computed at each address, not aggregated to a Census area.",
       "boundary": "Point",
@@ -73,6 +78,7 @@
       "value_cols": ["dist_flow_m", "dist_water_m", "dist_area_m", "dist_coast_m", "dist_blue_m"]
     },
     "noise": {
+      "spatial_method": "grid",
       "label": "BTS Transportation Noise (L50 dBA)",
       "description": "Per-residence static daytime road+aviation noise exposure in L50 dBA (existing/imp/nat scenarios) sampled from the US DOT BTS Transportation Noise CONUS raster (270 m grid, static product). l50dba_exi is the existing-conditions surface; l50dba_imp and l50dba_nat are alternative-scenario surfaces.",
       "boundary": "Point",
@@ -87,6 +93,7 @@
       "value_cols": ["l50dba_exi", "l50dba_imp", "l50dba_nat"]
     },
     "vnl": {
+      "spatial_method": "grid",
       "label": "VIIRS Night-time Lights (VNL)",
       "description": "Per-residence annual mean radiance sampled from the NOAA VIIRS Day/Night Band Nighttime Lights global v21 product (270 m grid, gridded raster linkage). Single value column 'value' carries the annual masked composite radiance in nanowatts/cm^2/sr.",
       "boundary": "Point",
@@ -100,6 +107,7 @@
       "value_cols": ["value"]
     },
     "temis": {
+      "spatial_method": "grid",
       "label": "TEMIS UV Exposure",
       "description": "Per-residence annual mean daily UV exposure sampled from KNMI TEMIS UV products (270 m grid, daily raster, gridded linkage). Four value columns: uvddc (daily DNA-damage UV dose), uvdec (daily erythemal UV dose), uvdvc (daily vitamin-D UV dose), uvief (UV index at noon).",
       "boundary": "Point",
@@ -113,6 +121,7 @@
       "value_cols": ["uvddc", "uvdec", "uvdvc", "uvief"]
     },
     "fara_tract": {
+      "spatial_method": "areal",
       "label": "FARA Food Access (Tract)",
       "description": "Per-tract annual USDA FARA food-access indicators (binary flags + share variables, interpolated 2013-2019). Headline value_cols: LILATracts_1And10 (low-income+low-access urban-1mi/rural-10mi), LATracts1 (low-access 1 mile), HUNVFlag (low-vehicle-access), LowIncomeTracts. Full label set in varnameCountRemoved.csv.",
       "boundary": "Tract",

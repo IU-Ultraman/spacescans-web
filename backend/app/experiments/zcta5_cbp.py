@@ -114,13 +114,13 @@ def csv_to_parquet(src: Path, dst: Path) -> None:
 def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     """Read a pipeline YAML template, inject task-specific fields, write to task dir.
 
-    Unlike bg_ndi_wi.render_yaml, this runner does NOT overwrite
-    ``buffer.raster_res_m`` — the c4/zcta5_cbp_demo.yaml template hardcodes
-    raster_res_m=25 to match the ZCTA5×25m weight parquet at
-    output/python_v2/270m/ZCTA5_US/C3/buffer270mZCTA525m_demo100k.parquet,
-    and overriding it would break that join. We still inject
-    ``time.output_grouping='episode'`` so the pipeline emits one row per
-    (PATID, episode_id) for the merge step to join on.
+    C3 steps (areal boundary_overlap_fast) get ``buffer.raster_res_m`` injected
+    so the polygon rasterization honors the user's grid resolution — the C4 now
+    reads this task's per-cohort C3 output, so there is no fixed demo-weight
+    join to protect. C4 steps get ``source.file`` rewritten to this task's C3
+    output (and the fallback's ``exposure.zbp_file`` chained to the ZBP C4
+    output). We also inject ``time.output_grouping='episode'`` so the pipeline
+    emits one row per (PATID, episode_id) for the merge step to join on.
     """
     template_path = (
         app.config.settings.SPACESCANS_CONFIG_TEMPLATES_DIR / step.template_relpath
@@ -131,7 +131,10 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     cfg["name"] = f"{cfg['name']}_task_{task_id_short}"
     cfg["buffer"]["patient_file"] = str(task_dir / "input.parquet")
     cfg["buffer"]["buffer_m"] = user_config["buffer"]["size"]
-    # NOTE: intentionally NO `cfg["buffer"]["raster_res_m"] = ...` here.
+    if step.is_c3:
+        # C3 (areal boundary_overlap_fast): honor the user's grid resolution so
+        # the ZCTA5/County polygon rasterization matches the buffer step.
+        cfg["buffer"]["raster_res_m"] = user_config["buffer"]["raster_res_m"]
     if not step.is_c3:
         # C4: rewrite source.file (the C3 weights table) to this task's C3
         # output, so C4 area-weights the uploaded cohort — not the demo weights.
