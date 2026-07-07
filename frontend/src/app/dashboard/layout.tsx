@@ -72,12 +72,6 @@ export default function DashboardLayout({
               >
                 Dashboard
               </Link>
-              <Link
-                href="/dashboard/data-setup"
-                className="text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Data Setup
-              </Link>
             </nav>
           </div>
 
