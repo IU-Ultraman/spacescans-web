@@ -3,8 +3,8 @@
     {
       "key": "county-boundaries",
       "name": "Census County boundaries (2010)",
-      "usedBy": "TIGER road-proximity clip base",
-      "variableKeys": ["tiger_proximity"],
+      "usedBy": "TIGER road-proximity clip base; CBP county fallback",
+      "variableKeys": ["tiger_proximity", "cbp_zcta5"],
       "role": "Boundary geometry",
       "sourceName": "US Census Bureau — TIGER/Line 2010",
       "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2010/COUNTY/2010/",
@@ -222,11 +222,11 @@
     },
     {
       "key": "cbp-artifact",
-      "name": "Community Organization Density (ZBP)",
+      "name": "Community Organization Density (ZBP + county CBP)",
       "variableKeys": ["cbp_zcta5"],
       "role": "Exposure values",
-      "artifact": "zbp_nationwide_*.Rda",
-      "origin": "Derived from Census ZIP Business Patterns (ZBP; raw ZBP is public). The web experiment uses ZBP at the ZCTA5 level — the county-CBP fallback in the full pipeline is not part of it."
+      "artifact": "zbp_nationwide_*.Rda + cbp_nationwide_*.Rda",
+      "origin": "Derived from Census ZIP + County Business Patterns (raw ZBP/CBP are public). ZBP gives ZCTA5-level density; patients whose ZIP has no ZBP row fall back to their county's CBP — so BOTH files are needed. The fallback also reuses the ZBP linkage output internally (auto-generated per run, not a download)."
     },
     {
       "key": "walkability-artifact",
