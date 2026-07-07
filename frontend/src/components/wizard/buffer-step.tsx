@@ -133,7 +133,7 @@ export function BufferStep({
             {/* Rasterization resolution — areal exposures only */}
             {rasterApplies && (
               <div className="space-y-2">
-                <Label htmlFor="raster-res">Measurement grid size (m)</Label>
+                <Label htmlFor="raster-res">Overlap grid size (m)</Label>
                 <Input
                   id="raster-res"
                   type="number"
@@ -145,9 +145,11 @@ export function BufferStep({
                   className="w-32"
                 />
                 <p className="text-xs text-muted-foreground">
-                  How finely the circle is gridded when overlapping it with
-                  Census areas — smaller squares = more precise, slower. 25 m is
-                  the standard. Applies to area-based exposures: {list(areal)}.
+                  How finely each Census area is gridded to measure its overlap
+                  with the circle — smaller cells = more precise, slower (25 m is
+                  the standard). Used only by area-based exposures ({list(areal)});
+                  it grids the Census polygons for the overlap, not the exposure
+                  data — the raster exposures (noise, lights, UV) don&apos;t use it.
                 </p>
               </div>
             )}
