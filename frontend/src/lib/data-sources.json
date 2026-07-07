@@ -72,7 +72,7 @@
       "access": "public",
       "size": "per-county × per-year (varies with cohort)",
       "files": [
-        { "name": "tl_{year}_{county_fips}_roads.zip", "note": "per county, per year — for the counties/years your cohort spans" }
+        { "name": "tiger{year}_roads/tl_{year}_{SSCCC}_roads.zip", "note": "per county (5-digit state+county FIPS), per year — kept in a tiger{year}_roads/ subfolder, for the counties/years your cohort spans" }
       ],
       "placeDir": ["data_full/TIGER/C4/"],
       "notes": [
