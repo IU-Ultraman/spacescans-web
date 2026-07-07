@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
-import { BOUNDARY_INFO } from "@/lib/variable-grouping";
+import { BOUNDARY_INFO, SPATIAL_METHOD_INFO } from "@/lib/variable-grouping";
 import { useColumnMeta } from "@/lib/use-column-meta";
 import { OntologyTree } from "@/components/ontology-tree";
 import { CatalogDetail } from "@/components/catalog-detail";
@@ -154,6 +154,22 @@ export function VariablesStep({
                       ? ` (${BOUNDARY_INFO[focusedVarMeta.boundary].abbr})`
                       : ""}
                   </dd>
+
+                  {focusedVarMeta.spatial_method && (
+                    <>
+                      <dt className="font-medium text-muted-foreground">
+                        Linked as
+                      </dt>
+                      <dd
+                        className="text-foreground/90"
+                        title={
+                          SPATIAL_METHOD_INFO[focusedVarMeta.spatial_method].blurb
+                        }
+                      >
+                        {SPATIAL_METHOD_INFO[focusedVarMeta.spatial_method].label}
+                      </dd>
+                    </>
+                  )}
 
                   <dt className="font-medium text-muted-foreground">Temporal</dt>
                   <dd className="text-foreground/90">

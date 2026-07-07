@@ -57,6 +57,32 @@ export const BOUNDARY_INFO: Record<
   },
 };
 
+// Plain-language "how is this exposure linked to a residence" — the C3 method.
+// Complements Spatial Scale (which only says the resolution): it distinguishes
+// the two point methods (grid vs proximity) that both read as "Residential
+// point", and it explains whether the buffer is used.
+export type SpatialMethod = 'areal' | 'grid' | 'proximity';
+export const SPATIAL_METHOD_INFO: Record<
+  SpatialMethod,
+  { label: string; blurb: string }
+> = {
+  areal: {
+    label: 'Area-weighted from Census areas',
+    blurb:
+      'The buffer around each home is overlaid on the Census areas it touches; the exposure is the area-weighted average of those areas.',
+  },
+  grid: {
+    label: 'Sampled from a raster grid',
+    blurb:
+      'The exposure raster is averaged over the cells the buffer around each home covers.',
+  },
+  proximity: {
+    label: 'Distance to the nearest feature',
+    blurb:
+      'The straight-line distance from the exact home address to the nearest feature (water, road). No buffer is used.',
+  },
+};
+
 export function groupByBoundary(
   variables: Record<string, VariableMetadata>,
 ): Partial<Record<BoundaryKey, [string, VariableMetadata][]>> {
