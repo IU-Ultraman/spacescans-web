@@ -151,8 +151,9 @@ def test_render_yaml_c4_skips_raster_res_m(fake_template_dir, tmp_path):
     # The fake C4 template does not have raster_res_m and rendering must not
     # add it (C4 doesn't use rasterization).
     assert "raster_res_m" not in cfg["buffer"]
-    # Preservation: C4 template's source.file must round-trip unchanged.
-    assert cfg["source"]["file"] == "data_full/BG_NDI/C4/ndi.Rda"
+    # C4 source.file (the C3 weights table) must be rewritten to THIS task's
+    # C3 output — otherwise C4 would area-weight against the demo weights.
+    assert cfg["source"]["file"] == str(task_dir / "output" / "c3_bg.parquet")
     assert cfg["linkage_pattern"] == "yearly_areal"
 
 

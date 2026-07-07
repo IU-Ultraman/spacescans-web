@@ -129,6 +129,18 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     cfg["buffer"]["buffer_m"] = user_config["buffer"]["size"]
     if step.is_c3:
         cfg["buffer"]["raster_res_m"] = user_config["buffer"]["raster_res_m"]
+    else:
+        # C4: rewrite source.file (the C3 weights table) to THIS task's C3
+        # output, so C4 area-weights the uploaded cohort's episodes — not the
+        # pre-built demo weight table the template ships with. Parity fix:
+        # matches the noise/fara/nhd/vnl/temis runners; bg_ndi_wi previously
+        # left source.file pointing at the demo weights (wrong for real cohorts).
+        # NOTE: source_2020 (NDI dual-vintage) is handled separately.
+        if not isinstance(cfg.get("source"), dict):
+            raise RuntimeError(
+                "bg_ndi_wi.render_yaml: unexpected source shape in C4 template"
+            )
+        cfg["source"]["file"] = str(task_dir / "output" / f"{_C3_STEP.name}.parquet")
     if "time" in cfg:
         cfg["time"]["output_grouping"] = "episode"  # Sprint 2: keep per-episode rows; web pipes episode_id via _adapt_demo_conus
     cfg["output"]["path"] = str(task_dir / "output" / f"{step.name}.parquet")
