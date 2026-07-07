@@ -140,6 +140,7 @@
       ],
       "placeDir": ["data/Noise/C3/"],
       "notes": [
+        "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
         "Keep the exact filenames — the reader hard-codes all three.",
         "Download only the CONUS_ files; skip the AK_/HI_ variants (different projections).",
         "Provenance: project metadata labels this 'US DOT BTS', but the actual files are the NPS soundscape dataset."
@@ -161,6 +162,7 @@
       ],
       "placeDir": ["data_full/NHD/C4/"],
       "notes": [
+        "No census boundary file needed — the value is the distance from each patient's residence to the nearest water feature (nhd_proximity), not a block-group summary.",
         "Direct link: prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHDPlusHR/National/GDB/NHDPlus_H_National_Release_2_GDB.zip",
         "Unzip to the .gdb directory (keep its name) — no conversion needed."
       ]
@@ -181,6 +183,7 @@
       ],
       "placeDir": ["data_full/VNL/C3/"],
       "notes": [
+        "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
         "Requires a free EOG account (login) to download the annual global files.",
         "gunzip each .tif.gz after download; keep the original filenames (the reader parses the year)."
       ]
@@ -201,6 +204,7 @@
       ],
       "placeDir": ["data_full/TEMIS/C4/raw/{var}/{year}/"],
       "notes": [
+        "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
         "Native HDF-4 — install pyhdf (+ the system HDF4 library) to read it.",
         "Scriptable from the CloudFront mirror: d1qb6yzwaaq4he.cloudfront.net/uvradiation/v2.0/{year}/{mm}/{var}YYYYMMDD.hdf",
         "Layout: one subfolder per variable, then per year."
