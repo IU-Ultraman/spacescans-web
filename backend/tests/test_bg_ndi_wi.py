@@ -3,15 +3,17 @@ from app.experiments.bg_ndi_wi import plan, PipelineStep
 
 def test_plan_with_both_variables():
     steps = plan({"variables": ["ndi", "walkability"], "buffer": {"size": 270, "raster_res_m": 25}})
-    assert [s.name for s in steps] == ["c3_bg", "c4_ndi", "c4_wi"]
-    assert [s.is_c3 for s in steps] == [True, False, False]
+    assert [s.name for s in steps] == ["c3_bg", "c3_bg_2020", "c4_ndi", "c4_wi"]
+    assert [s.is_c3 for s in steps] == [True, True, False, False]
     assert steps[0].template_relpath == "c3/bg_us_demo.yaml"
-    assert steps[1].template_relpath == "c4/bg_ndi_demo.yaml"
-    assert steps[2].template_relpath == "c4/bg_wi_demo.yaml"
+    assert steps[1].template_relpath == "c3/bg_us_2020_demo.yaml"
+    assert steps[2].template_relpath == "c4/bg_ndi_demo.yaml"
+    assert steps[3].template_relpath == "c4/bg_wi_demo.yaml"
 
 def test_plan_with_ndi_only():
     steps = plan({"variables": ["ndi"], "buffer": {"size": 270, "raster_res_m": 25}})
-    assert [s.name for s in steps] == ["c3_bg", "c4_ndi"]
+    # NDI is dual-vintage → 2010 + 2020 BG C3 both run before C4.
+    assert [s.name for s in steps] == ["c3_bg", "c3_bg_2020", "c4_ndi"]
 
 def test_plan_with_walkability_only():
     steps = plan({"variables": ["walkability"], "buffer": {"size": 270, "raster_res_m": 25}})
@@ -96,12 +98,25 @@ def fake_template_dir(tmp_path, monkeypatch):
         "  raster_res_m: 25\n"
         "output:\n  path: output/bg_us_demo.parquet\n"
     )
+    c3_2020 = tmp_path / "c3" / "bg_us_2020_demo.yaml"
+    c3_2020.write_text(
+        "name: bg_us_2020_demo\n"
+        "linkage_pattern: boundary_overlap_fast\n"
+        "source:\n  file: data_full/BG_FL/C3/tiger2024_bg_states/...\n  join_col: GEOID\n"
+        "buffer:\n"
+        "  patient_file: data_full/demo_patients_conus_fast_100000.parquet\n"
+        "  patient_adapter: demo_conus\n"
+        "  buffer_m: 270\n"
+        "  raster_res_m: 25\n"
+        "output:\n  path: output/bg_us_2020_demo.parquet\n"
+    )
     c4 = tmp_path / "c4" / "bg_ndi_demo.yaml"
     c4.parent.mkdir(parents=True)
     c4.write_text(
         "name: bg_ndi_demo\n"
-        "linkage_pattern: yearly_areal\n"
-        "source:\n  file: data_full/BG_NDI/C4/ndi.Rda\n"
+        "linkage_pattern: yearly_areal_bg_vintage\n"
+        "source:\n  file: output/python_v2/270m/BG_US/C3/buffer270mBG25m_demo100k.parquet\n  join_col: GEOID10\n"
+        "source_2020:\n  file: output/python_v2/270m/BG_US_2020/C3/buffer270mBG25m_2020_demo100k.parquet\n  join_col: GEOID\n"
         "buffer:\n"
         "  patient_file: data_full/demo_patients_conus_fast_100000.parquet\n"
         "  patient_adapter: demo_conus\n"
@@ -154,7 +169,9 @@ def test_render_yaml_c4_skips_raster_res_m(fake_template_dir, tmp_path):
     # C4 source.file (the C3 weights table) must be rewritten to THIS task's
     # C3 output — otherwise C4 would area-weight against the demo weights.
     assert cfg["source"]["file"] == str(task_dir / "output" / "c3_bg.parquet")
-    assert cfg["linkage_pattern"] == "yearly_areal"
+    # NDI dual-vintage: source_2020 (2020 BG weights) rewritten to the 2020 C3 output.
+    assert cfg["source_2020"]["file"] == str(task_dir / "output" / "c3_bg_2020.parquet")
+    assert cfg["linkage_pattern"] == "yearly_areal_bg_vintage"
 
 
 from app.experiments.bg_ndi_wi import parse_step_progress
@@ -171,6 +188,19 @@ def test_parse_step_progress_non_progress_returns_none():
     assert parse_step_progress("[overlap_fast] === SUMMARY ===") is None
     assert parse_step_progress("random log line") is None
     assert parse_step_progress("") is None
+
+
+def test_cache_key_distinguishes_bg_vintages(tmp_path):
+    import pandas as pd
+    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP, _C3_STEP_2020
+    inp = tmp_path / "input.parquet"
+    pd.DataFrame({"episode_id": [0, 1]}).to_parquet(inp)
+    uc = {"buffer": {"size": 270, "raster_res_m": 25}}
+    k2010 = _cache_key(inp, _C3_STEP, uc)
+    k2020 = _cache_key(inp, _C3_STEP_2020, uc)
+    # The two vintages must not collide in the C3 cache.
+    assert "__BG__" in k2010 and "__BG2020__" in k2020
+    assert k2010 != k2020
 
 
 import json
@@ -358,7 +388,7 @@ def test_run_writes_status_file_on_completion(fake_template_dir, fake_cli_settin
     assert rc == 0
     status = json.loads((task_dir / "status.json").read_text())
     assert status["status"] == "finished"
-    assert status["total_steps"] == 2  # c3_bg + c4_ndi
+    assert status["total_steps"] == 3  # c3_bg + c3_bg_2020 + c4_ndi
     # Sprint 4 F6: standalone run() emits only the per-runner partial
     # result_bg_ndi_wi.csv (symmetric with zcta5_cbp.run()). The dispatcher's
     # post-experiment fan_in is the sole producer of the consolidated
@@ -489,10 +519,12 @@ def test_cache_miss_creates_artifact_and_meta(fake_template_dir, fake_cli_settin
     cache_dir = app.config.settings.C3_CACHE_DIR
     parquets = list(cache_dir.glob("*.parquet"))
     metas = list(cache_dir.glob("*.meta.json"))
-    assert len(parquets) == 1
-    assert len(metas) == 1
-    # filename grammar
-    assert "__BG__b270m__r25m" in parquets[0].name
+    # NDI builds both vintages → 2010 (BG) + 2020 (BG2020) cache entries.
+    assert len(parquets) == 2
+    assert len(metas) == 2
+    names = " ".join(p.name for p in parquets)
+    assert "__BG__b270m__r25m" in names
+    assert "__BG2020__b270m__r25m" in names
 
 
 def test_cache_hit_skips_subprocess(fake_template_dir, fake_cli_settings, tmp_path, monkeypatch):
@@ -559,8 +591,8 @@ def test_cache_corrupted_falls_through(fake_template_dir, fake_cli_settings, tmp
     run(task_dir)  # populates cache
     cache_dir = app.config.settings.C3_CACHE_DIR
     parquets = list(cache_dir.glob("*.parquet"))
-    assert len(parquets) == 1
-    parquets[0].write_bytes(b"truncated!")  # corrupt it
+    assert len(parquets) == 2  # 2010 + 2020 vintages
+    parquets[0].write_bytes(b"truncated!")  # corrupt one
 
     # Now run again — should detect corruption and rebuild.
     task_dir_2 = tmp_path / "task-cache-D"

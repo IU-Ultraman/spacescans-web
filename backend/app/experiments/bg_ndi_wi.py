@@ -43,6 +43,9 @@ _VARIABLE_TO_STEP = {
 }
 
 _C3_STEP = PipelineStep(name="c3_bg", template_relpath="c3/bg_us_demo.yaml", is_c3=True)
+# NDI is dual-vintage: it also needs 2020-Census BG weights (TIGER 2024
+# shapefiles) for exposure rows tagged bg_vintage=2020. Walkability does not.
+_C3_STEP_2020 = PipelineStep(name="c3_bg_2020", template_relpath="c3/bg_us_2020_demo.yaml", is_c3=True)
 
 # Sprint 3 B15: per-runner boundary tag baked into the C3 cache key.
 _BOUNDARY = "BG"
@@ -61,6 +64,8 @@ def plan(config: dict) -> list[PipelineStep]:
     if unknown:
         raise ValueError(f"unknown variable(s): {', '.join(unknown)}")
     steps = [_C3_STEP]
+    if "ndi" in variables:
+        steps.append(_C3_STEP_2020)  # NDI dual-vintage: also build 2020 BG weights
     for v in ("ndi", "walkability"):
         if v in variables:
             steps.append(_VARIABLE_TO_STEP[v])
@@ -141,6 +146,12 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
                 "bg_ndi_wi.render_yaml: unexpected source shape in C4 template"
             )
         cfg["source"]["file"] = str(task_dir / "output" / f"{_C3_STEP.name}.parquet")
+        # NDI's dual-vintage C4 also reads source_2020 (the 2020 BG weights);
+        # rewrite it to the per-task 2020 C3 output.
+        if isinstance(cfg.get("source_2020"), dict):
+            cfg["source_2020"]["file"] = str(
+                task_dir / "output" / f"{_C3_STEP_2020.name}.parquet"
+            )
     if "time" in cfg:
         cfg["time"]["output_grouping"] = "episode"  # Sprint 2: keep per-episode rows; web pipes episode_id via _adapt_demo_conus
     cfg["output"]["path"] = str(task_dir / "output" / f"{step.name}.parquet")
@@ -307,7 +318,7 @@ def _cache_key(input_parquet: Path, step: PipelineStep, user_config: dict) -> st
     Example: ``a8f3c2b1__BG__b270m__r25m``
     """
     sha = _hash_input_parquet(input_parquet)
-    boundary = _BOUNDARY
+    boundary = "BG2020" if step.name == _C3_STEP_2020.name else _BOUNDARY
     buf = user_config["buffer"]["size"]
     raster = user_config["buffer"]["raster_res_m"]
     return f"{sha[:8]}__{boundary}__b{buf}m__r{raster}m"
