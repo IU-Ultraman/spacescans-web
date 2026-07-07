@@ -162,11 +162,14 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     return out
 
 
-# Matches both:
-#   [overlap_fast] tile 7460/14938 ( 49.9%) ...
+# Matches the per-tile/iteration progress lines emitted by the C3 patterns:
+#   [overlap_fast] tile 7460/14938 ( 49.9%) ...     (areal: ndi/walkability/cbp/fara)
 #   [overlap]   1600/3221 ( 49.7%)  ...
+#   [nhd_proximity] tile 5/100 ( 5.0%) elapsed=0.50m  (nhd bluespace — slow cold GDB run)
+# Without nhd_proximity here, the nhd C3 (minutes on a cold cache) reported no
+# progress, so the bar sat at the step-start % the whole time.
 _PROGRESS_RE = re.compile(
-    r"\[(?:overlap|overlap_fast)\]\s+(?:tile\s+)?(\d+)/(\d+)"
+    r"\[(?:overlap|overlap_fast|nhd_proximity)\]\s+(?:tile\s+)?(\d+)/(\d+)"
 )
 
 

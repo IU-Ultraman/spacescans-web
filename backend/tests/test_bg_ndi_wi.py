@@ -184,6 +184,17 @@ def test_parse_step_progress_overlap_classic():
     line = "[overlap]   1600/3221 ( 49.7%)  elapsed=   2.0m  rate=13.20/s"
     assert parse_step_progress(line) == pytest.approx(0.497, abs=0.005)
 
+def test_parse_step_progress_nhd_proximity():
+    # nhd's slow cold C3 emits this; without it the progress bar sat at 0%.
+    line = "[nhd_proximity] tile 5/100 ( 5.0%) elapsed=0.50m"
+    assert parse_step_progress(line) == pytest.approx(0.05, abs=0.005)
+
+def test_parse_step_progress_ignores_nhd_non_progress_lines():
+    # nhd also prints summary/count lines with % or counts that must NOT be
+    # read as progress fractions.
+    assert parse_step_progress("[nhd_proximity] 100000 patients across 50 tiles") is None
+    assert parse_step_progress("[nhd_proximity]   layer_load     1.20m ( 45.0%)") is None
+
 def test_parse_step_progress_non_progress_returns_none():
     assert parse_step_progress("[overlap_fast] === SUMMARY ===") is None
     assert parse_step_progress("random log line") is None
