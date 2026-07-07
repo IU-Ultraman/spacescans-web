@@ -1,12 +1,13 @@
 import type { VariableCatalog, VariableMetadata } from './api';
 
-// Ordered smallest → largest geography: Block Group ⊂ Census Tract ⊂
-// County, with ZCTA5 (ZIP-code area, ~tract-to-county scale) placed after
-// Tract. Drives the Select Variables section order.
-export const BOUNDARY_ORDER = ['BG', 'Tract', 'ZCTA5', 'County'] as const;
+// Ordered finest → coarsest: a residential Point (a 270 m buffer around the
+// address — finer than any Census area) precedes Block Group ⊂ Census Tract ⊂
+// County, with ZCTA5 (ZIP-code area, ~tract-to-county scale) placed after Tract.
+export const BOUNDARY_ORDER = ['Point', 'BG', 'Tract', 'ZCTA5', 'County'] as const;
 export type BoundaryKey = typeof BOUNDARY_ORDER[number];
 
 export const BOUNDARY_LABEL: Record<BoundaryKey, string> = {
+  Point: 'Residential point',
   BG: 'Block Group',
   ZCTA5: 'ZIP Code Tabulation Area',
   Tract: 'Census Tract',
@@ -17,24 +18,40 @@ export const BOUNDARY_LABEL: Record<BoundaryKey, string> = {
 // Select-Exposures detail panel. "blurb" answers "what is this and why does it
 // matter" for a researcher who knows cohorts but not the Census hierarchy: it
 // is the geographic resolution at which the exposure is assigned to a residence.
-export const BOUNDARY_INFO: Record<BoundaryKey, { name: string; blurb: string }> = {
+// `abbr` is the short tag shown in parentheses after the name (e.g. "Block
+// Group (BG)"). Residential Point has no Census abbreviation, so abbr is null
+// and no parenthetical is shown.
+export const BOUNDARY_INFO: Record<
+  BoundaryKey,
+  { name: string; abbr: string | null; blurb: string }
+> = {
+  Point: {
+    name: 'Residential point (270 m buffer)',
+    abbr: null,
+    blurb:
+      'Assigned at each residence directly — the exposure is sampled within a 270 m buffer around the address (from a raster grid or a hydrography layer), not aggregated to a Census area. Finer and more local than a block group.',
+  },
   BG: {
     name: 'Block Group',
+    abbr: 'BG',
     blurb:
-      'Smallest Census area (~600–3,000 people, a few city blocks). This exposure is assigned at block-group resolution — the finest, most local.',
+      'Smallest Census area (~600–3,000 people, a few city blocks). This exposure is assigned by area-weighting the block groups the buffer overlaps.',
   },
   Tract: {
     name: 'Census Tract',
+    abbr: 'Tract',
     blurb:
       'Neighborhood-sized Census area (~1,200–8,000 people), made of several block groups. This exposure is assigned at tract resolution.',
   },
   ZCTA5: {
     name: 'ZIP Code Tabulation Area',
+    abbr: 'ZCTA5',
     blurb:
       "The Census Bureau's approximation of a 5-digit ZIP-code area (roughly tract-to-county scale). This exposure is assigned per ZCTA.",
   },
   County: {
     name: 'County',
+    abbr: 'County',
     blurb:
       'County-level area — the coarsest resolution here. This exposure is assigned per county.',
   },

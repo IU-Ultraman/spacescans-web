@@ -124,7 +124,7 @@ export interface VarCoverage {
   patients_covered: number;
   coverage_pct: number;
   warnings: string[];
-  boundary: 'BG' | 'ZCTA5' | 'Tract' | 'County';
+  boundary: 'Point' | 'BG' | 'ZCTA5' | 'Tract' | 'County';
   display_unit: string;
   /** "static" products carry one vintage and skip the time-window check. */
   temporal?: 'static' | 'yearly';
@@ -133,7 +133,7 @@ export interface VarCoverage {
 export interface VariableMetadata {
   label: string;
   description: string;
-  boundary: 'BG' | 'ZCTA5' | 'Tract' | 'County';
+  boundary: 'Point' | 'BG' | 'ZCTA5' | 'Tract' | 'County';
   coverage_years: [number, number];
   coverage_region: 'CONUS' | 'US' | 'AK_HI';
   experiment: string;

@@ -299,7 +299,7 @@ def test_real_metadata_file_contains_tiger_proximity_with_runner_module():
     assert "tiger_proximity" in payload["variables"], sorted(payload["variables"].keys())
     entry = payload["variables"]["tiger_proximity"]
     assert entry["experiment"] == "tiger_proximity"
-    assert entry["boundary"] == "BG"
+    assert entry["boundary"] == "Point"
 
 
 # ----- Sprint 4 F3: startup probe -----
@@ -528,7 +528,7 @@ def test_real_metadata_file_contains_nhd_bluespace_with_runner_module():
     assert "nhd_bluespace" in payload["variables"], sorted(payload["variables"].keys())
     entry = payload["variables"]["nhd_bluespace"]
     assert entry["experiment"] == "nhd_bluespace"
-    assert entry["boundary"] == "BG"
+    assert entry["boundary"] == "Point"
     assert entry["coverage_years"] == [2024, 2024]
 
 
@@ -619,7 +619,7 @@ def test_real_metadata_file_contains_noise_with_runner_module():
     assert "noise" in payload["variables"], sorted(payload["variables"].keys())
     entry = payload["variables"]["noise"]
     assert entry["experiment"] == "noise"
-    assert entry["boundary"] == "BG"
+    assert entry["boundary"] == "Point"
     assert entry["coverage_years"] == [2020, 2020]
 
 
@@ -692,7 +692,7 @@ def test_real_metadata_file_contains_vnl_with_runner_module():
     assert "vnl" in payload["variables"], sorted(payload["variables"].keys())
     entry = payload["variables"]["vnl"]
     assert entry["experiment"] == "vnl"
-    assert entry["boundary"] == "BG"
+    assert entry["boundary"] == "Point"
     assert entry["coverage_years"] == [2013, 2019]
     assert entry["value_cols"] == ["value"]
 
@@ -706,7 +706,7 @@ def test_real_metadata_file_contains_temis_with_runner_module():
     assert "temis" in payload["variables"], sorted(payload["variables"].keys())
     entry = payload["variables"]["temis"]
     assert entry["experiment"] == "temis"
-    assert entry["boundary"] == "BG"
+    assert entry["boundary"] == "Point"
     assert entry["coverage_years"] == [2013, 2019]
     assert entry["value_cols"] == ["uvddc", "uvdec", "uvdvc", "uvief"]
 

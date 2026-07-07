@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/variables", tags=["variables"])
 class VariableMetadataModel(BaseModel):
     label: str
     description: str
-    boundary: Literal["BG", "ZCTA5", "Tract", "County"]
+    boundary: Literal["Point", "BG", "ZCTA5", "Tract", "County"]
     coverage_years: tuple[int, int]
     coverage_region: Literal["CONUS", "US", "AK_HI"]
     experiment: str

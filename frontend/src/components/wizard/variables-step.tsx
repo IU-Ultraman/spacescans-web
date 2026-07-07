@@ -149,8 +149,10 @@ export function VariablesStep({
                     className="text-foreground/90"
                     title={BOUNDARY_INFO[focusedVarMeta.boundary].blurb}
                   >
-                    {BOUNDARY_INFO[focusedVarMeta.boundary].name} (
-                    {focusedVarMeta.boundary})
+                    {BOUNDARY_INFO[focusedVarMeta.boundary].name}
+                    {BOUNDARY_INFO[focusedVarMeta.boundary].abbr
+                      ? ` (${BOUNDARY_INFO[focusedVarMeta.boundary].abbr})`
+                      : ""}
                   </dd>
 
                   <dt className="font-medium text-muted-foreground">Temporal</dt>
