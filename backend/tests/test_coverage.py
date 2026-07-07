@@ -94,17 +94,18 @@ def test_compute_coverage_basic_ndi(monkeypatch, tmp_path):
 
 
 def test_compute_coverage_time_window_filter(monkeypatch, tmp_path):
-    """Walkability covers 2016-2021. Patients in 2014 fall outside."""
+    """FARA is yearly, covering 2013-2019. A patient in 2010 falls outside.
+    (Walkability is now static, so it no longer exercises the time window.)"""
     csv = (
         "pid,startDate,endDate,longitude,latitude\n"
-        "P1,2014-01-01,2014-12-31,-93.0,45.0\n"
-        "P2,2018-01-01,2018-06-01,-93.0,45.0\n"
+        "P1,2010-01-01,2010-12-31,-93.0,45.0\n"
+        "P2,2016-01-01,2016-06-01,-93.0,45.0\n"
     )
     task_id = _seed_task_with_csv(monkeypatch, tmp_path, csv)
     from app.task_manager import compute_coverage
-    out = compute_coverage(task_id, ["walkability"])
-    assert out["variables"]["walkability"]["patients_in_time_window"] == 1
-    assert out["variables"]["walkability"]["coverage_pct"] == 50.0
+    out = compute_coverage(task_id, ["fara_tract"])
+    assert out["variables"]["fara_tract"]["patients_in_time_window"] == 1
+    assert out["variables"]["fara_tract"]["coverage_pct"] == 50.0
 
 
 def test_compute_coverage_region_filter_conus(monkeypatch, tmp_path):
@@ -152,16 +153,16 @@ def test_compute_coverage_emits_warning_on_low_time_coverage(monkeypatch, tmp_pa
     """When >5% of patients are outside the time window, append a human-readable warning."""
     rows = ["pid,startDate,endDate,longitude,latitude"]
     for i in range(100):
-        # 10 patients in 2014 (out of WI 2016-2021), 90 in 2018
-        year = 2014 if i < 10 else 2018
+        # 10 patients in 2010 (outside FARA 2013-2019), 90 in 2016
+        year = 2010 if i < 10 else 2016
         rows.append(f"P{i},{year}-01-01,{year}-12-31,-93.0,45.0")
     csv = "\n".join(rows) + "\n"
     task_id = _seed_task_with_csv(monkeypatch, tmp_path, csv)
     from app.task_manager import compute_coverage
-    out = compute_coverage(task_id, ["walkability"])
-    assert out["variables"]["walkability"]["coverage_pct"] == 90.0
-    assert len(out["variables"]["walkability"]["warnings"]) >= 1
-    assert "2016-2021" in out["variables"]["walkability"]["warnings"][0]
+    out = compute_coverage(task_id, ["fara_tract"])
+    assert out["variables"]["fara_tract"]["coverage_pct"] == 90.0
+    assert len(out["variables"]["fara_tract"]["warnings"]) >= 1
+    assert "2013-2019" in out["variables"]["fara_tract"]["warnings"][0]
 
 
 def _make_authed_client(monkeypatch, tmp_path):
