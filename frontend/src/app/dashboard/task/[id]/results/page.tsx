@@ -9,7 +9,6 @@ import { useColumnMeta } from "@/lib/use-column-meta";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
-import { HistogramsCard } from "@/components/results/histograms-card";
 import { StateMapCard } from "@/components/results/state-map-card";
 import { VizErrorBoundary } from "@/components/results/viz-error-boundary";
 import {
@@ -443,13 +442,6 @@ export default function TaskResultsPage() {
         </div>
         );
       })()}
-
-      {/* Exposure histograms */}
-      {task.status === "finished" && (
-        <VizErrorBoundary label="Exposure Histograms">
-          <HistogramsCard taskId={id} />
-        </VizErrorBoundary>
-      )}
 
       {/* US state choropleth */}
       {task.status === "finished" && (
