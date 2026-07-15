@@ -10,6 +10,7 @@ import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { StateMapCard } from "@/components/results/state-map-card";
+import { ExposomeGlossaryCard } from "@/components/results/exposome-glossary-card";
 import { VizErrorBoundary } from "@/components/results/viz-error-boundary";
 import {
   Table,
@@ -271,6 +272,11 @@ export default function TaskResultsPage() {
           </div>
         </div>
       </div>
+
+      {/* Exposome glossary — recall what each measure means + link to ontology */}
+      {task.variables && task.variables.length > 0 && (
+        <ExposomeGlossaryCard variableKeys={task.variables} />
+      )}
 
       {/* Preview section */}
       {preview && (
