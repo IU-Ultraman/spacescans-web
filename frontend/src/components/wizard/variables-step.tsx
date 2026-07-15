@@ -110,7 +110,7 @@ export function VariablesStep({
         <CardTitle className="text-lg">Data Catalog</CardTitle>
         <CardDescription>
           Browse the Spatial &amp; Contextual Exposome ontology. Expand a branch
-          to see its exposures and their outcomes; check an exposure to compute
+          to see its exposures and their exposomes; check an exposure to compute
           it for your cohort. Click any node to read its definition.
         </CardDescription>
       </CardHeader>
@@ -137,7 +137,7 @@ export function VariablesStep({
           </div>
 
           {/* Right: detail. Variable nodes show the full metadata card;
-              other nodes (domains, outcomes) show their ontology definition. */}
+              other nodes (domains, exposomes) show their ontology definition. */}
           <div className="min-w-0 flex-1">
             {focusedVarMeta ? (
               <div className="rounded-lg border bg-card p-5">
@@ -207,7 +207,7 @@ export function VariablesStep({
 
                 <div className="mt-3">
                   <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Outcomes ({focusedVarMeta.value_cols.length})
+                    Exposomes ({focusedVarMeta.value_cols.length})
                   </h4>
                   <ul className="space-y-1.5">
                     {focusedVarMeta.value_cols.map((col) => {
