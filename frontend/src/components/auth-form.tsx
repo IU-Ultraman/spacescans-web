@@ -67,9 +67,12 @@ export function AuthForm({ mode }: AuthFormProps) {
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          <Link
+            href="/"
+            className="inline-block text-3xl font-bold tracking-tight text-foreground transition-colors hover:text-primary"
+          >
             SPACESCANS
-          </h1>
+          </Link>
           <p className="mt-1 text-sm text-muted-foreground">
             Spatial Scanning Analysis Platform
           </p>
