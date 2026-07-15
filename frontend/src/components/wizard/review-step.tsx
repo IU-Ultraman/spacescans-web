@@ -143,10 +143,6 @@ export function ReviewStep({
               label="Radius"
               value={`${bufferConfig.size.toLocaleString()} meters`}
             />
-            <InfoItem
-              label="Raster resolution"
-              value={`${bufferConfig.raster_res_m} m`}
-            />
           </div>
         </SummarySection>
 

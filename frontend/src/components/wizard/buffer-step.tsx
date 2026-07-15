@@ -39,9 +39,9 @@ export function BufferStep({
   const [size, setSize] = useState<string>(
     initialConfig?.size?.toString() ?? "270"
   );
-  const [rasterResM, setRasterResM] = useState<number>(
-    initialConfig?.raster_res_m ?? 25
-  );
+  // Overlap grid resolution is fixed at the 25 m standard — not user-configurable.
+  // Still emitted in the config so the backend C3 areal linkage receives it.
+  const rasterResM = initialConfig?.raster_res_m ?? 25;
 
   const { catalog } = useVariableCatalog();
 
@@ -67,7 +67,6 @@ export function BufferStep({
 
   const bufferVars = [...areal, ...grid];
   const bufferApplies = bufferVars.length > 0;
-  const rasterApplies = areal.length > 0;
 
   const sizeNum = parseFloat(size);
   const sizeValid = !isNaN(sizeNum) && sizeNum > 0 && sizeNum <= 100000;
@@ -130,29 +129,6 @@ export function BufferStep({
               </p>
             </div>
 
-            {/* Rasterization resolution — areal exposures only */}
-            {rasterApplies && (
-              <div className="space-y-2">
-                <Label htmlFor="raster-res">Overlap grid size (m)</Label>
-                <Input
-                  id="raster-res"
-                  type="number"
-                  min={5}
-                  max={100}
-                  step={5}
-                  value={rasterResM}
-                  onChange={(e) => setRasterResM(parseInt(e.target.value) || 25)}
-                  className="w-32"
-                />
-                <p className="text-xs text-muted-foreground">
-                  How finely each Census area is gridded to measure its overlap
-                  with the circle — smaller cells = more precise, slower (25 m is
-                  the standard). Used only by area-based exposures ({list(areal)});
-                  it grids the Census polygons for the overlap, not the exposure
-                  data — the raster exposures (noise, lights, UV) don&apos;t use it.
-                </p>
-              </div>
-            )}
           </>
         ) : (
           <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-4">

@@ -255,12 +255,6 @@ export default function TaskResultsPage() {
               <span className="font-medium">{task.buffer.size} m</span>
             </div>
           )}
-          {task.buffer && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Grid resolution</span>
-              <span className="font-medium">{task.buffer.raster_res_m} m</span>
-            </div>
-          )}
           {task.variables && task.variables.length > 0 && (
             <div className="flex justify-between gap-4">
               <span className="shrink-0 text-muted-foreground">Variables</span>
