@@ -1,2 +1,8 @@
 # git worktrees used during subagent-driven-development
 .worktrees/
+
+# Docker
+# built pipeline wheel — copy from ../dist/ at build time
+backend/wheels/*.whl
+# docker compose local config — created from .env.docker.example
+.env

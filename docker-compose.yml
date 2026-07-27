@@ -1,0 +1,46 @@
+name: spacescans-web
+
+# One-command local run:  docker compose up --build
+# Frontend → http://localhost:3000   Backend → http://localhost:8000
+#
+# Prereq: the pipeline wheel must be present at backend/wheels/*.whl
+#   (see DOCKER.md — copy it from the parent repo's dist/).
+
+services:
+  backend:
+    build:
+      context: ./backend
+    image: spacescans-web-backend
+    environment:
+      # The pipeline resolves config-relative paths (data/, data_full/, configs/)
+      # against SPACESCANS_DATA_DIR — mounted below at /project.
+      SPACESCANS_DATA_DIR: /project
+      SPACESCANS_CONFIG_TEMPLATES_DIR: /project/configs
+      # In-container interpreter + CLI (the conda base env / wheel console
+      # script). Absolute paths — the backend validates these exist on startup.
+      SPACESCANS_PIPELINE_PYTHON: /opt/conda/bin/python
+      SPACESCANS_PIPELINE_CLI: /opt/conda/bin/spacescans
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+    volumes:
+      # Parent repo root → exposure data (data/, data_full/), config templates
+      # (configs/), and pipeline output/. Read-write so standalone C3 outputs can
+      # be written; the web flow itself writes under the backend-data volume.
+      - ../:/project
+      # Persistent app state: SQLite DB, tasks/, c3_cache/.
+      - backend-data:/app/data
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    image: spacescans-web-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  backend-data:

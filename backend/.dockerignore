@@ -1,0 +1,19 @@
+# Host-specific config + secrets — the container gets its config from compose.
+.env
+.env.*
+
+# Local app state — comes from the mounted named volume, never bake it in.
+data/
+
+# Python caches / test artifacts
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# VCS / docs
+.git/
+.gitignore
+*.md
