@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 // Catches errors thrown by the root layout itself. It replaces the root
 // layout, so it must render its own <html>/<body>. Tailwind/theme may not be
 // available here, so styling is inline and self-contained.
@@ -10,6 +12,11 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // Root-layout crashes would otherwise vanish silently — surface them.
+  useEffect(() => {
+    console.error("Global error boundary caught:", error);
+  }, [error]);
+
   return (
     <html lang="en">
       <body
