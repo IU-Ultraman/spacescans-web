@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -16,15 +14,12 @@ import { Pill } from "@/components/ui/chip";
 import { api, ApiError } from "@/lib/api";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import { groupByExperiment } from "@/lib/variable-grouping";
-import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
-  ChevronDown,
   Clock,
   FileSpreadsheet,
   Loader2,
   Play,
-  Settings,
   Shapes,
   Tags,
   Target,
@@ -66,9 +61,6 @@ export function ReviewStep({
   const router = useRouter();
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [cpuCores, setCpuCores] = useState("4");
-  const [memoryLimit, setMemoryLimit] = useState("8");
   const { catalog } = useVariableCatalog();
 
   const handleStart = async () => {
@@ -79,10 +71,6 @@ export function ReviewStep({
       await api.saveConfig(taskId, {
         buffer: bufferConfig,
         variables: selectedVariables,
-        advanced: {
-          cpu_cores: parseInt(cpuCores) || 4,
-          memory_limit_gb: parseInt(memoryLimit) || 8,
-        },
       });
       await api.startTask(taskId);
       router.push(`/dashboard/task/${taskId}`);
@@ -211,54 +199,6 @@ export function ReviewStep({
             </div>
           </SummarySection>
         )}
-
-        {/* Advanced options */}
-        <div className="rounded-lg border border-border">
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
-          >
-            <div className="flex items-center gap-2">
-              <Settings className="size-4 text-muted-foreground" />
-              Advanced Options
-            </div>
-            <ChevronDown
-              className={cn(
-                "size-4 text-muted-foreground transition-transform duration-200",
-                showAdvanced && "rotate-180"
-              )}
-            />
-          </button>
-          {showAdvanced && (
-            <div className="animate-in fade-in slide-in-from-top-1 border-t border-border px-4 py-4 duration-200">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="cpu-cores">CPU Cores</Label>
-                  <Input
-                    id="cpu-cores"
-                    type="number"
-                    min={1}
-                    max={64}
-                    value={cpuCores}
-                    onChange={(e) => setCpuCores(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="memory-limit">Memory Limit (GB)</Label>
-                  <Input
-                    id="memory-limit"
-                    type="number"
-                    min={1}
-                    max={256}
-                    value={memoryLimit}
-                    onChange={(e) => setMemoryLimit(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Error */}
         {error && (
