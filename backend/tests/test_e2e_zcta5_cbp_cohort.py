@@ -22,7 +22,7 @@ def _integration_available() -> bool:
     if not app.config.settings.SPACESCANS_PIPELINE_CLI.exists():
         return False
     if not (app.config.settings.SPACESCANS_DATA_DIR
-            / "data_full/BG_FL/C3/tiger2010_bg10_states").exists():
+            / "BG/C3/tiger2010_bg10_states").exists():
         return False
     try:
         import pyreadr  # noqa: F401

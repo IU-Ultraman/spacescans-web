@@ -7,12 +7,12 @@ source:
   join_col: grid_id
 
 buffer:
-  patient_file: data_full/conus_patients_100k_no_bg_geoid.csv
+  patient_file: conus_patients_100k_no_bg_geoid.csv
   patient_adapter: demo_conus
   buffer_m: 270
 
 exposure:
-  file: data/Noise/C3/CONUS_L50dBA_sumDay_exi.tif
+  file: Noise/C3/CONUS_L50dBA_sumDay_exi.tif
   join_col: grid_id
   value_cols:
     - l50dba_exi

@@ -90,9 +90,9 @@ def fake_template_dir(tmp_path, monkeypatch):
     c3.write_text(
         "name: bg_us_demo\n"
         "linkage_pattern: boundary_overlap_fast\n"
-        "source:\n  file: data_full/BG_FL/C3/...\n  join_col: GEOID10\n"
+        "source:\n  file: BG/C3/...\n  join_col: GEOID10\n"
         "buffer:\n"
-        "  patient_file: data_full/demo_patients_conus_fast_100000.parquet\n"
+        "  patient_file: demo_patients_conus_fast_100000.parquet\n"
         "  patient_adapter: demo_conus\n"
         "  buffer_m: 270\n"
         "  raster_res_m: 25\n"
@@ -102,9 +102,9 @@ def fake_template_dir(tmp_path, monkeypatch):
     c3_2020.write_text(
         "name: bg_us_2020_demo\n"
         "linkage_pattern: boundary_overlap_fast\n"
-        "source:\n  file: data_full/BG_FL/C3/tiger2024_bg_states/...\n  join_col: GEOID\n"
+        "source:\n  file: BG/C3/tiger2024_bg_states/...\n  join_col: GEOID\n"
         "buffer:\n"
-        "  patient_file: data_full/demo_patients_conus_fast_100000.parquet\n"
+        "  patient_file: demo_patients_conus_fast_100000.parquet\n"
         "  patient_adapter: demo_conus\n"
         "  buffer_m: 270\n"
         "  raster_res_m: 25\n"
@@ -118,7 +118,7 @@ def fake_template_dir(tmp_path, monkeypatch):
         "source:\n  file: output/python_v2/270m/BG_US/C3/buffer270mBG25m_demo100k.parquet\n  join_col: GEOID10\n"
         "source_2020:\n  file: output/python_v2/270m/BG_US_2020/C3/buffer270mBG25m_2020_demo100k.parquet\n  join_col: GEOID\n"
         "buffer:\n"
-        "  patient_file: data_full/demo_patients_conus_fast_100000.parquet\n"
+        "  patient_file: demo_patients_conus_fast_100000.parquet\n"
         "  patient_adapter: demo_conus\n"
         "  buffer_m: 270\n"
         "time:\n"
@@ -148,7 +148,7 @@ def test_render_yaml_c3_injects_all_five_keys(fake_template_dir, tmp_path):
     assert cfg["buffer"]["raster_res_m"] == 50
     assert cfg["output"]["path"] == str(task_dir / "output" / "c3_bg.parquet")
     # source.file is left alone — pipeline resolves it via --data-dir
-    assert cfg["source"]["file"] == "data_full/BG_FL/C3/..."
+    assert cfg["source"]["file"] == "BG/C3/..."
     # Preservation: keys not in the 5 injection points must round-trip unchanged.
     assert cfg["linkage_pattern"] == "boundary_overlap_fast"
     assert cfg["source"]["join_col"] == "GEOID10"

@@ -74,14 +74,14 @@ def _assert_tiger_data_present(payload: dict[str, Any]) -> None:
 
     Raises MetadataSchemaError if a declared tiger_proximity variable's
     coverage_years range names a year with no on-disk
-    {DATA_ROOT}/data_full/TIGER/C4/tiger{year}_roads/ subdir.
+    {DATA_ROOT}/TIGER/C4/tiger{year}_roads/ subdir.
 
     Short-circuits when the C4 root itself is absent — production startup
     runs validate_pipeline_settings first, so this branch only fires under
     test fixtures that bypass the data-dir gate.
     """
     from app.config import settings
-    root = settings.SPACESCANS_DATA_DIR / "data_full" / "TIGER" / "C4"
+    root = settings.SPACESCANS_DATA_DIR / "TIGER" / "C4"
     if not root.exists():
         return
     for key, m in payload["variables"].items():
@@ -102,7 +102,7 @@ def _assert_nhd_data_present(payload: dict[str, Any]) -> None:
 
     Raises MetadataSchemaError if a declared nhd_bluespace variable's
     on-disk product is missing — specifically
-    {DATA_ROOT}/data_full/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb.
+    {DATA_ROOT}/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb.
 
     Short-circuits when the C4 root itself is absent — production startup
     runs validate_pipeline_settings first, so this branch only fires under
@@ -110,7 +110,7 @@ def _assert_nhd_data_present(payload: dict[str, Any]) -> None:
     _assert_tiger_data_present (Sprint 6 H2 pattern).
     """
     from app.config import settings
-    root = settings.SPACESCANS_DATA_DIR / "data_full" / "NHD" / "C4"
+    root = settings.SPACESCANS_DATA_DIR / "NHD" / "C4"
     if not root.exists():
         return
     for key, m in payload["variables"].items():
@@ -137,7 +137,7 @@ def _assert_noise_data_present(payload: dict[str, Any]) -> None:
 
     Raises MetadataSchemaError if a declared noise variable's on-disk
     product is missing — specifically the three TIFs under
-    {DATA_ROOT}/data/Noise/C3/ that the noise reader plugin requires.
+    {DATA_ROOT}/Noise/C3/ that the noise reader plugin requires.
 
     Short-circuits when the C3 root itself is absent — production startup
     runs validate_pipeline_settings first, so this branch only fires under
@@ -145,13 +145,12 @@ def _assert_noise_data_present(payload: dict[str, Any]) -> None:
     _assert_tiger_data_present / _assert_nhd_data_present (Sprint 6 H2 /
     Sprint 8 I1 pattern).
 
-    Note: noise TIFs live under data/Noise/C3/ (NOT data_full/Noise/...) —
-    they predate the data_full/ subtree convention. The noise plugin
-    resolves sibling TIFs relative to the primary exposure.file path in the
-    YAML, so we only need to verify all three siblings exist.
+    Note: the noise plugin resolves sibling TIFs relative to the primary
+    exposure.file path in the YAML, so we only need to verify all three
+    siblings exist.
     """
     from app.config import settings
-    root = settings.SPACESCANS_DATA_DIR / "data" / "Noise" / "C3"
+    root = settings.SPACESCANS_DATA_DIR / "Noise" / "C3"
     if not root.exists():
         return
     for key, m in payload["variables"].items():
@@ -175,7 +174,7 @@ def _assert_vnl_data_present(payload: dict[str, Any]) -> None:
 
     Raises MetadataSchemaError if a declared vnl variable's on-disk
     product is missing — specifically at least one ``VNL_v21_*.tif`` under
-    {DATA_ROOT}/data_full/VNL/C3/.
+    {DATA_ROOT}/VNL/C3/.
 
     Short-circuits when the C3 root itself is absent — production startup
     runs validate_pipeline_settings first, so this branch only fires under
@@ -183,7 +182,7 @@ def _assert_vnl_data_present(payload: dict[str, Any]) -> None:
     _assert_noise_data_present (Sprint 9 T4 pattern).
     """
     from app.config import settings
-    root = settings.SPACESCANS_DATA_DIR / "data_full" / "VNL" / "C3"
+    root = settings.SPACESCANS_DATA_DIR / "VNL" / "C3"
     if not root.exists():
         return
     for key, m in payload["variables"].items():
@@ -205,8 +204,8 @@ def _assert_fara_data_present(payload: dict[str, Any]) -> None:
 
     Raises MetadataSchemaError if a declared fara_tract variable's on-disk
     product is missing — specifically
-    {DATA_ROOT}/data_full/FARA/C4/fara_nationwide_2010_2019_interpolated.Rda
-    and {DATA_ROOT}/data_full/FARA/C4/varnameCountRemoved.csv.
+    {DATA_ROOT}/FARA/C4/fara_nationwide_2010_2019_interpolated.Rda
+    and {DATA_ROOT}/FARA/C4/varnameCountRemoved.csv.
 
     Short-circuits when the C4 root itself is absent — production startup
     runs validate_pipeline_settings first, so this branch only fires under
@@ -215,7 +214,7 @@ def _assert_fara_data_present(payload: dict[str, Any]) -> None:
     Sprint 10 T4 pattern).
     """
     from app.config import settings
-    root = settings.SPACESCANS_DATA_DIR / "data_full" / "FARA" / "C4"
+    root = settings.SPACESCANS_DATA_DIR / "FARA" / "C4"
     if not root.exists():
         return
     for key, m in payload["variables"].items():
@@ -239,7 +238,7 @@ def _assert_temis_data_present(payload: dict[str, Any]) -> None:
     Raises MetadataSchemaError if a declared temis variable's on-disk
     product is missing — specifically at least one of the four UV-variable
     subdirs (uvddc / uvdec / uvdvc / uvief) under
-    {DATA_ROOT}/data_full/TEMIS/C4/raw/.
+    {DATA_ROOT}/TEMIS/C4/raw/.
 
     Short-circuits when the C4 raw root itself is absent — production
     startup runs validate_pipeline_settings first, so this branch only
@@ -248,7 +247,7 @@ def _assert_temis_data_present(payload: dict[str, Any]) -> None:
     Sprint 10 T4 pattern).
     """
     from app.config import settings
-    root = settings.SPACESCANS_DATA_DIR / "data_full" / "TEMIS" / "C4" / "raw"
+    root = settings.SPACESCANS_DATA_DIR / "TEMIS" / "C4" / "raw"
     if not root.exists():
         return
     for key, m in payload["variables"].items():

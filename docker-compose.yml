@@ -12,8 +12,9 @@ services:
       context: ./backend
     image: spacescans-web-backend
     environment:
-      # data_full/ + data/ live under the parent repo, mounted at /project. The
-      # pipeline resolves config-relative paths (data_full/...) against this.
+      # The exposure dataset folders (BG/, Noise/, TIGER/, ...) live directly
+      # under the data root, mounted at /project. The pipeline resolves
+      # config-relative paths (Noise/C3/..., NDI/C4/...) against this.
       SPACESCANS_DATA_DIR: /project
       # Config templates ship IN this repo (configs/), mounted at /configs — so
       # they don't depend on the parent. Path resolution is independent of where
@@ -27,10 +28,10 @@ services:
     volumes:
       # Config templates from this repo (versioned, not from the parent).
       - ./configs:/configs:ro
-      # Exposure data root (must contain data_full/ and data/). Defaults to the
-      # in-repo pipeline-data/ folder — drop your data there for a standalone
-      # setup. Point SPACESCANS_DATA_HOST at the parent repo (`..`) or anywhere
-      # else in .env to reuse an existing data tree without copying.
+      # Exposure data root (contains the dataset folders directly). Defaults to
+      # the in-repo pipeline-data/ folder — drop your data there for a
+      # standalone setup. Point SPACESCANS_DATA_HOST elsewhere in .env to reuse
+      # an existing data tree without copying.
       - ${SPACESCANS_DATA_HOST:-./pipeline-data}:/project
       # Persistent app state: SQLite DB, tasks/, c3_cache/.
       - backend-data:/app/data

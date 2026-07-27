@@ -24,7 +24,7 @@ def _seed(base: Path):
         {"id": "000295", "label": "Social_Environment_Exposome", "definition": "", "has_children": False},
     ]))
     (base / "nodes" / "000292.json").write_text(json.dumps([
-        {"id": "000294", "label": "Food_Access_Exposome", "definition": "", "has_children": False},
+        {"id": "000294", "label": "FARA_Exposome", "definition": "", "has_children": False},
     ]))
     # Natural's existing SPACEO leaves that gain value_col children.
     (base / "nodes" / "000094_2.json").write_text(json.dumps([
@@ -56,7 +56,7 @@ def test_extend_adds_five_nodes_and_flips_social(tmp_path):
         "SPACESCANS_Neighborhood_Deprivation_Index",
         "SPACESCANS_Community_Organization_Density",
     }
-    # Built gained Walkability + Road_Proximity (kept Food_Access).
+    # Built gained Walkability + Road_Proximity (kept FARA).
     built_ids = {c["id"] for c in json.loads((tmp_path / "nodes" / "000292.json").read_text())}
     assert {"SPACESCANS_Walkability", "SPACESCANS_Road_Proximity", "000294"} <= built_ids
     # Natural gained Bluespace (kept Noise).

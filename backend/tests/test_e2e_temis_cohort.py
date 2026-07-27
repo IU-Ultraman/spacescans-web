@@ -27,7 +27,7 @@ def _integration_available() -> bool:
         return False
     temis_raw = (
         app.config.settings.SPACESCANS_DATA_DIR
-        / "data_full" / "TEMIS" / "C4" / "raw"
+        / "TEMIS" / "C4" / "raw"
     )
     if not temis_raw.is_dir():
         return False

@@ -26,7 +26,7 @@ def _integration_available() -> bool:
         return False
     if not app.config.settings.SPACESCANS_PIPELINE_CLI.exists():
         return False
-    if not (app.config.settings.SPACESCANS_DATA_DIR / "data_full/BG_FL/C3/tiger2010_bg10_states").exists():
+    if not (app.config.settings.SPACESCANS_DATA_DIR / "BG/C3/tiger2010_bg10_states").exists():
         return False
     return True
 

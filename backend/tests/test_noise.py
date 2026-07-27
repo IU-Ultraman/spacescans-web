@@ -60,7 +60,7 @@ def templates_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (templates / "c3" / "noise_grid_demo.yaml").write_text(yaml.safe_dump({
         "name": "c3_noise_demo",
         "buffer": {"patient_file": "PLACEHOLDER", "buffer_m": 270},
-        "source": {"file": "data/Noise/C3/CONUS_L50dBA_sumDay_exi.tif"},
+        "source": {"file": "Noise/C3/CONUS_L50dBA_sumDay_exi.tif"},
         "output": {"path": "PLACEHOLDER"},
     }))
     (templates / "c4" / "noise_demo.yaml").write_text(yaml.safe_dump({
@@ -71,7 +71,7 @@ def templates_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             "join_col": "grid_id",
         },
         "exposure": {
-            "file": "data/Noise/C3/CONUS_L50dBA_sumDay_exi.tif",
+            "file": "Noise/C3/CONUS_L50dBA_sumDay_exi.tif",
             "join_col": "grid_id",
             "value_cols": ["l50dba_exi", "l50dba_imp", "l50dba_nat"],
         },
@@ -113,7 +113,7 @@ def test_render_yaml_c3_leaves_source_untouched(
 ) -> None:
     """C3 template's source.file (the static TIF) must NOT be rewritten to a
     per-task path — pipeline CLI --data-dir resolves the relative
-    'data/Noise/C3/...' against SPACESCANS_DATA_DIR.
+    'Noise/C3/...' against SPACESCANS_DATA_DIR.
     """
     cfg = {"buffer": {"size": 270}}
     c3_path = noise.render_yaml(noise._C3_STEP, task_dir, cfg)
@@ -141,8 +141,9 @@ def test_render_yaml_c4_leaves_exposure_file_untouched(
     task_dir: Path, templates_dir: Path
 ) -> None:
     """C4 exposure.file (the static TIF path) MUST NOT be rewritten — pipeline
-    CLI --data-dir resolves the relative 'data/Noise/C3/CONUS_L50dBA_*.tif'
-    path against SPACESCANS_DATA_DIR. A regression that rewrote exposure.file
+    CLI --data-dir resolves the relative
+    'Noise/C3/CONUS_L50dBA_*.tif' path against
+    SPACESCANS_DATA_DIR. A regression that rewrote exposure.file
     to a per-task path (mirroring TIGER/NHD) would silently break the
     noise reader plugin which expects the static raster directory.
     """

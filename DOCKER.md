@@ -19,7 +19,7 @@ container regardless of host OS. There is nothing OS-specific to configure.
    only: tag a new release on that repo and bump `SPACESCANS_REF` in
    `backend/Dockerfile` (default `v0.2.0`).
 
-3. **The exposure data** — put `data_full/` + `data/` (several GB) in
+3. **The exposure data** — put the dataset folders (several GB) in
    `pipeline-data/` (see [pipeline-data/README.md](pipeline-data/README.md) for
    the layout + per-dataset sources). Already have the data elsewhere? Set
    `SPACESCANS_DATA_HOST=/abs/path` in `.env` to mount it without copying.
@@ -58,7 +58,7 @@ the SQLite DB / tasks / cache volume).
 | Path | Kind | Purpose |
 | --- | --- | --- |
 | `./configs` → `/configs` | bind mount (ro) | C3/C4 config templates — versioned in this repo; `SPACESCANS_CONFIG_TEMPLATES_DIR=/configs` |
-| `pipeline-data/` → `/project` | bind mount (host) | exposure data (`data_full/`, `data/`); override host path with `SPACESCANS_DATA_HOST`; `SPACESCANS_DATA_DIR=/project` |
+| `pipeline-data/` → `/project` | bind mount (host) | exposure data (one folder per dataset); override host path with `SPACESCANS_DATA_HOST`; `SPACESCANS_DATA_DIR=/project` |
 | `backend-data` → `/app/data` | named volume | SQLite DB, `tasks/`, `c3_cache/` — survives restarts |
 
 ---

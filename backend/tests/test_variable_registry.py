@@ -353,8 +353,8 @@ def test_startup_probe_runs_once(monkeypatch):
 
 
 def _make_tiger_tree(root: Path, years: range) -> Path:
-    """Build a fake {root}/data_full/TIGER/C4/tiger{year}_roads/ tree."""
-    c4 = root / "data_full" / "TIGER" / "C4"
+    """Build a fake {root}/TIGER/C4/tiger{year}_roads/ tree."""
+    c4 = root / "TIGER" / "C4"
     c4.mkdir(parents=True, exist_ok=True)
     for year in years:
         (c4 / f"tiger{year}_roads").mkdir()
@@ -392,7 +392,7 @@ def test_tiger_preflight_skips_when_root_missing(tmp_path, monkeypatch):
     from app import variable_registry as vr
     from app.config import settings
 
-    # tmp_path has no data_full/TIGER/ tree at all
+    # tmp_path has no TIGER/ tree at all
     monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
 
     payload = vr.load_variables(force=True)  # short-circuit, no raise
@@ -405,11 +405,11 @@ def test_tiger_preflight_skips_when_root_missing(tmp_path, monkeypatch):
 
 
 def _make_nhd_tree(root: Path, *, with_gdb: bool = True) -> Path:
-    """Build a fake {root}/data_full/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb/
+    """Build a fake {root}/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb/
     tree. with_gdb=False creates only the C4 parent so the GDB-missing
     branch can be exercised.
     """
-    c4 = root / "data_full" / "NHD" / "C4"
+    c4 = root / "NHD" / "C4"
     c4.mkdir(parents=True, exist_ok=True)
     if with_gdb:
         (c4 / "NHDPlus_H_National_Release_2_GDB.gdb").mkdir()
@@ -629,10 +629,10 @@ def test_real_metadata_file_contains_noise_with_runner_module():
 
 
 def _make_noise_tree(root: Path, *, with_tifs: bool = True) -> Path:
-    """Build a fake {root}/data/Noise/C3/ tree. with_tifs=False creates only
-    the C3 parent so the TIF-missing branch can be exercised.
+    """Build a fake {root}/Noise/C3/ tree. with_tifs=False creates
+    only the C3 parent so the TIF-missing branch can be exercised.
     """
-    c3 = root / "data" / "Noise" / "C3"
+    c3 = root / "Noise" / "C3"
     c3.mkdir(parents=True, exist_ok=True)
     if with_tifs:
         for tif in (
@@ -733,10 +733,10 @@ def test_list_experiments_after_vnl_and_temis_added():
 
 
 def _make_vnl_tree(root: Path, *, with_tif: bool = True) -> Path:
-    """Build a fake {root}/data_full/VNL/C3/ tree. with_tif=False creates
+    """Build a fake {root}/VNL/C3/ tree. with_tif=False creates
     only the C3 parent so the TIF-missing branch can be exercised.
     """
-    c3 = root / "data_full" / "VNL" / "C3"
+    c3 = root / "VNL" / "C3"
     c3.mkdir(parents=True, exist_ok=True)
     if with_tif:
         (c3 / "VNL_v21_npp_2013_global_vcmcfg_c202205302300.average_masked.dat.tif").write_bytes(b"\x00")
@@ -744,11 +744,11 @@ def _make_vnl_tree(root: Path, *, with_tif: bool = True) -> Path:
 
 
 def _make_temis_tree(root: Path, *, with_subdir: bool = True) -> Path:
-    """Build a fake {root}/data_full/TEMIS/C4/raw/ tree. with_subdir=False
+    """Build a fake {root}/TEMIS/C4/raw/ tree. with_subdir=False
     creates only the raw parent so the missing-UV-subdir branch can be
     exercised.
     """
-    raw = root / "data_full" / "TEMIS" / "C4" / "raw"
+    raw = root / "TEMIS" / "C4" / "raw"
     raw.mkdir(parents=True, exist_ok=True)
     if with_subdir:
         (raw / "uvief").mkdir(exist_ok=True)
@@ -830,10 +830,10 @@ def test_temis_preflight_raises_when_no_uv_subdir(tmp_path, monkeypatch):
 
 
 def _make_fara_tree(root: Path, *, with_files: bool = True) -> Path:
-    """Build a fake {root}/data_full/FARA/C4/ tree. with_files=False creates
+    """Build a fake {root}/FARA/C4/ tree. with_files=False creates
     only the C4 parent so the data-missing branch can be exercised.
     """
-    c4 = root / "data_full" / "FARA" / "C4"
+    c4 = root / "FARA" / "C4"
     c4.mkdir(parents=True, exist_ok=True)
     if with_files:
         (c4 / "fara_nationwide_2010_2019_interpolated.Rda").write_bytes(b"\x00")

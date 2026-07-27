@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 
 def test_pipeline_settings_load_from_env(tmp_path, monkeypatch):
-    data_dir = tmp_path / "data_full"
+    data_dir = tmp_path / "data-root"
     data_dir.mkdir()
     py = tmp_path / "python"
     py.write_text("#!/bin/sh\n")

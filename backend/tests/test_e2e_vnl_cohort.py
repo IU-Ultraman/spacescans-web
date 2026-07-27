@@ -25,7 +25,7 @@ def _integration_available() -> bool:
         return False
     if not app.config.settings.SPACESCANS_PIPELINE_CLI.exists():
         return False
-    vnl_c3 = app.config.settings.SPACESCANS_DATA_DIR / "data_full" / "VNL" / "C3"
+    vnl_c3 = app.config.settings.SPACESCANS_DATA_DIR / "VNL" / "C3"
     if not vnl_c3.is_dir():
         return False
     if not list(vnl_c3.glob("VNL_v21_*.tif")):

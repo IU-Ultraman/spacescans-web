@@ -4,6 +4,9 @@
 # Docker
 # docker compose local config — created from .env.docker.example
 .env
-# user-supplied exposure data (several GB) — keep only the layout README
-pipeline-data/*
+# user-supplied exposure data (several GB) — keep only the layout README and
+# the folder skeleton (.gitkeep); the datasets themselves are never committed
+pipeline-data/**
+!pipeline-data/**/
 !pipeline-data/README.md
+!pipeline-data/**/.gitkeep

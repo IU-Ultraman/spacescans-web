@@ -54,7 +54,7 @@ def templates_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (templates / "c3" / "nhd_demo.yaml").write_text(yaml.safe_dump({
         "name": "c3_nhd_demo",
         "buffer": {"patient_file": "PLACEHOLDER", "buffer_m": 270},
-        "source": {"file": "data_full/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb"},
+        "source": {"file": "NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb"},
         "output": {"path": "PLACEHOLDER"},
     }))
     (templates / "c4" / "nhd_bluespace_demo.yaml").write_text(yaml.safe_dump({

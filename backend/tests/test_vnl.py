@@ -60,7 +60,7 @@ def templates_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (templates / "c3" / "vnl_grid_demo.yaml").write_text(yaml.safe_dump({
         "name": "c3_vnl_demo",
         "buffer": {"patient_file": "PLACEHOLDER", "buffer_m": 270},
-        "source": {"file": "data_full/VNL/C3/VNL_v21_npp_2013_global_vcmcfg.tif"},
+        "source": {"file": "VNL/C3/VNL_v21_npp_2013_global_vcmcfg.tif"},
         "output": {"path": "PLACEHOLDER"},
     }))
     (templates / "c4" / "vnl_demo.yaml").write_text(yaml.safe_dump({
@@ -70,7 +70,7 @@ def templates_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             "file": "output/python_v2/270m/VNL/C3/buffer270m_vnl_weights_demo100k.parquet",
         },
         "exposure": {
-            "file": "data_full/VNL/C3",
+            "file": "VNL/C3",
             "join_col": "grid_id",
             "value_cols": ["value"],
             "start_col": "start_date",
@@ -143,7 +143,7 @@ def test_render_yaml_c4_leaves_exposure_file_untouched(
     task_dir: Path, templates_dir: Path
 ) -> None:
     """C4 exposure.file (the VNL C3 directory) MUST NOT be rewritten —
-    pipeline CLI --data-dir resolves the relative 'data_full/VNL/C3'
+    pipeline CLI --data-dir resolves the relative 'VNL/C3'
     against SPACESCANS_DATA_DIR. A regression that rewrote exposure.file
     to a per-task path (mirroring TIGER/NHD) would silently break the
     vnl reader plugin which expects the static raster directory.

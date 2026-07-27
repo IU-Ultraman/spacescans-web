@@ -25,7 +25,7 @@ def _integration_available() -> bool:
         return False
     if not app.config.settings.SPACESCANS_PIPELINE_CLI.exists():
         return False
-    tiger_c4 = app.config.settings.SPACESCANS_DATA_DIR / "data_full" / "TIGER" / "C4"
+    tiger_c4 = app.config.settings.SPACESCANS_DATA_DIR / "TIGER" / "C4"
     if not tiger_c4.is_dir():
         return False
     if not any(tiger_c4.glob("tiger*_roads")):

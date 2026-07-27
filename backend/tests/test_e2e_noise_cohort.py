@@ -29,7 +29,7 @@ def _integration_available() -> bool:
         return False
     if not app.config.settings.SPACESCANS_PIPELINE_CLI.exists():
         return False
-    noise_c3 = app.config.settings.SPACESCANS_DATA_DIR / "data" / "Noise" / "C3"
+    noise_c3 = app.config.settings.SPACESCANS_DATA_DIR / "Noise" / "C3"
     if not noise_c3.is_dir():
         return False
     if not (noise_c3 / "CONUS_L50dBA_sumDay_exi.tif").exists():

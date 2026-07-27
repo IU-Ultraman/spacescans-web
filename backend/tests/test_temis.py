@@ -71,7 +71,7 @@ def templates_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
                      "buffer270m_temis_weights_demo100k.parquet"),
         },
         "exposure": {
-            "file": "data_full/TEMIS/C4/raw",
+            "file": "TEMIS/C4/raw",
             "join_col": "grid_id",
             "value_cols": ["uvddc", "uvdec", "uvdvc", "uvief"],
             "date_col": "date",
@@ -144,7 +144,7 @@ def test_render_yaml_c4_leaves_exposure_file_untouched(
     task_dir: Path, templates_dir: Path
 ) -> None:
     """C4 exposure.file (the TEMIS C4 raw directory) MUST NOT be rewritten —
-    pipeline CLI --data-dir resolves the relative 'data_full/TEMIS/C4/raw'
+    pipeline CLI --data-dir resolves the relative 'TEMIS/C4/raw'
     against SPACESCANS_DATA_DIR. A regression that rewrote exposure.file to
     a per-task path (mirroring TIGER/NHD) would silently break the temis
     reader plugin which expects the static raw-HDF directory.

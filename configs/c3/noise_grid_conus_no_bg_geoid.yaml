@@ -3,10 +3,10 @@ linkage_pattern: grid_weights
 geometry_type: raster
 
 source:
-  file: data/Noise/C3/CONUS_L50dBA_sumDay_exi.tif
+  file: Noise/C3/CONUS_L50dBA_sumDay_exi.tif
 
 buffer:
-  patient_file: data_full/conus_patients_100k_no_bg_geoid.csv
+  patient_file: conus_patients_100k_no_bg_geoid.csv
   patient_adapter: demo_conus
   buffer_m: 270
 

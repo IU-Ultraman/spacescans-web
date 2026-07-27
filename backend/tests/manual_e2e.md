@@ -6,7 +6,7 @@ It is not part of automated pytest; run it before publishing any release.
 ## Prerequisites
 
 - Backend env (`backend/.env`) configured:
-  - `SPACESCANS_DATA_DIR=/Users/xai/Desktop/spacescans-project` (project root — the dir that contains `data_full/`)
+  - `SPACESCANS_DATA_DIR=/Users/xai/Desktop/spacescans-all/spacescans-web/pipeline-data` (data root — the dir that contains the dataset folders `BG/`, `Noise/`, `TIGER/`, …)
   - `SPACESCANS_PIPELINE_PYTHON=/Users/xai/miniconda3/envs/spacescans/bin/python`
   - `SPACESCANS_PIPELINE_CLI=/Users/xai/miniconda3/envs/spacescans/bin/spacescans`
   - `SPACESCANS_CONFIG_TEMPLATES_DIR=/Users/xai/Desktop/spacescans-project/configs`
@@ -181,7 +181,7 @@ Pre-flight:
   Verify with `python -c "from spacescans.linkage import
   precomputed_areal_linkage; import inspect; print('episode' in
   inspect.getsource(precomputed_areal_linkage))"` — expect True.
-- `data_full/TIGER/C4/tiger{2013,…,2019}_roads/` exists with per-county
+- `TIGER/C4/tiger{2013,…,2019}_roads/` exists with per-county
   zip files for at least one county.
 - `cache/C3/tiger_roads_filtered/` exists (first run on a fresh cache
   takes longer).
@@ -229,7 +229,7 @@ Pre-flight:
   `python -c "from spacescans.linkage import precomputed_static_linkage;
   import inspect; print('output_grouping' in
   inspect.getsource(precomputed_static_linkage))"` — expect True.
-- `data_full/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb` exists and is
+- `NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb` exists and is
   readable (61 GB NHDPlus National Release 2 product).
 - `cache/C3/nhd_features/` exists or will be created on first run (per-tile
   blue-feature cache is cohort-independent).
@@ -272,7 +272,7 @@ Pre-flight:
    *removing* the key — `TimeConfig.output_grouping` defaults to
    `"patient"` and would silently fall through.
 6. Negative test (missing GDB): rename
-   `data_full/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb` aside and
+   `NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb` aside and
    restart the server. Expect `MetadataSchemaError` during server-boot
    pre-flight (`_assert_nhd_data_present` in `variable_registry.py`)
    with the GDB path in the message. Restore the GDB. No partial run,
@@ -289,8 +289,7 @@ Pre-flight:
   import inspect; print('output_grouping' in
   inspect.getsource(static_areal_linkage))"` — expect True.
 - All three noise TIFs exist and are readable under
-  `data/Noise/C3/` (NOT `data_full/Noise/...` — noise predates the
-  `data_full/` convention):
+  `Noise/C3/`:
   - `CONUS_L50dBA_sumDay_exi.tif`
   - `CONUS_sumDay_L50dBA_imp.tif`
   - `CONUS_sumDay_L50dBA_nat.tif`
@@ -334,7 +333,7 @@ Pre-flight:
    *removing* the key — `TimeConfig.output_grouping` defaults to
    `patient` and would silently fall through.
 6. Negative test (missing TIF): rename
-   `data/Noise/C3/CONUS_L50dBA_sumDay_exi.tif` aside and restart the
+   `Noise/C3/CONUS_L50dBA_sumDay_exi.tif` aside and restart the
    server. Expect `MetadataSchemaError` during server-boot pre-flight
    (`_assert_noise_data_present` in `variable_registry.py`) with the
    TIF path in the message. Restore the TIF. No partial run, no orphan
@@ -351,9 +350,9 @@ Pre-flight:
   import inspect; print('output_grouping' in
   inspect.getsource(gridded_linkage))"` — expect True.
 - VNL annual TIFs (`VNL_v21_*.tif`) exist and are readable under
-  `data_full/VNL/C3/` (at least one file per coverage year 2013-2019).
+  `VNL/C3/` (at least one file per coverage year 2013-2019).
 - TEMIS C4 raw HDFs exist and are readable under
-  `data_full/TEMIS/C4/raw/<uv-var>/<year>/` for at least one of the
+  `TEMIS/C4/raw/<uv-var>/<year>/` for at least one of the
   four UV variables (`uvddc`, `uvdec`, `uvdvc`, `uvief`).
 - `backend/app/data/variable_metadata.json` has **8** entries including
   `vnl` (BG boundary, `coverage_years=[2013, 2019]`, 1 value_col
@@ -400,12 +399,12 @@ Pre-flight:
    by *removing* the key — `TimeConfig.output_grouping` defaults to
    `patient` and would silently fall through.
 6. Negative test (missing VNL data): rename
-   `data_full/VNL/C3/` aside or remove all `VNL_v21_*.tif` files and
+   `VNL/C3/` aside or remove all `VNL_v21_*.tif` files and
    restart the server. Expect `MetadataSchemaError` during server-boot
    pre-flight (`_assert_vnl_data_present` in `variable_registry.py`)
    with `VNL_v21_*.tif` in the message. Restore the directory.
 7. Negative test (missing TEMIS data): remove every UV-variable subdir
-   under `data_full/TEMIS/C4/raw/` and restart the server. Expect
+   under `TEMIS/C4/raw/` and restart the server. Expect
    `MetadataSchemaError` during server-boot pre-flight
    (`_assert_temis_data_present` in `variable_registry.py`) mentioning
    `temis` and the UV-variable subdir names. Restore the directories.
@@ -422,13 +421,13 @@ Pre-flight:
   import inspect; print('output_grouping' in
   inspect.getsource(fara_linkage))"` — expect True.
 - FARA static panel exists and is readable at
-  `data_full/FARA/C4/fara_nationwide_2010_2019_interpolated.Rda`
+  `FARA/C4/fara_nationwide_2010_2019_interpolated.Rda`
   (~440 MB, R `fara1019` data key).
 - FARA label CSV exists at
-  `data_full/FARA/C4/varnameCountRemoved.csv` (defines the column
+  `FARA/C4/varnameCountRemoved.csv` (defines the column
   set the runner discovers dynamically; backend metadata declares
   only the four headline columns the merge step exposes).
-- Tract C3 shapefile set under `data_full/TRACT/C3/tl_2010_*_tract10/`
+- Tract C3 shapefile set under `TRACT/C3/tl_2010_*_tract10/`
   is present for at least the states that intersect the cohort.
 - `backend/app/data/variable_metadata.json` has **9** entries
   including `fara_tract` (boundary `Tract`, `coverage_years=[2013,
@@ -478,13 +477,13 @@ Pre-flight:
    test by *removing* the key — `TimeConfig.output_grouping` defaults
    to `patient` and would silently fall through.
 6. Negative test (missing FARA data): rename
-   `data_full/FARA/C4/fara_nationwide_2010_2019_interpolated.Rda`
+   `FARA/C4/fara_nationwide_2010_2019_interpolated.Rda`
    aside and restart the server. Expect `MetadataSchemaError` during
    server-boot pre-flight (`_assert_fara_data_present` in
    `variable_registry.py`) with the .Rda path in the message.
    Restore the file.
 7. Negative test (missing label CSV): rename
-   `data_full/FARA/C4/varnameCountRemoved.csv` aside and restart the
+   `FARA/C4/varnameCountRemoved.csv` aside and restart the
    server. Expect `MetadataSchemaError` mentioning `fara_tract` and
    `varnameCountRemoved.csv`. Restore the file. No partial run, no
    orphan cache files for either failure.

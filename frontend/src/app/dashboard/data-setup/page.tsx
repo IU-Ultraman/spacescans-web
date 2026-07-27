@@ -34,7 +34,7 @@ export default function DataSetupPage({
               </code>{" "}
               (the repo&apos;s{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                data_full/
+                pipeline-data/
               </code>
               ).
             </p>
@@ -53,7 +53,7 @@ export default function DataSetupPage({
               </code>{" "}
               (the repo&apos;s{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                data_full/
+                pipeline-data/
               </code>
               ). Most are US federal public-domain data you can fetch directly;
               a few are preprocessed and supplied by the deployer.

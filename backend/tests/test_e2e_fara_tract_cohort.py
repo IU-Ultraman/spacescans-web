@@ -30,14 +30,14 @@ def _integration_available() -> bool:
     if not app.config.settings.SPACESCANS_PIPELINE_CLI.exists():
         return False
     # FARA C4 panel
-    fara_c4 = app.config.settings.SPACESCANS_DATA_DIR / "data_full" / "FARA" / "C4"
+    fara_c4 = app.config.settings.SPACESCANS_DATA_DIR / "FARA" / "C4"
     if not (fara_c4 / "fara_nationwide_2010_2019_interpolated.Rda").exists():
         return False
     if not (fara_c4 / "varnameCountRemoved.csv").exists():
         return False
     # Tract C3 shapefile set (at least one state — boundary_overlap_fast
     # pulls the full set, but checking one is enough for the gate).
-    tract_c3 = app.config.settings.SPACESCANS_DATA_DIR / "data_full" / "TRACT" / "C3"
+    tract_c3 = app.config.settings.SPACESCANS_DATA_DIR / "TRACT" / "C3"
     if not tract_c3.is_dir():
         return False
     if not any(tract_c3.glob("tl_2010_*_tract10")):

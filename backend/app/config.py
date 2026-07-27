@@ -38,15 +38,24 @@ class Settings(BaseSettings):
 settings = Settings()
 
 
+# Dataset folders expected directly under SPACESCANS_DATA_DIR (only those for
+# the variables actually run are required — presence of ANY marks a real root).
+_DATASET_DIRS = (
+    "BG", "Community_Organization_Density", "County", "FARA", "NDI",
+    "NHD", "Noise", "TEMIS", "TIGER", "TRACT", "VNL", "Walkability", "ZCTA5",
+)
+
+
 def validate_pipeline_settings() -> None:
     """Raise RuntimeError early if any pipeline path is missing.
 
     Called from app.main:create_app on startup so the FastAPI process refuses
     to serve traffic before its required external dependencies are present.
 
-    Note on SPACESCANS_DATA_DIR semantics: this is the project root that the
+    Note on SPACESCANS_DATA_DIR semantics: this is the data root that the
     pipeline CLI's --data-dir parameter resolves YAML config relative paths
-    against. The actual exposure data lives under <SPACESCANS_DATA_DIR>/data_full/.
+    against. The exposure dataset folders (BG/, Noise/, TIGER/, ...) live
+    directly under it.
     """
     missing = []
     for name in (
@@ -58,10 +67,14 @@ def validate_pipeline_settings() -> None:
         path = getattr(settings, name)
         if not path.exists():
             missing.append(f"{name}={path}")
-    # Check the data subtree exists since YAML configs use `data_full/...` prefixes
-    data_subdir = settings.SPACESCANS_DATA_DIR / "data_full"
-    if settings.SPACESCANS_DATA_DIR.exists() and not data_subdir.exists():
-        missing.append(f"SPACESCANS_DATA_DIR/{data_subdir.name}={data_subdir}")
+    # Sanity-check the mount: YAML configs use dataset-folder prefixes
+    # (`Noise/...`, `TIGER/...`) resolved against the data root, so an existing
+    # but empty/wrong mount should fail fast rather than boot with no data.
+    data_root = settings.SPACESCANS_DATA_DIR
+    if data_root.exists() and not any(
+        (data_root / d).is_dir() for d in _DATASET_DIRS
+    ):
+        missing.append(f"SPACESCANS_DATA_DIR has no dataset folders={data_root}")
     if missing:
         raise RuntimeError(
             "Pipeline integration disabled. Missing paths: " + ", ".join(missing)

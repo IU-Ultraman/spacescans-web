@@ -109,7 +109,7 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
          per-task C3 parquet output (precomputed_static reads it as the
          exposure table). The C3 step needs no source.file rewrite — the
          pipeline CLI's --data-dir SPACESCANS_DATA_DIR arg resolves the
-         relative data_full/NHD/C4/... path.
+         relative NHD/C4/... path.
     """
     template_path = (
         app.config.settings.SPACESCANS_CONFIG_TEMPLATES_DIR / step.template_relpath

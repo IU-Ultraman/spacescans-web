@@ -48,7 +48,7 @@ NEW_NODES = [
 # baked from ExposomeVariablesList.xlsx (cbp/fara/ndi/walkability) and
 # variable_metadata.json (noise/vnl/temis/nhd/tiger), per the 2026-06-29 spec.
 _CBP = "SPACESCANS_Community_Organization_Density"
-_FOOD = "000294"            # Food_Access_Exposome (fara_tract)
+_FOOD = "000294"            # FARA_Exposome (fara_tract)
 _NDI = "SPACESCANS_Neighborhood_Deprivation_Index"
 _WALK = "SPACESCANS_Walkability"
 _NOISE = "000289"           # Noise

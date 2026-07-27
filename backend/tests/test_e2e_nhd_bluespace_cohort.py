@@ -31,7 +31,7 @@ def _integration_available() -> bool:
         return False
     if not app.config.settings.SPACESCANS_PIPELINE_CLI.exists():
         return False
-    nhd_c4 = app.config.settings.SPACESCANS_DATA_DIR / "data_full" / "NHD" / "C4"
+    nhd_c4 = app.config.settings.SPACESCANS_DATA_DIR / "NHD" / "C4"
     if not nhd_c4.is_dir():
         return False
     if not (nhd_c4 / "NHDPlus_H_National_Release_2_GDB.gdb").exists():

@@ -12,7 +12,8 @@ Cloned from nhd_bluespace.py with the spec-mandated Sprint 9 deltas:
   * render_yaml on C4 rewrites cfg['source']['file'] (the weights table) to
     point at the per-task C3 output. cfg['exposure']['file'] (the static TIF
     path) stays untouched — pipeline CLI --data-dir resolves the relative
-    'data/Noise/C3/CONUS_L50dBA_sumDay_exi.tif' against SPACESCANS_DATA_DIR.
+    'Noise/C3/CONUS_L50dBA_sumDay_exi.tif' against
+    SPACESCANS_DATA_DIR.
   * sanity probe greps live spacescans.linkage.static_areal_linkage for
     'output_grouping' (Sprint 6 T6: static_areal already wired with
     resolve_output_grouping dispatch).

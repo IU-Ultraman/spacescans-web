@@ -15,7 +15,7 @@ Cloned from noise.py with the spec-mandated Sprint 10 deltas:
     gridded linkage reads the source table as the weights table).
     cfg['exposure']['file'] (the VNL C3 directory) stays untouched —
     pipeline CLI --data-dir resolves the relative
-    'data_full/VNL/C3' against SPACESCANS_DATA_DIR.
+    'VNL/C3' against SPACESCANS_DATA_DIR.
   * sanity probe greps live spacescans.linkage.gridded_linkage for
     'output_grouping' (Sprint 10 A1: gridded wired with
     resolve_output_grouping dispatch).

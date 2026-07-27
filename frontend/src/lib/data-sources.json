@@ -14,7 +14,7 @@
       "files": [
         { "name": "tl_2010_us_county10.zip", "note": "the single NATIONAL file (not the per-state tl_2010_{ss}_county10 in the same folder)" }
       ],
-      "placeDir": ["data_full/County_FL/C3/tl_2010_us_county10/"],
+      "placeDir": ["County/C3/tl_2010_us_county10/"],
       "notes": [
         "Unzip; put the .shp in a subfolder named after the file basename, with its .shx/.dbf/.prj sidecars alongside.",
         "No reprojection needed — the pipeline buffers/reprojects internally."
@@ -34,7 +34,7 @@
       "files": [
         { "name": "tl_2010_{ss}_tract10.zip × 51", "note": "STATEWIDE files — 2-digit state FIPS (not the 5-digit per-county files)" }
       ],
-      "placeDir": ["data_full/TRACT/C3/tl_2010_{ss}_tract10/  (one subfolder per state)"],
+      "placeDir": ["TRACT/C3/tl_2010_{ss}_tract10/  (one subfolder per state)"],
       "notes": [
         "The TIGER2010/TRACT/2010/ folder lists BOTH per-county files (5-digit FIPS, e.g. tl_2010_06037_tract10.zip) and statewide files (2-digit FIPS, e.g. tl_2010_06_tract10.zip). Download the STATEWIDE (2-digit) ones — the pipeline expects tl_2010_{ss}_tract10.",
         "No single national tract file — fetch all 51 statewide files (or just the states your cohort covers).",
@@ -55,7 +55,7 @@
       "files": [
         { "name": "tl_2010_us_zcta510.zip", "note": "national ZCTAs (~33,120)" }
       ],
-      "placeDir": ["data_full/ZCTA5/C3/tl_2010_us_zcta510/"],
+      "placeDir": ["ZCTA5/C3/tl_2010_us_zcta510/"],
       "notes": [
         "Unzip into a subfolder named after the file basename (.shp + sidecars)."
       ]
@@ -74,11 +74,11 @@
       "files": [
         { "name": "tiger{year}_roads/tl_{year}_{SSCCC}_roads.zip", "note": "per county (5-digit state+county FIPS), per year — kept in a tiger{year}_roads/ subfolder, for the counties/years your cohort spans" }
       ],
-      "placeDir": ["data_full/TIGER/C4/"],
+      "placeDir": ["TIGER/C4/"],
       "notes": [
         "Go into each year's ROADS folder — TIGER{year}/ROADS/tl_{year}_{SSCCC}_roads.zip (e.g. TIGER2013/ROADS/tl_2013_13139_roads.zip). The other folders under TIGER{year}/ are different layers (COUNTY/TRACT/…) — you want ROADS.",
         "One zip per county; grab only the counties your cohort spans, for each year 2013–2019. (The linked URL shows 2019 — swap the year for the others.)",
-        "Place them under data_full/TIGER/C4/tiger{year}_roads/ — the reader scans that directory."
+        "Place them under TIGER/C4/tiger{year}_roads/ — the reader scans that directory."
       ]
     },
     {
@@ -95,7 +95,7 @@
       "files": [
         { "name": "tl_2010_{ss}_bg10.zip × 51", "note": "statewide files — 2-digit state FIPS (not the 5-digit per-county files)" }
       ],
-      "placeDir": ["data_full/BG_FL/C3/tiger2010_bg10_states/tl_2010_{ss}_bg10/"],
+      "placeDir": ["BG/C3/tiger2010_bg10_states/tl_2010_{ss}_bg10/"],
       "notes": [
         "The TIGER2010/BG/2010/ folder has both 5-digit per-county and 2-digit statewide files — grab the statewide tl_2010_{ss}_bg10.",
         "Unzip each into a subfolder named after the file basename (.shp + sidecars); join column is GEOID10."
@@ -115,7 +115,7 @@
       "files": [
         { "name": "tl_2024_{ss}_bg.zip × 51", "note": "or just run the bundled download script" }
       ],
-      "placeDir": ["data_full/BG_FL/C3/tiger2024_bg_states/tl_2024_{ss}_bg/"],
+      "placeDir": ["BG/C3/tiger2024_bg_states/tl_2024_{ss}_bg/"],
       "notes": [
         "Fastest: run `bash scripts/download_bg_2020_shapefiles.sh` from the repo root (idempotent).",
         "Join column is GEOID (some products expose GEOID20 — if so, edit join_col in bg_us_2020_demo.yaml).",
@@ -138,7 +138,7 @@
         { "name": "CONUS_sumDay_L50dBA_imp.tif", "note": "impact (anthropogenic)" },
         { "name": "CONUS_sumDay_L50dBA_nat.tif", "note": "natural" }
       ],
-      "placeDir": ["data/Noise/C3/"],
+      "placeDir": ["Noise/C3/"],
       "notes": [
         "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
         "Keep the exact filenames — the reader hard-codes all three.",
@@ -160,7 +160,7 @@
       "files": [
         { "name": "NHDPlus_H_National_Release_2_GDB.zip", "note": "national file geodatabase (.gdb)" }
       ],
-      "placeDir": ["data_full/NHD/C4/"],
+      "placeDir": ["NHD/C4/"],
       "notes": [
         "No census boundary file needed — the value is the distance from each patient's residence to the nearest water feature (nhd_proximity), not a block-group summary.",
         "Direct link: prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHDPlusHR/National/GDB/NHDPlus_H_National_Release_2_GDB.zip",
@@ -181,7 +181,7 @@
       "files": [
         { "name": "VNL_v21_npp_{year}_global_*.average_masked.dat.tif.gz", "note": "one per year 2013–2019; choose the 'average_masked' variant" }
       ],
-      "placeDir": ["data_full/VNL/C3/"],
+      "placeDir": ["VNL/C3/"],
       "notes": [
         "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
         "Requires a free EOG account (login) to download the annual global files.",
@@ -202,7 +202,7 @@
       "files": [
         { "name": "{var}YYYYMMDD.hdf", "note": "4 variables (uvief, uvdec, uvdvc, uvddc) — one file per day" }
       ],
-      "placeDir": ["data_full/TEMIS/C4/raw/{var}/{year}/"],
+      "placeDir": ["TEMIS/C4/raw/{var}/{year}/"],
       "notes": [
         "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
         "Native HDF-4 — install pyhdf (+ the system HDF4 library) to read it.",
@@ -219,7 +219,7 @@
       "role": "Exposure values",
       "artifact": "ndi_bg_acs5_..._xgboost.rds",
       "origin": "Built from Census ACS 5-year via an xgboost model — no public download.",
-      "placeDir": ["data_full/BG_NDI/C4/"]
+      "placeDir": ["NDI/C4/"]
     },
     {
       "key": "cbp-artifact",
@@ -228,7 +228,7 @@
       "role": "Exposure values",
       "artifact": "zbp_nationwide_*.Rda + cbp_nationwide_*.Rda",
       "origin": "Derived from Census ZIP + County Business Patterns (raw ZBP/CBP are public). ZBP gives ZCTA5-level density; patients whose ZIP has no ZBP row fall back to their county's CBP — so BOTH files are needed. The fallback also reuses the ZBP linkage output internally (auto-generated per run, not a download).",
-      "placeDir": ["data/CBP/C4/"]
+      "placeDir": ["Community_Organization_Density/C4/"]
     },
     {
       "key": "walkability-artifact",
@@ -237,7 +237,7 @@
       "role": "Exposure values",
       "artifact": "epawalkind_nationwide_2016_2021.Rda",
       "origin": "Converted from the EPA Smart Location Database (raw SLD is public). The pipeline uses the 2016 year as a static index; the file's 2021 rows are filtered out.",
-      "placeDir": ["data_full/BG_WI/C4/"]
+      "placeDir": ["Walkability/C4/"]
     },
     {
       "key": "fara-artifact",
@@ -246,7 +246,7 @@
       "role": "Exposure values",
       "artifact": "fara_nationwide_2010_2019_interpolated.Rda",
       "origin": "Interpolated from USDA ERS Food Access Research Atlas (raw FARA is public).",
-      "placeDir": ["data_full/FARA/C4/"]
+      "placeDir": ["FARA/C4/"]
     }
   ]
 }

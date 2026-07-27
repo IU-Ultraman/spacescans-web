@@ -15,7 +15,7 @@ Cloned from vnl.py with the spec-mandated Sprint 10 deltas:
     gridded linkage reads the source table as the weights table).
     cfg['exposure']['file'] (the TEMIS C4 raw directory) stays untouched —
     pipeline CLI --data-dir resolves the relative
-    'data_full/TEMIS/C4/raw' against SPACESCANS_DATA_DIR.
+    'TEMIS/C4/raw' against SPACESCANS_DATA_DIR.
   * sanity probe greps live spacescans.linkage.gridded_linkage for
     'output_grouping' (Sprint 10 A1: gridded wired with
     resolve_output_grouping dispatch).
