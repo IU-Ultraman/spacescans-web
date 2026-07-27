@@ -8,8 +8,7 @@ explore the results.
   `spacescans-pipeline` package.
 - **Frontend** — Next.js 14 (App Router, React 18, TypeScript, Tailwind).
 
-> Install via **Docker** (one command). For hot-reload development without
-> Docker, see [Local development](#local-development-without-docker) below.
+> Install via **Docker** (one command).
 
 The same setup runs on macOS, Windows, and Linux — the containers run Linux
 regardless of host OS, so there is nothing OS-specific to configure.
@@ -88,37 +87,3 @@ docker compose logs -f backend
 
 Image bases, the conda/pip channel split, and other architecture notes are in
 [DOCKER.md](DOCKER.md).
-
----
-
-## Local development (without Docker)
-
-For hot-reload iteration, run the two processes directly against a Python 3.12
-conda env named `spacescans` (Node 20.x for the frontend). Substitute your own
-paths for `/path/to/...`.
-
-```bash
-# 1) install the pipeline (editable) + backend deps into the conda env
-/path/to/conda/envs/spacescans/bin/python -m pip install -e /path/to/spacescans-project
-cd backend
-/path/to/conda/envs/spacescans/bin/python -m pip install -r requirements.txt
-
-# 2) backend/.env (gitignored) — absolute host paths
-cat > .env <<'EOF'
-SPACESCANS_DATA_DIR=/path/to/spacescans-project
-SPACESCANS_PIPELINE_PYTHON=/path/to/conda/envs/spacescans/bin/python
-SPACESCANS_PIPELINE_CLI=/path/to/conda/envs/spacescans/bin/spacescans
-SPACESCANS_CONFIG_TEMPLATES_DIR=/path/to/spacescans-project/configs
-SECRET_KEY=change-me
-EOF
-
-# 3) run both (separate terminals)
-#    backend → http://localhost:8000
-/path/to/conda/envs/spacescans/bin/python -m uvicorn app.main:app --reload --port 8000
-#    frontend → http://localhost:3000
-cd frontend && nvm use 20 && npm install && npm run dev
-```
-
-The SQLite DB (`backend/data/spacescans.db`), `tasks/`, and `c3_cache/` are
-created automatically on first startup. Other defaults (`CORS_ORIGINS`, …) live
-in `backend/app/config.py`.
