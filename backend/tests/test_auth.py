@@ -83,3 +83,55 @@ def test_login_wrong_password():
         "password": "wrongpassword"
     })
     assert resp.status_code == 401
+
+def test_change_password():
+    client = get_test_app()
+    client.post("/api/auth/signup", json={
+        "email": "chpw@example.com",
+        "password": "oldpass123",
+        "first_name": "Test",
+        "last_name": "User"
+    })
+    # Change with the correct current password → 200 + fresh token.
+    resp = client.post("/api/auth/change-password", json={
+        "email": "chpw@example.com",
+        "current_password": "oldpass123",
+        "new_password": "newpass456"
+    })
+    assert resp.status_code == 200
+    assert "access_token" in resp.json()
+    # New password works, old one no longer does.
+    assert client.post("/api/auth/login", json={
+        "email": "chpw@example.com", "password": "newpass456"
+    }).status_code == 200
+    assert client.post("/api/auth/login", json={
+        "email": "chpw@example.com", "password": "oldpass123"
+    }).status_code == 401
+
+def test_change_password_wrong_current():
+    client = get_test_app()
+    client.post("/api/auth/signup", json={
+        "email": "chpw2@example.com",
+        "password": "oldpass123",
+        "first_name": "Test",
+        "last_name": "User"
+    })
+    resp = client.post("/api/auth/change-password", json={
+        "email": "chpw2@example.com",
+        "current_password": "wrongcurrent",
+        "new_password": "newpass456"
+    })
+    assert resp.status_code == 401
+    # Password unchanged: the original still logs in.
+    assert client.post("/api/auth/login", json={
+        "email": "chpw2@example.com", "password": "oldpass123"
+    }).status_code == 200
+
+def test_change_password_unknown_email():
+    client = get_test_app()
+    resp = client.post("/api/auth/change-password", json={
+        "email": "nobody@example.com",
+        "current_password": "whatever",
+        "new_password": "newpass456"
+    })
+    assert resp.status_code == 401

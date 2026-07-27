@@ -223,6 +223,16 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  changePassword: (data: {
+    email: string;
+    current_password: string;
+    new_password: string;
+  }) =>
+    request<{ access_token: string }>("/api/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   // Tasks
   listTasks: () => request<Task[]>("/api/tasks"),
 
