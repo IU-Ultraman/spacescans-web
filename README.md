@@ -20,29 +20,33 @@ regardless of host OS, so there is nothing OS-specific to configure.
 | Requirement | Notes |
 | ----------- | ----- |
 | Docker | Docker Desktop (macOS/Windows) or Docker Engine (Linux) |
-| Pipeline wheel | bundled in this repo at `backend/wheels/` (`spacescans-pipeline` isn't on PyPI) — nothing to do |
-| Exposure data | `data/` and `data_full/` (several GB) in the parent repo root — bind-mounted, not baked into the image |
+| Pipeline | installed from GitHub at build time (`IU-Ultraman/spacescans`, pinned tag) — nothing to do |
+| Exposure data | put `data_full/` + `data/` (several GB) in `pipeline-data/` — see [pipeline-data/README.md](pipeline-data/README.md), or reuse an existing tree via `SPACESCANS_DATA_HOST` |
 
 ---
 
-## 1. Pipeline wheel (bundled)
+## 1. Pipeline (installed from GitHub)
 
-`spacescans-pipeline` is not on PyPI, so the backend image installs it from a
-wheel **committed to this repo** at `backend/wheels/*.whl`. A normal install
-needs nothing here.
+`spacescans-pipeline` is not on PyPI, so the backend image `pip install`s it
+straight from its public repo (`IU-Ultraman/spacescans`), pinned to a release
+tag — nothing to do here.
 
-**Maintainers only** — after changing the pipeline, rebuild + replace + commit
-the wheel (needs a checkout of the pipeline repo):
-
-```bash
-# in the pipeline repo (spacescans-project)
-python -m build --wheel                       # -> dist/spacescans_pipeline-*.whl
-cp dist/spacescans_pipeline-*.whl <spacescans-web>/backend/wheels/
-```
+**Maintainers only** — to ship a newer pipeline release, tag it on
+`IU-Ultraman/spacescans` and bump `SPACESCANS_REF` in `backend/Dockerfile`
+(default `v0.2.0`).
 
 ---
 
-## 2. Configure
+## 2. Data
+
+Put the exposure data (`data_full/` + `data/`, several GB) in **`pipeline-data/`**
+— see [pipeline-data/README.md](pipeline-data/README.md) for the exact layout
+and per-dataset sources. Already have the data elsewhere? Skip copying and set
+`SPACESCANS_DATA_HOST=/abs/path` in `.env`.
+
+---
+
+## 3. Configure
 
 ```bash
 cp .env.docker.example .env      # then edit SECRET_KEY
@@ -58,7 +62,7 @@ for local testing; set a real secret otherwise).
 
 ---
 
-## 3. Run
+## 4. Run
 
 ```bash
 docker compose up --build
@@ -84,7 +88,7 @@ docker compose logs -f backend
 | Path | Kind | Purpose |
 | --- | --- | --- |
 | `./configs` → `/configs` | bind mount (ro) | C3/C4 config templates — **versioned in this repo** (`SPACESCANS_CONFIG_TEMPLATES_DIR=/configs`) |
-| `../` → `/project` | bind mount | `data/`, `data_full/`, `output/` — exposure data from the parent repo (`SPACESCANS_DATA_DIR=/project`) |
+| `pipeline-data/` → `/project` | bind mount | exposure data (`data_full/`, `data/`) — override host path with `SPACESCANS_DATA_HOST` (`SPACESCANS_DATA_DIR=/project`) |
 | `backend-data` → `/app/data` | named volume | SQLite DB, `tasks/`, `c3_cache/` — survives restarts |
 
 Image bases, the conda/pip channel split, and other architecture notes are in

@@ -27,9 +27,11 @@ services:
     volumes:
       # Config templates from this repo (versioned, not from the parent).
       - ./configs:/configs:ro
-      # Parent repo root → exposure data (data/, data_full/) + pipeline output/.
-      # (Still parent-dependent — the several-GB data isn't bundled here.)
-      - ../:/project
+      # Exposure data root (must contain data_full/ and data/). Defaults to the
+      # in-repo pipeline-data/ folder — drop your data there for a standalone
+      # setup. Point SPACESCANS_DATA_HOST at the parent repo (`..`) or anywhere
+      # else in .env to reuse an existing data tree without copying.
+      - ${SPACESCANS_DATA_HOST:-./pipeline-data}:/project
       # Persistent app state: SQLite DB, tasks/, c3_cache/.
       - backend-data:/app/data
     ports:

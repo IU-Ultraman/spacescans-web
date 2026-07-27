@@ -13,20 +13,16 @@ container regardless of host OS. There is nothing OS-specific to configure.
 ## Prerequisites
 
 1. **Docker** (Docker Desktop on macOS/Windows, Docker Engine on Linux).
-2. **The pipeline wheel** — `spacescans-pipeline` is not on PyPI, so the backend
-   image installs it from a wheel **committed to this repo** at
-   `backend/wheels/*.whl`. Nothing to do for a normal install. Maintainers only,
-   after changing the pipeline, rebuild + replace + commit the wheel:
+2. **The pipeline** — `spacescans-pipeline` is not on PyPI, so the backend image
+   `pip install`s it straight from its public repo (`IU-Ultraman/spacescans`),
+   pinned to a release tag. Nothing to do for a normal install. Maintainers
+   only: tag a new release on that repo and bump `SPACESCANS_REF` in
+   `backend/Dockerfile` (default `v0.2.0`).
 
-   ```bash
-   # in the pipeline repo (spacescans-project)
-   python -m build --wheel                       # -> dist/spacescans_pipeline-*.whl
-   cp dist/spacescans_pipeline-*.whl <spacescans-web>/backend/wheels/
-   ```
-
-3. **The exposure data** — `data/` and `data_full/` (several GB) must exist in
-   the parent repo root. They are bind-mounted into the container, not baked
-   into the image.
+3. **The exposure data** — put `data_full/` + `data/` (several GB) in
+   `pipeline-data/` (see [pipeline-data/README.md](pipeline-data/README.md) for
+   the layout + per-dataset sources). Already have the data elsewhere? Set
+   `SPACESCANS_DATA_HOST=/abs/path` in `.env` to mount it without copying.
 
 ---
 
@@ -62,7 +58,7 @@ the SQLite DB / tasks / cache volume).
 | Path | Kind | Purpose |
 | --- | --- | --- |
 | `./configs` → `/configs` | bind mount (ro) | C3/C4 config templates — versioned in this repo; `SPACESCANS_CONFIG_TEMPLATES_DIR=/configs` |
-| `../` → `/project` | bind mount (host) | `data/`, `data_full/`, `output/` — exposure data from the parent repo; `SPACESCANS_DATA_DIR=/project` |
+| `pipeline-data/` → `/project` | bind mount (host) | exposure data (`data_full/`, `data/`); override host path with `SPACESCANS_DATA_HOST`; `SPACESCANS_DATA_DIR=/project` |
 | `backend-data` → `/app/data` | named volume | SQLite DB, `tasks/`, `c3_cache/` — survives restarts |
 
 ---
@@ -72,8 +68,8 @@ the SQLite DB / tasks / cache volume).
 - **Backend image**: `mambaorg/micromamba` base. Channel split mirrors the
   tested `spacescans` env — the GDAL/C++ layer (`libgdal`, `rasterio`,
   `exactextract`) from **conda-forge**; everything else (geopandas, shapely,
-  pyproj, pandas, duckdb, pyreadr) from **pip**, via the pipeline wheel's
-  `[geo,rda]` extras + `requirements.txt`.
+  pyproj, pandas, duckdb, pyreadr) from **pip**, via the pipeline's `[geo,rda]`
+  extras (installed from GitHub) + `requirements.txt`.
 - **Frontend image**: `node:20-slim`, `next build` → `next start`.
   `NEXT_PUBLIC_API_URL` is inlined at build time (default `http://localhost:8000`).
 - **Two ports** (3000 / 8000). To serve everything under one URL with HTTPS,
