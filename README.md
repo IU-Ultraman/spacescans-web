@@ -5,49 +5,105 @@ upload a patient cohort CSV, pick exposure variables, run the pipeline, and
 explore the results.
 
 - **Backend** — FastAPI (Python), serves `/api/*`, drives the
-  `spacescans-pipeline` package via an editable install.
+  `spacescans-pipeline` package.
 - **Frontend** — Next.js 14 (App Router, React 18, TypeScript, Tailwind).
 
-> This README covers **installation only**.
+> Install via **Docker** (one command). For hot-reload development without
+> Docker, see [Local development](#local-development-without-docker) below.
+
+The same setup runs on macOS, Windows, and Linux — the containers run Linux
+regardless of host OS, so there is nothing OS-specific to configure.
 
 ---
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-| ---- | ------- | ----- |
-| Python | 3.12 | the same interpreter that runs the pipeline; a conda env named `spacescans` is the tested setup |
-| Node.js | 20.x (e.g. 20.20.2) | `nvm use 20` |
-| spacescans-pipeline | ≥ 0.2 | a local checkout of the pipeline repo (this repo's parent), installed editable — see step 1 |
-
-Paths below are placeholders — substitute your own:
-
-- `/path/to/spacescans-project` — the pipeline repo root (contains `pyproject.toml`, `configs/`, `data_full/`).
-- `/path/to/conda/envs/spacescans/bin/python` — the Python interpreter for the `spacescans` env.
+| Requirement | Notes |
+| ----------- | ----- |
+| Docker | Docker Desktop (macOS/Windows) or Docker Engine (Linux) |
+| Pipeline wheel | `spacescans-pipeline` is not on PyPI — supply a built wheel (step 1) |
+| Exposure data | `data/` and `data_full/` (several GB) in the parent repo root — bind-mounted, not baked into the image |
 
 ---
 
-## 1. Install the pipeline package (editable)
+## 1. Supply the pipeline wheel
 
-The backend imports `spacescans`, so the Python env must have the pipeline
-installed:
+The backend image installs the pipeline from a locally-built wheel. Copy it into
+`backend/wheels/` (redo whenever the pipeline version bumps):
 
 ```bash
-/path/to/conda/envs/spacescans/bin/python -m pip install -e /path/to/spacescans-project
-/path/to/conda/envs/spacescans/bin/python -c "import spacescans; print('pipeline OK')"
+# from the spacescans-web/ directory
+mkdir -p backend/wheels
+cp ../dist/spacescans_pipeline-*.whl backend/wheels/
+```
+
+Rebuild the wheel first if the pipeline source changed:
+`python -m build --wheel /path/to/spacescans-project` (writes to `dist/`).
+
+---
+
+## 2. Configure
+
+```bash
+cp .env.docker.example .env      # then edit SECRET_KEY
+```
+
+`docker compose` reads `.env` automatically. Without it, defaults apply (fine
+for local testing; set a real secret otherwise).
+
+| Key | Meaning |
+| --- | ------- |
+| `SECRET_KEY` | JWT signing key — set a real random value for anything beyond local testing |
+| `NEXT_PUBLIC_API_URL` | origin the browser uses to reach the backend (default `http://localhost:8000`), inlined into the frontend at build time |
+
+---
+
+## 3. Run
+
+```bash
+docker compose up --build
+```
+
+- **Frontend** → `http://localhost:3000`
+- **Backend** → `http://localhost:8000`
+
+The first build pulls the conda-forge geospatial stack (~1.5 GB) and takes a few
+minutes; later runs are cached and fast. Open the frontend and **sign up** to
+create an account.
+
+```bash
+docker compose down        # stop + remove containers (keeps the data volume)
+docker compose down -v     # also drop the SQLite DB / tasks / cache volume
+docker compose logs -f backend
 ```
 
 ---
 
-## 2. Backend
+## What's mounted / persisted
+
+| Path | Kind | Purpose |
+| --- | --- | --- |
+| `../` → `/project` | bind mount | `data/`, `data_full/`, `configs/`, `output/` — pipeline inputs (`SPACESCANS_DATA_DIR=/project`) |
+| `backend-data` → `/app/data` | named volume | SQLite DB, `tasks/`, `c3_cache/` — survives restarts |
+
+Image bases, the conda/pip channel split, and other architecture notes are in
+[DOCKER.md](DOCKER.md).
+
+---
+
+## Local development (without Docker)
+
+For hot-reload iteration, run the two processes directly against a Python 3.12
+conda env named `spacescans` (Node 20.x for the frontend). Substitute your own
+paths for `/path/to/...`.
 
 ```bash
+# 1) install the pipeline (editable) + backend deps into the conda env
+/path/to/conda/envs/spacescans/bin/python -m pip install -e /path/to/spacescans-project
 cd backend
-
-# install the API dependencies into the same env
 /path/to/conda/envs/spacescans/bin/python -m pip install -r requirements.txt
 
-# create backend/.env (gitignored)
+# 2) backend/.env (gitignored) — absolute host paths
 cat > .env <<'EOF'
 SPACESCANS_DATA_DIR=/path/to/spacescans-project
 SPACESCANS_PIPELINE_PYTHON=/path/to/conda/envs/spacescans/bin/python
@@ -55,48 +111,14 @@ SPACESCANS_PIPELINE_CLI=/path/to/conda/envs/spacescans/bin/spacescans
 SPACESCANS_CONFIG_TEMPLATES_DIR=/path/to/spacescans-project/configs
 SECRET_KEY=change-me
 EOF
-```
 
-`.env` keys:
-
-| Key | Meaning |
-| --- | ------- |
-| `SPACESCANS_DATA_DIR` | pipeline project root; exposure data lives under `<dir>/data_full/` |
-| `SPACESCANS_PIPELINE_PYTHON` | interpreter the runner subprocess uses |
-| `SPACESCANS_PIPELINE_CLI` | the `spacescans` CLI entrypoint |
-| `SPACESCANS_CONFIG_TEMPLATES_DIR` | pipeline `configs/` (C3/C4 YAML templates) |
-| `SECRET_KEY` | JWT signing key — **set a real secret in production** |
-
-The SQLite DB (`backend/data/spacescans.db`), `tasks/`, and `c3_cache/`
-directories are created automatically on first startup. Other defaults
-(`DB_PATH`, `CORS_ORIGINS`, …) live in `backend/app/config.py`.
-
----
-
-## 3. Frontend
-
-```bash
-cd frontend
-nvm use 20        # or ensure Node 20.x is on PATH
-npm install
-```
-
----
-
-## Run
-
-Start the two processes (separate terminals):
-
-```bash
-# backend → http://localhost:8000
-cd backend
+# 3) run both (separate terminals)
+#    backend → http://localhost:8000
 /path/to/conda/envs/spacescans/bin/python -m uvicorn app.main:app --reload --port 8000
-
-# frontend → http://localhost:3000
-cd frontend
-npm run dev
+#    frontend → http://localhost:3000
+cd frontend && nvm use 20 && npm install && npm run dev
 ```
 
-Open <http://localhost:3000> and sign up to create an account. The frontend
-talks to the API at `http://localhost:8000` by default — override with
-`NEXT_PUBLIC_API_URL` if the backend runs elsewhere.
+The SQLite DB (`backend/data/spacescans.db`), `tasks/`, and `c3_cache/` are
+created automatically on first startup. Other defaults (`CORS_ORIGINS`, …) live
+in `backend/app/config.py`.
