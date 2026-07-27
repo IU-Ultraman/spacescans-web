@@ -86,12 +86,14 @@ def _fake_catalog():
     }
 
 
-def test_unauthenticated_returns_401(client):
-    # Sprint 12 G2: standardized on 401 across the API. HTTPBearer is configured
-    # with auto_error=False; get_current_user raises 401 when no credentials
-    # are present — matching /api/tasks/* and the rest of the auth contract.
-    r = client.get("/api/variables")
-    assert r.status_code == 401
+def test_unauthenticated_returns_catalog(client):
+    # The variable catalog is public (descriptive metadata, no PII / cohort
+    # data) so the landing page's "Browse Catalog" works for logged-out
+    # visitors — no credentials required.
+    with patch.object(variable_registry, "load_variables", return_value=_fake_catalog()):
+        r = client.get("/api/variables")
+    assert r.status_code == 200
+    assert set(r.json()["variables"].keys()) == {"ndi", "NatWalkInd", "cbp_zcta5"}
 
 
 def test_authenticated_returns_catalog(client, auth_headers):
@@ -127,17 +129,18 @@ def test_metadata_schema_invalid_returns_500(client, auth_headers):
     assert "bogus" in r.json()["detail"]["message"]
 
 
-def test_list_variables_rejects_invalid_jwt(client):
-    """Garbage tokens must be rejected with 401 (was 200 under presence-only stub)."""
-    headers = {"Authorization": "Bearer not-a-real-jwt"}
-    response = client.get("/api/variables", headers=headers)
-    assert response.status_code == 401
+def test_list_variables_ignores_bearer_token(client):
+    """The endpoint is public — a Bearer token (even a garbage one) is simply
+    ignored, not rejected."""
+    with patch.object(variable_registry, "load_variables", return_value=_fake_catalog()):
+        response = client.get(
+            "/api/variables", headers={"Authorization": "Bearer not-a-real-jwt"}
+        )
+    assert response.status_code == 200
 
 
 def test_unauthenticated_status_is_consistent_across_endpoints(client):
-    """Sprint 12 G2 cross-product invariant: every authenticated endpoint must
+    """Sprint 12 G2 cross-product invariant: every *authenticated* endpoint must
     return 401 (NOT 403) for missing credentials, so the FE can branch on a
-    single status code. Previously /api/variables returned 403 (HTTPBearer
-    default) while /api/tasks/* returned 401."""
-    assert client.get("/api/variables").status_code == 401
+    single status code. (/api/variables is public and thus excluded.)"""
     assert client.get("/api/tasks").status_code == 401

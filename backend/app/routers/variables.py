@@ -1,11 +1,10 @@
 """GET /api/variables — variable catalog endpoint (Sprint 3 B8)."""
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app import variable_registry
-from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/variables", tags=["variables"])
 
@@ -40,7 +39,10 @@ class VariableCatalogResponse(BaseModel):
     response_model=VariableCatalogResponse,
     include_in_schema=True,
 )
-def list_variables(_user=Depends(get_current_user)) -> VariableCatalogResponse:
+def list_variables() -> VariableCatalogResponse:
+    # Public: the variable catalog is descriptive metadata (labels, definitions,
+    # units, ontology links) — no PII or cohort data — so the landing page's
+    # "Browse Catalog" can show it to logged-out visitors.
     try:
         payload = variable_registry.load_variables()
     except FileNotFoundError as e:
