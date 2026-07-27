@@ -20,24 +20,25 @@ regardless of host OS, so there is nothing OS-specific to configure.
 | Requirement | Notes |
 | ----------- | ----- |
 | Docker | Docker Desktop (macOS/Windows) or Docker Engine (Linux) |
-| Pipeline wheel | `spacescans-pipeline` is not on PyPI — supply a built wheel (step 1) |
+| Pipeline wheel | bundled in this repo at `backend/wheels/` (`spacescans-pipeline` isn't on PyPI) — nothing to do |
 | Exposure data | `data/` and `data_full/` (several GB) in the parent repo root — bind-mounted, not baked into the image |
 
 ---
 
-## 1. Supply the pipeline wheel
+## 1. Pipeline wheel (bundled)
 
-The backend image installs the pipeline from a locally-built wheel. Copy it into
-`backend/wheels/` (redo whenever the pipeline version bumps):
+`spacescans-pipeline` is not on PyPI, so the backend image installs it from a
+wheel **committed to this repo** at `backend/wheels/*.whl`. A normal install
+needs nothing here.
+
+**Maintainers only** — after changing the pipeline, rebuild + replace + commit
+the wheel (needs a checkout of the pipeline repo):
 
 ```bash
-# from the spacescans-web/ directory
-mkdir -p backend/wheels
-cp ../dist/spacescans_pipeline-*.whl backend/wheels/
+# in the pipeline repo (spacescans-project)
+python -m build --wheel                       # -> dist/spacescans_pipeline-*.whl
+cp dist/spacescans_pipeline-*.whl <spacescans-web>/backend/wheels/
 ```
-
-Rebuild the wheel first if the pipeline source changed:
-`python -m build --wheel /path/to/spacescans-project` (writes to `dist/`).
 
 ---
 

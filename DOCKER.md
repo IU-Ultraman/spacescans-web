@@ -13,19 +13,16 @@ container regardless of host OS. There is nothing OS-specific to configure.
 ## Prerequisites
 
 1. **Docker** (Docker Desktop on macOS/Windows, Docker Engine on Linux).
-2. **The pipeline wheel** — `spacescans-pipeline` is not published to PyPI, so the
-   backend image installs it from a locally-built wheel. Copy it into
-   `backend/wheels/` (already done once; redo it whenever the pipeline version
-   bumps):
+2. **The pipeline wheel** — `spacescans-pipeline` is not on PyPI, so the backend
+   image installs it from a wheel **committed to this repo** at
+   `backend/wheels/*.whl`. Nothing to do for a normal install. Maintainers only,
+   after changing the pipeline, rebuild + replace + commit the wheel:
 
    ```bash
-   # from the spacescans-web/ directory
-   mkdir -p backend/wheels
-   cp ../dist/spacescans_pipeline-*.whl backend/wheels/
+   # in the pipeline repo (spacescans-project)
+   python -m build --wheel                       # -> dist/spacescans_pipeline-*.whl
+   cp dist/spacescans_pipeline-*.whl <spacescans-web>/backend/wheels/
    ```
-
-   Rebuild the wheel first if the pipeline source changed:
-   `python -m build --wheel /path/to/spacescans-project` (writes to `dist/`).
 
 3. **The exposure data** — `data/` and `data_full/` (several GB) must exist in
    the parent repo root. They are bind-mounted into the container, not baked
