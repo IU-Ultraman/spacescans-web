@@ -83,7 +83,8 @@ docker compose logs -f backend
 
 | Path | Kind | Purpose |
 | --- | --- | --- |
-| `../` → `/project` | bind mount | `data/`, `data_full/`, `configs/`, `output/` — pipeline inputs (`SPACESCANS_DATA_DIR=/project`) |
+| `./configs` → `/configs` | bind mount (ro) | C3/C4 config templates — **versioned in this repo** (`SPACESCANS_CONFIG_TEMPLATES_DIR=/configs`) |
+| `../` → `/project` | bind mount | `data/`, `data_full/`, `output/` — exposure data from the parent repo (`SPACESCANS_DATA_DIR=/project`) |
 | `backend-data` → `/app/data` | named volume | SQLite DB, `tasks/`, `c3_cache/` — survives restarts |
 
 Image bases, the conda/pip channel split, and other architecture notes are in
