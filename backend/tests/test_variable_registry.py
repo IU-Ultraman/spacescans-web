@@ -512,6 +512,39 @@ def _make_nhd_tree(root: Path, *, with_gdb: bool = True) -> Path:
     return c4
 
 
+def _make_nhd_cache_tree(root: Path) -> Path:
+    """Build a fake distributed cache {root}/cache/C3/nhd_features/ tree."""
+    cache = root / "cache" / "C3" / "nhd_features"
+    cache.mkdir(parents=True, exist_ok=True)
+    (cache / "tile_gx-200_gy80_water.parquet").write_bytes(b"\x00")
+    return cache
+
+
+def test_nhd_preflight_accepts_distributed_cache_without_gdb(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_cache_tree(tmp_path, range(2013, 2020))
+    _make_nhd_cache_tree(tmp_path)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "nhd_bluespace" in payload["variables"]
+
+
+def test_nhd_preflight_raises_when_raw_dir_has_no_gdb_and_no_cache(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_cache_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=False)  # half-downloaded raw, no cache
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc_info:
+        vr.load_variables(force=True)
+    assert "nhd_bluespace" in str(exc_info.value)
+
+
 def test_nhd_preflight_passes_when_gdb_present(tmp_path, monkeypatch):
     from app import variable_registry as vr
     from app.config import settings

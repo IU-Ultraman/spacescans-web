@@ -34,15 +34,23 @@ def _integration_available() -> bool:
     if not (app.config.settings.SPACESCANS_DATA_DIR
             / "BG/C3/tiger2010_bg10_states").exists():
         return False
+    tiger_cache = (app.config.settings.SPACESCANS_DATA_DIR / "cache" / "C3"
+                   / "tiger_roads_filtered")
     tiger_c4 = app.config.settings.SPACESCANS_DATA_DIR / "TIGER" / "C4"
-    if not tiger_c4.is_dir() or not any(tiger_c4.glob("tiger*_roads")):
+    tiger_ok = (tiger_cache.is_dir() and any(tiger_cache.iterdir())) or (
+        tiger_c4.is_dir() and any(tiger_c4.glob("tiger*_roads")))
+    if not tiger_ok:
         return False
+    nhd_cache = (app.config.settings.SPACESCANS_DATA_DIR / "cache" / "C3"
+                 / "nhd_features")
     nhd_gdb = (
         app.config.settings.SPACESCANS_DATA_DIR
         / "NHD" / "C4"
         / "NHDPlus_H_National_Release_2_GDB.gdb"
     )
-    if not nhd_gdb.exists():
+    nhd_ok = (nhd_cache.is_dir() and any(nhd_cache.glob("*.parquet"))) \
+        or nhd_gdb.exists()
+    if not nhd_ok:
         return False
     try:
         import pyreadr  # noqa: F401

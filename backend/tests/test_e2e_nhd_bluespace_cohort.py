@@ -31,10 +31,12 @@ def _integration_available() -> bool:
         return False
     if not app.config.settings.SPACESCANS_PIPELINE_CLI.exists():
         return False
-    nhd_c4 = app.config.settings.SPACESCANS_DATA_DIR / "NHD" / "C4"
-    if not nhd_c4.is_dir():
-        return False
-    if not (nhd_c4 / "NHDPlus_H_National_Release_2_GDB.gdb").exists():
+    nhd_cache = (app.config.settings.SPACESCANS_DATA_DIR / "cache" / "C3"
+                 / "nhd_features")
+    nhd_gdb = (app.config.settings.SPACESCANS_DATA_DIR / "NHD" / "C4"
+               / "NHDPlus_H_National_Release_2_GDB.gdb")
+    if not (any(nhd_cache.glob("*.parquet")) if nhd_cache.is_dir() else False) \
+            and not nhd_gdb.exists():
         return False
     try:
         import pyogrio  # noqa: F401

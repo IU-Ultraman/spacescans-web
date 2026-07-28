@@ -42,9 +42,10 @@ settings = Settings()
 # the variables actually run are required — presence of ANY marks a real root).
 _DATASET_DIRS = (
     "BG", "Community_Organization_Density", "County", "FARA", "NDI",
-    "NHD", "Noise", "TEMIS", "TRACT", "VNL", "Walkability", "ZCTA5",
-    # TIGER roads are served from the distributed prefiltered cache rather
-    # than a raw dataset dir; "cache" marks such a root as provisioned too.
+    "Noise", "TEMIS", "TRACT", "VNL", "Walkability", "ZCTA5",
+    # TIGER roads and NHD water features are served from the distributed
+    # prefiltered caches rather than raw dataset dirs; "cache" marks such a
+    # root as provisioned too.
     "cache",
 )
 
@@ -57,7 +58,7 @@ def validate_pipeline_settings() -> None:
 
     Note on SPACESCANS_DATA_DIR semantics: this is the data root that the
     pipeline CLI's --data-dir parameter resolves YAML config relative paths
-    against. The exposure dataset folders (BG/, Noise/, NHD/, ...) live
+    against. The exposure dataset folders (BG/, Noise/, VNL/, ...) live
     directly under it.
     """
     missing = []
@@ -71,7 +72,7 @@ def validate_pipeline_settings() -> None:
         if not path.exists():
             missing.append(f"{name}={path}")
     # Sanity-check the mount: YAML configs use dataset-folder prefixes
-    # (`Noise/...`, `NHD/...`) resolved against the data root, so a wrong
+    # (`Noise/...`, `VNL/...`) resolved against the data root, so a wrong
     # mount should fail fast. The repo ships the folder skeleton, so this
     # passes on a fresh clone — it catches a mount pointing somewhere else
     # entirely, not a data root that simply has no data downloaded yet.

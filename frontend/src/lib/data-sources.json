@@ -205,30 +205,30 @@
     },
     {
       "key": "nhdplus",
-      "name": "USGS NHDPlus High Resolution — National Release 2",
+      "name": "NHDPlus HR water features — pretiled cache",
       "usedBy": "NHD bluespace (distance to water)",
       "variableKeys": [
         "nhd_bluespace"
       ],
       "role": "Water geometry",
-      "sourceName": "USGS — National Hydrography",
-      "sourceUrl": "https://www.usgs.gov/national-hydrography/access-national-hydrography-products",
-      "license": "US federal public domain.",
+      "sourceName": "Deployer-distributed archive (Google Drive)",
+      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "license": "Derived from USGS NHDPlus High Resolution (National Release 2) — US federal public domain; free to use and redistribute (credit USGS).",
       "access": "public",
-      "size": "~29 GB zipped, ~61 GB unzipped (budget ~90 GB free disk)",
+      "size": "~45 GB archive (47 GB extracted)",
       "files": [
         {
-          "name": "NHDPlus_H_National_Release_2_GDB.zip",
-          "note": "national file geodatabase (.gdb)"
+          "name": "nhd_features_cache_v1.tar.gz",
+          "note": "flow/water/area/coast features per 0.5° tile, full CONUS (14,856 parquets); MANIFEST.txt inside; sha256 in the .sha256 file next to the archive"
         }
       ],
       "placeDir": [
-        "NHD/C4/"
+        "cache/C3/nhd_features/"
       ],
       "notes": [
-        "No census boundary file needed — the value is the distance from each patient's residence to the nearest water feature (nhd_proximity), not a block-group summary.",
-        "Direct link: prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHDPlusHR/National/GDB/NHDPlus_H_National_Release_2_GDB.zip",
-        "Unzip to the .gdb directory (keep its name) — no conversion needed."
+        "Extract at the data root's cache/C3/ so the archive's nhd_features/ folder lands there: tar -xzf nhd_features_cache_v1.tar.gz -C pipeline-data/cache/C3/",
+        "That's it — no 61 GB NHDPlus GDB download and no first-run tiling.",
+        "Advanced fallback: the raw GDB is still supported at NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb (either form satisfies the pre-flight; a tile-cache miss without the GDB fails with a clear error rather than a wrong value)."
       ]
     },
     {

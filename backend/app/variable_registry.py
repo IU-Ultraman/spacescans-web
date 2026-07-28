@@ -130,26 +130,32 @@ def _assert_tiger_data_present(payload: dict[str, Any]) -> None:
 
 
 def _assert_nhd_data_present(payload: dict[str, Any]) -> None:
-    """Pre-flight: NHD C4 GDB exists for each nhd_bluespace variable.
+    """Pre-flight: water-feature data exists for each nhd_bluespace variable.
 
-    Raises MetadataSchemaError if a declared nhd_bluespace variable's
-    on-disk product is missing — specifically
-    {DATA_ROOT}/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb.
+    Two provisioning forms are accepted, matching the pipeline's
+    cache-first tile loader:
+      * the distributed pretiled cache —
+        {DATA_ROOT}/cache/C3/nhd_features/ with tile parquets, and/or
+      * the raw {DATA_ROOT}/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb.
 
-    Short-circuits while the C4 dir is unprovisioned (see _unprovisioned).
-    Mirrors _assert_tiger_data_present (Sprint 6 H2 pattern).
+    Short-circuits while both locations are unprovisioned (see
+    _unprovisioned). Mirrors _assert_tiger_data_present.
     """
     from app.config import settings
-    root = settings.SPACESCANS_DATA_DIR / "NHD" / "C4"
-    if _unprovisioned(root):
+    raw_root = settings.SPACESCANS_DATA_DIR / "NHD" / "C4"
+    cache_root = settings.SPACESCANS_DATA_DIR / "cache" / "C3" / "nhd_features"
+    if _unprovisioned(raw_root) and _unprovisioned(cache_root):
         return
     for key, m in payload["variables"].items():
         if m.get("experiment") != "nhd_bluespace":
             continue
-        gdb = root / "NHDPlus_H_National_Release_2_GDB.gdb"
+        if not _unprovisioned(cache_root):
+            continue
+        gdb = raw_root / "NHDPlus_H_National_Release_2_GDB.gdb"
         if not gdb.exists():
             raise MetadataSchemaError(
-                f"nhd_bluespace variable {key!r} missing data: {gdb}"
+                f"nhd_bluespace variable {key!r} missing data: neither "
+                f"{cache_root} nor {gdb}"
             )
 
 

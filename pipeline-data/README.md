@@ -26,7 +26,7 @@ pipeline-data/
 ├── Walkability/C4/                         epawalkind_nationwide_2016_2021.Rda  (ships with the repo)
 ├── Community_Organization_Density/C4/      cbp_nationwide_*.Rda , zbp_nationwide_*.Rda  (ship with the repo)
 ├── FARA/C4/                                fara_nationwide_2010_2019_interpolated.Rda  (deployer artifact; varnameCountRemoved.csv ships with the repo)
-├── NHD/C4/                                 NHDPlus_H_National_Release_2_GDB.gdb  (USGS NHDPlus HR)
+├── cache/C3/nhd_features/                  tile_gx*_gy*_{flow,water,area,coast}.parquet  (pretiled NHDPlus HR — download the deployer's archive; raw GDB not needed)
 ├── Noise/C3/                               CONUS_*_L50dBA_*.tif  (NPS soundscape noise)
 ├── VNL/C3/                                 VNL_v21_npp_*.tif  (VIIRS nighttime lights)
 ├── TEMIS/C3/                               temis_template.tif  (ships with the repo)
