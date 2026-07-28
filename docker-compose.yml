@@ -15,7 +15,7 @@ services:
     # leaving the frontend with "Failed to fetch" until someone intervenes.
     restart: unless-stopped
     environment:
-      # The exposure dataset folders (BG/, Noise/, TIGER/, ...) live directly
+      # The exposure dataset folders (BG/, Noise/, NHD/, ...) live directly
       # under the data root, mounted at /project. The pipeline resolves
       # config-relative paths (Noise/C3/..., NDI/C4/...) against this.
       SPACESCANS_DATA_DIR: /project

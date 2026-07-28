@@ -353,12 +353,23 @@ def test_startup_probe_runs_once(monkeypatch):
 
 
 def _make_tiger_tree(root: Path, years: range) -> Path:
-    """Build a fake {root}/TIGER/C4/tiger{year}_roads/ tree."""
+    """Build a fake raw {root}/TIGER/C4/tiger{year}_roads/ tree."""
     c4 = root / "TIGER" / "C4"
     c4.mkdir(parents=True, exist_ok=True)
     for year in years:
         (c4 / f"tiger{year}_roads").mkdir()
     return c4
+
+
+def _make_tiger_cache_tree(root: Path, years: range) -> Path:
+    """Build a fake distributed cache {root}/cache/C3/tiger_roads_filtered/
+    {year}/ tree — the other provisioning form the pre-flight accepts."""
+    cache = root / "cache" / "C3" / "tiger_roads_filtered"
+    for year in years:
+        d = cache / str(year)
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "01001.parquet").write_bytes(b"\x00")
+    return cache
 
 
 def test_tiger_preflight_passes_when_all_years_present(tmp_path, monkeypatch):
@@ -386,6 +397,45 @@ def test_tiger_preflight_raises_on_missing_year(tmp_path, monkeypatch):
     msg = str(exc_info.value)
     assert "2017" in msg
     assert "tiger2017_roads" in msg
+
+
+def test_tiger_preflight_accepts_distributed_cache_without_raw(tmp_path, monkeypatch):
+    """The prefiltered cache alone (no raw TIGER/C4 zips) is a valid
+    provisioning form — it is what Data Setup now tells users to download."""
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_cache_tree(tmp_path, range(2013, 2020))
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "tiger_proximity" in payload["variables"]
+
+
+def test_tiger_preflight_raises_when_cache_misses_a_year(tmp_path, monkeypatch):
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_cache_tree(tmp_path, range(2013, 2019))  # 2019 missing
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc_info:
+        vr.load_variables(force=True)
+    assert "2019" in str(exc_info.value)
+
+
+def test_tiger_preflight_mixes_cache_and_raw_years(tmp_path, monkeypatch):
+    """2013-2016 from the cache + 2017-2019 raw zips together satisfy the
+    coverage range."""
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_cache_tree(tmp_path, range(2013, 2017))
+    _make_tiger_tree(tmp_path, range(2017, 2020))
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "tiger_proximity" in payload["variables"]
 
 
 def test_tiger_preflight_skips_when_root_missing(tmp_path, monkeypatch):

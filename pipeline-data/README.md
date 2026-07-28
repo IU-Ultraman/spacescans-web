@@ -31,7 +31,7 @@ pipeline-data/
 ├── VNL/C3/                                 VNL_v21_npp_*.tif  (VIIRS nighttime lights)
 ├── TEMIS/C3/                               temis_template.tif  (ships with the repo)
 ├── TEMIS/C4/raw/                           uvddc/ uvdec/ ...  (KNMI TEMIS UV)
-├── TIGER/C4/                               tiger{2013..2019}_roads/  (Census TIGER roads)
+├── cache/C3/tiger_roads_filtered/          {year}/{SSCCC}.parquet  (prefiltered TIGER roads — download the deployer's archive; raw Census zips not needed)
 ├── County/C3/                              tl_2010_us_county10/*.shp  (Census county boundaries)
 ├── ZCTA5/C3/                               tl_2010_us_zcta510/*.shp  (Census ZCTA5 boundaries)
 ├── TRACT/C3/                               tl_2010_<ss>_tract10/*.shp  (Census tract boundaries, per state)

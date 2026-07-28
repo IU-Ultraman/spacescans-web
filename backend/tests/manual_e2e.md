@@ -6,7 +6,7 @@ It is not part of automated pytest; run it before publishing any release.
 ## Prerequisites
 
 - Backend env (`backend/.env`) configured:
-  - `SPACESCANS_DATA_DIR=/Users/xai/Desktop/spacescans-all/spacescans-web/pipeline-data` (data root — the dir that contains the dataset folders `BG/`, `Noise/`, `TIGER/`, …)
+  - `SPACESCANS_DATA_DIR=/Users/xai/Desktop/spacescans-all/spacescans-web/pipeline-data` (data root — the dir that contains the dataset folders `BG/`, `Noise/`, `NHD/`, …)
   - `SPACESCANS_PIPELINE_PYTHON=/Users/xai/miniconda3/envs/spacescans/bin/python`
   - `SPACESCANS_PIPELINE_CLI=/Users/xai/miniconda3/envs/spacescans/bin/spacescans`
   - `SPACESCANS_CONFIG_TEMPLATES_DIR=/Users/xai/Desktop/spacescans-all/spacescans-web/configs`

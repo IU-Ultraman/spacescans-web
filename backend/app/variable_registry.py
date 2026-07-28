@@ -93,30 +93,40 @@ def _unprovisioned(root: Path) -> bool:
 
 
 def _assert_tiger_data_present(payload: dict[str, Any]) -> None:
-    """Pre-flight: TIGER C4 tile subdirs exist for each coverage_year.
+    """Pre-flight: road data exists for each tiger_proximity coverage_year.
 
-    Raises MetadataSchemaError if a declared tiger_proximity variable's
-    coverage_years range names a year with no on-disk
-    {DATA_ROOT}/TIGER/C4/tiger{year}_roads/ subdir.
+    Two provisioning forms are accepted, matching the pipeline's
+    cache-first _get_county_roads:
+      * the distributed prefiltered cache —
+        {DATA_ROOT}/cache/C3/tiger_roads_filtered/{year}/ with parquets
+        (what Data Setup tells users to download), and/or
+      * raw Census zips — {DATA_ROOT}/TIGER/C4/tiger{year}_roads/.
+    A year passes if EITHER source has it.
 
-    Short-circuits while the C4 dir is unprovisioned (see _unprovisioned)
-    so a fresh clone's empty skeleton does not fail the catalog.
+    Short-circuits while both locations are unprovisioned (see
+    _unprovisioned) so a fresh clone's empty skeleton does not fail the
+    catalog.
     """
     from app.config import settings
-    root = settings.SPACESCANS_DATA_DIR / "TIGER" / "C4"
-    if _unprovisioned(root):
+    raw_root = settings.SPACESCANS_DATA_DIR / "TIGER" / "C4"
+    cache_root = (settings.SPACESCANS_DATA_DIR / "cache" / "C3"
+                  / "tiger_roads_filtered")
+    if _unprovisioned(raw_root) and _unprovisioned(cache_root):
         return
     for key, m in payload["variables"].items():
         if m.get("experiment") != "tiger_proximity":
             continue
         yr_lo, yr_hi = m["coverage_years"]
         for year in range(yr_lo, yr_hi + 1):
-            subdir = root / f"tiger{year}_roads"
-            if not subdir.exists():
-                raise MetadataSchemaError(
-                    f"tiger_proximity variable {key!r} coverage_year "
-                    f"{year} missing data: {subdir}"
-                )
+            if not _unprovisioned(cache_root / str(year)):
+                continue
+            if (raw_root / f"tiger{year}_roads").exists():
+                continue
+            raise MetadataSchemaError(
+                f"tiger_proximity variable {key!r} coverage_year {year} "
+                f"missing data: neither {cache_root / str(year)} nor "
+                f"{raw_root / f'tiger{year}_roads'}"
+            )
 
 
 def _assert_nhd_data_present(payload: dict[str, Any]) -> None:
