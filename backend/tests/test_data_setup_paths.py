@@ -50,7 +50,7 @@ def test_data_setup_place_dirs_match_configs():
         pytest.skip(f"data-sources.json not found at {_DATA_SOURCES_JSON}")
     configs_dir = Path(
         os.environ.get("SPACESCANS_CONFIG_TEMPLATES_DIR")
-        or (_WEB_ROOT.parent / "configs")
+        or (_WEB_ROOT / "configs")
     )
     if not (configs_dir / "c3").exists():
         pytest.skip(

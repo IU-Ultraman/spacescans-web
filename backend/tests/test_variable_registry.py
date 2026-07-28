@@ -401,9 +401,9 @@ def test_tiger_preflight_skips_when_root_missing(tmp_path, monkeypatch):
 
 def test_preflights_skip_on_the_gitkeep_only_skeleton(tmp_path, monkeypatch):
     """A fresh clone ships pipeline-data/ as empty dirs holding only
-    .gitkeep. Every pre-flight must treat that as unprovisioned so the app
-    still boots — users discover what to download on the Data Setup page,
-    which they can only reach if the server is up.
+    .gitkeep. Every pre-flight must treat that as unprovisioned so the
+    variable catalog still loads — otherwise GET /api/variables 500s
+    before the operator has downloaded anything.
     """
     from app import variable_registry as vr
     from app.config import settings
@@ -420,6 +420,26 @@ def test_preflights_skip_on_the_gitkeep_only_skeleton(tmp_path, monkeypatch):
 
     payload = vr.load_variables(force=True)  # must not raise
     assert len(payload["variables"]) == 9
+
+
+def test_preflight_reports_cleanly_when_a_dataset_path_is_a_file(
+    tmp_path, monkeypatch
+):
+    """An unreadable dataset path must still surface as MetadataSchemaError
+    naming the missing artifact — not as a raw OSError. _unprovisioned
+    calls iterdir(), which raises where the old exists() check silently
+    returned False (mode-750 bind mounts are the normal Linux case).
+    """
+    from app import variable_registry as vr
+    from app.config import settings
+
+    (tmp_path / "NHD").mkdir()
+    (tmp_path / "NHD" / "C4").write_text("not a directory")
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    with pytest.raises(vr.MetadataSchemaError) as exc_info:
+        vr.load_variables(force=True)
+    assert "NHDPlus_H_National_Release_2_GDB.gdb" in str(exc_info.value)
 
 
 # ---------------------------------------------------------------------------

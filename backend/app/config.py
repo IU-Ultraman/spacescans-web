@@ -68,8 +68,10 @@ def validate_pipeline_settings() -> None:
         if not path.exists():
             missing.append(f"{name}={path}")
     # Sanity-check the mount: YAML configs use dataset-folder prefixes
-    # (`Noise/...`, `TIGER/...`) resolved against the data root, so an existing
-    # but empty/wrong mount should fail fast rather than boot with no data.
+    # (`Noise/...`, `TIGER/...`) resolved against the data root, so a wrong
+    # mount should fail fast. The repo ships the folder skeleton, so this
+    # passes on a fresh clone — it catches a mount pointing somewhere else
+    # entirely, not a data root that simply has no data downloaded yet.
     data_root = settings.SPACESCANS_DATA_DIR
     if data_root.exists() and not any(
         (data_root / d).is_dir() for d in _DATASET_DIRS

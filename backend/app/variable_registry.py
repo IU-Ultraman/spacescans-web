@@ -74,14 +74,22 @@ def _unprovisioned(root: Path) -> bool:
     committed `.gitkeep` skeleton (plus OS cruft like .DS_Store).
 
     The repo ships pipeline-data/ as an empty folder skeleton, so a fresh
-    clone has every dataset dir present but empty. Treating that as
-    provisioned would make the app refuse to boot before any data is
-    downloaded — and the in-app Data Setup page is where users learn what
-    to download.
+    clone has every dataset dir present but empty. Without this, the
+    pre-flights would treat that skeleton as provisioned and fail the
+    whole variable catalog (GET /api/variables → 500) before the operator
+    has downloaded anything.
+
+    Anything we cannot read — a file where a dir belongs, a mode-750 dir
+    the container user can't enter — counts as provisioned so the caller's
+    own check runs and reports the missing artifact by path. iterdir()
+    raises on those where the old exists() check swallowed them.
     """
     if not root.exists():
         return True
-    return not any(p for p in root.iterdir() if not p.name.startswith("."))
+    try:
+        return not any(p for p in root.iterdir() if not p.name.startswith("."))
+    except OSError:
+        return False
 
 
 def _assert_tiger_data_present(payload: dict[str, Any]) -> None:
@@ -91,9 +99,8 @@ def _assert_tiger_data_present(payload: dict[str, Any]) -> None:
     coverage_years range names a year with no on-disk
     {DATA_ROOT}/TIGER/C4/tiger{year}_roads/ subdir.
 
-    Short-circuits when the C4 root itself is absent — production startup
-    runs validate_pipeline_settings first, so this branch only fires under
-    test fixtures that bypass the data-dir gate.
+    Short-circuits while the C4 dir is unprovisioned (see _unprovisioned)
+    so a fresh clone's empty skeleton does not fail the catalog.
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "TIGER" / "C4"
@@ -119,10 +126,8 @@ def _assert_nhd_data_present(payload: dict[str, Any]) -> None:
     on-disk product is missing — specifically
     {DATA_ROOT}/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb.
 
-    Short-circuits when the C4 root itself is absent — production startup
-    runs validate_pipeline_settings first, so this branch only fires under
-    test fixtures that bypass the data-dir gate. Mirrors
-    _assert_tiger_data_present (Sprint 6 H2 pattern).
+    Short-circuits while the C4 dir is unprovisioned (see _unprovisioned).
+    Mirrors _assert_tiger_data_present (Sprint 6 H2 pattern).
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "NHD" / "C4"
@@ -154,11 +159,9 @@ def _assert_noise_data_present(payload: dict[str, Any]) -> None:
     product is missing — specifically the three TIFs under
     {DATA_ROOT}/Noise/C3/ that the noise reader plugin requires.
 
-    Short-circuits when the C3 root itself is absent — production startup
-    runs validate_pipeline_settings first, so this branch only fires under
-    test fixtures that bypass the data-dir gate. Mirrors
-    _assert_tiger_data_present / _assert_nhd_data_present (Sprint 6 H2 /
-    Sprint 8 I1 pattern).
+    Short-circuits while the C3 dir is unprovisioned (see _unprovisioned).
+    Mirrors _assert_tiger_data_present / _assert_nhd_data_present
+    (Sprint 6 H2 / Sprint 8 I1 pattern).
 
     Note: the noise plugin resolves sibling TIFs relative to the primary
     exposure.file path in the YAML, so we only need to verify all three
@@ -191,10 +194,8 @@ def _assert_vnl_data_present(payload: dict[str, Any]) -> None:
     product is missing — specifically at least one ``VNL_v21_*.tif`` under
     {DATA_ROOT}/VNL/C3/.
 
-    Short-circuits when the C3 root itself is absent — production startup
-    runs validate_pipeline_settings first, so this branch only fires under
-    test fixtures that bypass the data-dir gate. Mirrors
-    _assert_noise_data_present (Sprint 9 T4 pattern).
+    Short-circuits while the C3 dir is unprovisioned (see _unprovisioned).
+    Mirrors _assert_noise_data_present (Sprint 9 T4 pattern).
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "VNL" / "C3"
@@ -222,11 +223,12 @@ def _assert_fara_data_present(payload: dict[str, Any]) -> None:
     {DATA_ROOT}/FARA/C4/fara_nationwide_2010_2019_interpolated.Rda
     and {DATA_ROOT}/FARA/C4/varnameCountRemoved.csv.
 
-    Short-circuits when the C4 root itself is absent — production startup
-    runs validate_pipeline_settings first, so this branch only fires under
-    test fixtures that bypass the data-dir gate. Mirrors
-    _assert_nhd_data_present / _assert_vnl_data_present (Sprint 8 I1 /
-    Sprint 10 T4 pattern).
+    Short-circuits while the C4 dir is unprovisioned (see _unprovisioned).
+    Mirrors _assert_nhd_data_present / _assert_vnl_data_present
+    (Sprint 8 I1 / Sprint 10 T4 pattern).
+
+    Note: varnameCountRemoved.csv ships in the repo, so in practice only
+    the .Rda can be missing here.
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "FARA" / "C4"
@@ -255,11 +257,9 @@ def _assert_temis_data_present(payload: dict[str, Any]) -> None:
     subdirs (uvddc / uvdec / uvdvc / uvief) under
     {DATA_ROOT}/TEMIS/C4/raw/.
 
-    Short-circuits when the C4 raw root itself is absent — production
-    startup runs validate_pipeline_settings first, so this branch only
-    fires under test fixtures that bypass the data-dir gate. Mirrors
-    _assert_noise_data_present / _assert_vnl_data_present (Sprint 9 T4 /
-    Sprint 10 T4 pattern).
+    Short-circuits while the raw/ dir is unprovisioned (see
+    _unprovisioned). Mirrors _assert_noise_data_present /
+    _assert_vnl_data_present (Sprint 9 T4 / Sprint 10 T4 pattern).
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "TEMIS" / "C4" / "raw"
@@ -305,12 +305,23 @@ def load_variables(*, force: bool = False) -> dict[str, Any]:
                 f"{m['experiment']!r} (known: {sorted(known_experiments)})"
             )
 
-    _assert_tiger_data_present(payload)
-    _assert_nhd_data_present(payload)
-    _assert_noise_data_present(payload)
-    _assert_vnl_data_present(payload)
-    _assert_temis_data_present(payload)
-    _assert_fara_data_present(payload)
+    # Pathlib probes inside the pre-flights (exists()/glob()) raise raw
+    # OSError on unreadable paths — e.g. a uid-mismatched mode-750 bind
+    # mount, or a stray file where a dir belongs (this interpreter's
+    # Path.exists() re-raises EACCES rather than returning False). Fold
+    # those into MetadataSchemaError so /api/variables answers with a
+    # structured error naming the path instead of a bare 500.
+    try:
+        _assert_tiger_data_present(payload)
+        _assert_nhd_data_present(payload)
+        _assert_noise_data_present(payload)
+        _assert_vnl_data_present(payload)
+        _assert_temis_data_present(payload)
+        _assert_fara_data_present(payload)
+    except OSError as exc:
+        raise MetadataSchemaError(
+            f"exposure data pre-flight could not read the data root: {exc}"
+        ) from exc
 
     _CACHE["mtime"] = mtime
     _CACHE["payload"] = payload
