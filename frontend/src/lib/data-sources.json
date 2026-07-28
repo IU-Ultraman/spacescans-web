@@ -84,30 +84,30 @@
     },
     {
       "key": "tiger-roads",
-      "name": "Census TIGER/Line roads",
+      "name": "TIGER/Line roads — prefiltered cache",
       "usedBy": "TIGER road proximity (distance to nearest road)",
       "variableKeys": [
         "tiger_proximity"
       ],
       "role": "Road geometry",
-      "sourceName": "US Census Bureau — TIGER/Line (ROADS)",
-      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2019/ROADS/",
-      "license": "US federal public domain — free to use and redistribute.",
+      "sourceName": "Deployer-distributed archive (Google Drive)",
+      "sourceUrl": "https://drive.google.com/REPLACE_WITH_TIGER_CACHE_LINK",
+      "license": "Derived from US Census Bureau TIGER/Line ROADS — US federal public domain; free to use and redistribute (credit the Census Bureau).",
       "access": "public",
-      "size": "per-county × per-year (varies with cohort)",
+      "size": "1.72 GB archive (2.8 GB extracted)",
       "files": [
         {
-          "name": "tiger{year}_roads/tl_{year}_{SSCCC}_roads.zip",
-          "note": "per county (5-digit state+county FIPS), per year — kept in a tiger{year}_roads/ subfolder, for the counties/years your cohort spans"
+          "name": "tiger_roads_filtered_cache_v1.tar.gz",
+          "note": "S1100/S1200 roads, one parquet per (county, year), all 22,618 county-years 2013–2019; MANIFEST.txt inside. sha256: 049b9de7b768acaf2c415953f02a4a1acf7645bd7aae97334a7b93d8b6062f75"
         }
       ],
       "placeDir": [
-        "TIGER/C4/"
+        "cache/C3/tiger_roads_filtered/"
       ],
       "notes": [
-        "Go into each year's ROADS folder — TIGER{year}/ROADS/tl_{year}_{SSCCC}_roads.zip (e.g. TIGER2013/ROADS/tl_2013_13139_roads.zip). The other folders under TIGER{year}/ are different layers (COUNTY/TRACT/…) — you want ROADS.",
-        "One zip per county; grab only the counties your cohort spans, for each year 2013–2019. (The linked URL shows 2019 — swap the year for the others.)",
-        "Place them under TIGER/C4/tiger{year}_roads/ — the reader scans that directory."
+        "Extract at the data root's cache/C3/ so the archive's tiger_roads_filtered/ folder lands there: tar -xzf tiger_roads_filtered_cache_v1.tar.gz -C pipeline-data/cache/C3/",
+        "That's it — no raw Census downloads and no first-run filtering; runs read the parquet cache directly.",
+        "Advanced fallback: raw per-county zips are still supported at TIGER/C4/tiger{year}_roads/ (the pre-flight accepts either form, per year)."
       ]
     },
     {

@@ -37,11 +37,16 @@ def _config_path_blob(configs_dir: Path) -> str:
             sec = cfg.get(section)
             if not isinstance(sec, dict):
                 continue
-            f = sec.get("file")
-            if isinstance(f, str):
-                paths.append(f)
-            elif isinstance(f, list):
-                paths += [x for x in f if isinstance(x, str)]
+            # every key the pipeline treats as an input location — file paths
+            # plus the dataset-level cache dirs it reads from (road_cache_dir
+            # serves the distributed tiger/nhd caches).
+            for key in ("file", "road_cache_dir", "label_file", "zbp_file",
+                        "county_file", "boundary_files"):
+                f = sec.get(key)
+                if isinstance(f, str):
+                    paths.append(f)
+                elif isinstance(f, list):
+                    paths += [x for x in f if isinstance(x, str)]
     return "\n".join(paths)
 
 
