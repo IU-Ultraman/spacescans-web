@@ -9,22 +9,23 @@
         "cbp_zcta5"
       ],
       "role": "Boundary geometry",
-      "sourceName": "US Census Bureau — TIGER/Line 2010",
-      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2010/COUNTY/2010/",
-      "license": "US federal public domain — free to use and redistribute (cite the Census Bureau).",
+      "sourceName": "Deployer-distributed archive (Google Drive)",
+      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "license": "Repackaged US Census Bureau TIGER/Line 2010 — US federal public domain (CC0); credit the Census Bureau.",
       "access": "public",
-      "size": "~71 MB",
+      "size": "~70 MB archive (116 MB extracted)",
       "files": [
         {
-          "name": "tl_2010_us_county10.zip",
-          "note": "the single NATIONAL file (not the per-state tl_2010_{ss}_county10 in the same folder)"
+          "name": "county_boundaries_v1.tar.gz",
+          "note": "MANIFEST.txt inside; sha256 in county_zcta5_noise_v1.sha256 next to it"
         }
       ],
       "placeDir": [
         "County/C3/tl_2010_us_county10/"
       ],
       "notes": [
-        "Unzip; put the .shp in a subfolder named after the file basename, with its .shx/.dbf/.prj sidecars alongside.",
+        "Extract at the data root: tar -xzf county_boundaries_v1.tar.gz -C pipeline-data/County/",
+        "Prefer the original source? tl_2010_us_county10.zip (the single NATIONAL file) from https://www2.census.gov/geo/tiger/TIGER2010/COUNTY/2010/ — unzip into County/C3/tl_2010_us_county10/.",
         "No reprojection needed — the pipeline buffers/reprojects internally."
       ]
     },
@@ -63,22 +64,23 @@
         "cbp_zcta5"
       ],
       "role": "Boundary geometry",
-      "sourceName": "US Census Bureau — TIGER/Line 2010",
-      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2010/ZCTA5/2010/",
-      "license": "US federal public domain — free to use and redistribute.",
+      "sourceName": "Deployer-distributed archive (Google Drive)",
+      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "license": "Repackaged US Census Bureau TIGER/Line 2010 — US federal public domain (CC0); credit the Census Bureau.",
       "access": "public",
-      "size": "~500 MB",
+      "size": "~0.5 GB archive (801 MB extracted)",
       "files": [
         {
-          "name": "tl_2010_us_zcta510.zip",
-          "note": "national ZCTAs (~33,120)"
+          "name": "zcta5_boundaries_v1.tar.gz",
+          "note": "MANIFEST.txt inside; sha256 in county_zcta5_noise_v1.sha256 next to it"
         }
       ],
       "placeDir": [
         "ZCTA5/C3/tl_2010_us_zcta510/"
       ],
       "notes": [
-        "Unzip into a subfolder named after the file basename (.shp + sidecars)."
+        "Extract at the data root: tar -xzf zcta5_boundaries_v1.tar.gz -C pipeline-data/ZCTA5/",
+        "Prefer the original source? tl_2010_us_zcta510.zip from https://www2.census.gov/geo/tiger/TIGER2010/ZCTA5/2010/ — unzip into ZCTA5/C3/tl_2010_us_zcta510/."
       ]
     },
     {
@@ -175,29 +177,23 @@
         "noise"
       ],
       "role": "Gridded values",
-      "sourceName": "US National Park Service — Geospatial sound modeling (Mennitt et al.)",
-      "sourceUrl": "https://irma.nps.gov/DataStore/Reference/Profile/2217356",
-      "license": "US federal public domain.",
+      "sourceName": "Deployer-distributed archive (Google Drive)",
+      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "license": "US National Park Service geospatial sound model — US federal work, freely available; credit NPS (Mennitt, Sherrill & Fristrup).",
       "access": "public",
-      "size": "~1.2 GB (3 GeoTIFFs)",
+      "size": "~1.1 GB archive (1.2 GB extracted)",
       "files": [
         {
-          "name": "CONUS_L50dBA_sumDay_exi.tif",
-          "note": "existing (primary)"
-        },
-        {
-          "name": "CONUS_sumDay_L50dBA_imp.tif",
-          "note": "impact (anthropogenic)"
-        },
-        {
-          "name": "CONUS_sumDay_L50dBA_nat.tif",
-          "note": "natural"
+          "name": "noise_v1.tar.gz",
+          "note": "MANIFEST.txt inside; sha256 in county_zcta5_noise_v1.sha256 next to it"
         }
       ],
       "placeDir": [
         "Noise/C3/"
       ],
       "notes": [
+        "Extract at the data root: tar -xzf noise_v1.tar.gz -C pipeline-data/Noise/",
+        "Prefer the original source? Download the three CONUS_ TIFs from the NPS DataStore (https://irma.nps.gov/DataStore/Reference/Profile/2217356); skip the AK_/HI_ variants.",
         "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
         "Keep the exact filenames — the reader hard-codes all three.",
         "Download only the CONUS_ files; skip the AK_/HI_ variants (different projections).",

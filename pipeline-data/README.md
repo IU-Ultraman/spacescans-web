@@ -27,9 +27,9 @@ pipeline-data/
 ├── cache/C3/tiger_roads_filtered/          {year}/{SSCCC}.parquet  (Google Drive; raw Census zips not needed)
 ├── BG/C3/                                  tiger2010_bg10_states/ , tiger2024_bg_states/  (Google Drive)
 ├── TRACT/C3/                               tl_2010_<ss>_tract10/*.shp  (Google Drive)
-├── County/C3/                              tl_2010_us_county10/*.shp  (Census, one zip)
-├── ZCTA5/C3/                               tl_2010_us_zcta510/*.shp  (Census, one zip)
-├── Noise/C3/                               CONUS_*_L50dBA_*.tif  (NPS, three files)
+├── County/C3/                              tl_2010_us_county10/*.shp  (Google Drive)
+├── ZCTA5/C3/                               tl_2010_us_zcta510/*.shp  (Google Drive)
+├── Noise/C3/                               CONUS_*_L50dBA_*.tif  (Google Drive)
 ├── VNL/C3/                                 VNL_v21_npp_*.tif  (EOG — account required)
 ├── TEMIS/C3/                               temis_template.tif  (ships with the repo)
 └── TEMIS/C4/raw/                           uvddc/ uvdec/ ...  (KNMI TEMIS — see group 2)
@@ -52,20 +52,23 @@ a `.sha256` checksum file beside it):
 | `tiger_roads_filtered_cache_v1.tar.gz` (1.7 GB) | `tar -xzf … -C pipeline-data/cache/C3/` | **derived cache** — S1100/S1200-filtered roads per (county, year); replaces 28 GB of per-county Census zips *and* the first-run filtering |
 | `nhd_features_cache_v1.tar.gz` (36 GB) | `tar -xzf … -C pipeline-data/cache/C3/` | **derived cache** — pretiled NHDPlus water features; replaces the 61 GB GDB *and* hours of first-run tiling |
 | `fara_nationwide_2010_2019_interpolated.Rda` (427 MB) | drop into `pipeline-data/FARA/C4/` | **preprocessed artifact** — interpolated from USDA FARA; not downloadable anywhere else |
-| `bg_boundaries_v1.tar.gz` (~2 GB) | `tar -xzf … -C pipeline-data/BG/` | **too tedious by hand** — 102 statewide shapefile zips (51 × 2010 vintage + 51 × 2020 vintage) |
-| `tract_boundaries_v1.tar.gz` (~0.5 GB) | `tar -xzf … -C pipeline-data/TRACT/` | **too tedious by hand** — 51 statewide shapefile zips |
+| `bg_boundaries_v1.tar.gz` (1.25 GB) | `tar -xzf … -C pipeline-data/BG/` | **too tedious by hand** — 102 statewide shapefile zips (51 × 2010 vintage + 51 × 2020 vintage) |
+| `tract_boundaries_v1.tar.gz` (0.33 GB) | `tar -xzf … -C pipeline-data/TRACT/` | **too tedious by hand** — 51 statewide shapefile zips |
+| `county_boundaries_v1.tar.gz` (70 MB) | `tar -xzf … -C pipeline-data/County/` | **convenience** — one-stop with the rest |
+| `zcta5_boundaries_v1.tar.gz` (0.49 GB) | `tar -xzf … -C pipeline-data/ZCTA5/` | **convenience** — one-stop with the rest |
+| `noise_v1.tar.gz` (1.11 GB) | `tar -xzf … -C pipeline-data/Noise/` | **convenience** — three NPS TIFs, exact filenames required |
 
-Everything in this group is either US-federal public domain (Census TIGER,
-USGS NHDPlus, USDA FARA sources — free to use and redistribute, credit the
-agencies) or a project-derived artifact, so redistribution is unencumbered.
+Everything in this group is either US-federal public domain (Census
+TIGER/Line under CC0, USGS NHDPlus, USDA FARA, NPS sound model — free to
+use and redistribute, credit the agencies; boundary/roads archives are
+repackaged TIGER/Line data) or a project-derived artifact, so
+redistribution is unencumbered. Each card in the in-app Data Setup page
+also keeps the original-source instructions as a fallback.
 
-### 2. Original sources (easy single downloads, or licenses that require it)
+### 2. Original sources only (license terms require it)
 
 | Dataset | Where | Why not on Drive |
 | --- | --- | --- |
-| County boundaries | Census TIGER/Line 2010 — one national zip (~71 MB) | single-file download, no pain to relay |
-| ZCTA5 boundaries | Census TIGER/Line 2010 — one national zip (~500 MB) | same |
-| Noise (3 CONUS TIFs) | NPS soundscape dataset (~1.2 GB) | three direct files, public domain |
 | VNL nighttime lights | EOG (Earth Observation Group) — **free account required** | EOG's own terms gate the download; we can't relay it |
 | TEMIS UV (daily HDFs) | KNMI/ESA TEMIS mirror | © KNMI/ESA — credits + no explicit redistribution grant, so each deployment downloads its own copy; the **first run auto-converts** the archive to fast parquet (~2 min, one-time) |
 
