@@ -132,9 +132,23 @@ export function PresetCard({ d }: { d: PresetDataset }) {
           </code>
         ))}
       </div>
-      <p className="pt-1 text-[11px] text-muted-foreground">
-        Supplied by the deployer — not downloadable from an official site.
-      </p>
+      {d.downloadUrl ? (
+        <p className="pt-1 text-[11px] text-muted-foreground">
+          <a
+            href={d.downloadUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-foreground underline underline-offset-2"
+          >
+            Download from the deployer&apos;s archive
+          </a>
+          {d.downloadNote ? <> — {d.downloadNote}</> : null}
+        </p>
+      ) : (
+        <p className="pt-1 text-[11px] text-muted-foreground">
+          Supplied by the deployer — not downloadable from an official site.
+        </p>
+      )}
     </Card>
   );
 }

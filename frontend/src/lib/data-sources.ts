@@ -45,6 +45,10 @@ export interface PresetDataset {
    * page hides it. Entries stay in the JSON for provenance and so the
    * placeDir guard test keeps covering them. */
   shipped?: boolean;
+  /** Set when the deployer distributes the artifact for download (e.g. a
+   * Google Drive archive) instead of handing it over out of band. */
+  downloadUrl?: string;
+  downloadNote?: string;
 }
 
 export const SELF_SERVE_DATASETS = raw.selfServe as SelfServeDataset[];
