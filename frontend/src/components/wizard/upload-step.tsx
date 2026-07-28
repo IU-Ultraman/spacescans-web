@@ -357,7 +357,7 @@ export function UploadStep({
               size="lg"
             >
               <FileSpreadsheet className="size-4" />
-              Try with a demo cohort (500 patients)
+              Try with a demo cohort (100 patients)
             </Button>
             <p className="text-center text-[11px] text-muted-foreground/70">
               A 500-patient sample spread across the US — no file needed.
