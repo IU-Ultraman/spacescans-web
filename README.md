@@ -11,8 +11,10 @@ Docker containers, so there is nothing OS-specific to configure.
 
 ## Quick start
 
-The only thing you install yourself is **Docker** (Docker Desktop on
-macOS/Windows, Docker Engine on Linux).
+The only thing you install yourself is **Docker** —
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) on
+macOS/Windows, [Docker Engine](https://docs.docker.com/engine/install/) on
+Linux.
 
 > **Docker Desktop users (macOS/Windows):** give the Docker VM enough
 > memory — **Settings → Resources → Memory ≥ 12 GB**. The pipeline works
