@@ -1,10 +1,12 @@
 # pipeline-data/ — exposure data root
 
 This folder is the pipeline's data root (`SPACESCANS_DATA_DIR` → mounted at
-`/project` in Docker). **The datasets themselves are gitignored** — they are
-several GB and must never be committed. What ships with the repo is the empty
-folder skeleton (a `.gitkeep` per dataset dir), this README, and one small
-lookup table, `FARA/C4/varnameCountRemoved.csv`.
+`/project` in Docker). **The big raw datasets are gitignored** — several GB,
+never committed. What ships with the repo: the folder skeleton (a `.gitkeep`
+per dataset dir), this README, the FARA lookup table
+(`FARA/C4/varnameCountRemoved.csv`), and the four small deployer artifacts
+(NDI, Walkability, CBP + ZBP) — so those three variables work straight from
+a clone with nothing to download.
 
 Drop the data in the layout below. Config templates reference these paths
 relative to the data root (e.g. `Walkability/C4/...`), so the subfolder
@@ -20,10 +22,10 @@ structure matters — this is not a flat dump.
 
 ```
 pipeline-data/
-├── NDI/C4/                                 ndi_bg_acs5_..._xgboost.rds  (deployer artifact)
-├── Walkability/C4/                         epawalkind_nationwide_2016_2021.Rda  (deployer artifact)
-├── Community_Organization_Density/C4/      cbp_nationwide_*.Rda , zbp_nationwide_*.Rda  (deployer artifacts)
-├── FARA/C4/                                fara_nationwide_2010_2019_interpolated.Rda  (varnameCountRemoved.csv already ships here)
+├── NDI/C4/                                 ndi_bg_acs5_..._xgboost.rds  (ships with the repo)
+├── Walkability/C4/                         epawalkind_nationwide_2016_2021.Rda  (ships with the repo)
+├── Community_Organization_Density/C4/      cbp_nationwide_*.Rda , zbp_nationwide_*.Rda  (ship with the repo)
+├── FARA/C4/                                fara_nationwide_2010_2019_interpolated.Rda  (deployer artifact; varnameCountRemoved.csv ships with the repo)
 ├── NHD/C4/                                 NHDPlus_H_National_Release_2_GDB.gdb  (USGS NHDPlus HR)
 ├── Noise/C3/                               CONUS_*_L50dBA_*.tif  (NPS soundscape noise)
 ├── VNL/C3/                                 VNL_v21_npp_*.tif  (VIIRS nighttime lights)

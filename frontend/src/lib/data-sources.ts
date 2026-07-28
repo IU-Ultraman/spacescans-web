@@ -40,10 +40,17 @@ export interface PresetDataset {
   artifact: string;
   origin: string;
   placeDir: string[];
+  /** True when the artifact ships inside the repo (committed under
+   * pipeline-data/) — nothing for the user to acquire, so the Data Setup
+   * page hides it. Entries stay in the JSON for provenance and so the
+   * placeDir guard test keeps covering them. */
+  shipped?: boolean;
 }
 
 export const SELF_SERVE_DATASETS = raw.selfServe as SelfServeDataset[];
-export const PRESET_DATASETS = raw.preset as PresetDataset[];
+export const PRESET_DATASETS = (raw.preset as PresetDataset[]).filter(
+  (d) => !d.shipped,
+);
 
 /** A dataset entry a given exposure variable depends on, with a stable anchor
  * key into the Data Setup page (/dashboard/data-setup#<key>). */
