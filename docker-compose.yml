@@ -28,6 +28,10 @@ services:
       SPACESCANS_PIPELINE_PYTHON: /opt/conda/bin/python
       SPACESCANS_PIPELINE_CLI: /opt/conda/bin/spacescans
       SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      # GitHub Codespaces browser access: lets the backend CORS-allow the
+      # forwarded frontend origin. Empty outside Codespaces — no effect.
+      CODESPACE_NAME: ${CODESPACE_NAME:-}
+      GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: ${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}
     volumes:
       # Config templates from this repo (versioned, not from the parent).
       - ./configs:/configs:ro

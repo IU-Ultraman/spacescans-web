@@ -37,6 +37,15 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+# GitHub Codespaces: the browser reaches the app via
+# https://<name>-3000.<domain> and the API via https://<name>-8000.<domain>,
+# so the frontend origin must be CORS-allowed. Compose passes these two
+# variables through (empty outside Codespaces — no effect locally).
+_cs_name = os.environ.get("CODESPACE_NAME")
+_cs_domain = os.environ.get("GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN")
+if _cs_name and _cs_domain:
+    settings.CORS_ORIGINS.append(f"https://{_cs_name}-3000.{_cs_domain}")
+
 
 # Dataset folders expected directly under SPACESCANS_DATA_DIR (only those for
 # the variables actually run are required — presence of ANY marks a real root).
