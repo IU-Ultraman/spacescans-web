@@ -11,12 +11,15 @@ FROM mambaorg/micromamba:1.5.10
 
 # 1) GDAL/C++ layer from conda-forge (pyreadr/geopandas/etc. are NOT on
 #    conda-forge — they come from pip). `git` is needed to pip-install the
-#    pipeline straight from its GitHub repo below.
+#    pipeline straight from its GitHub repo below. pyhdf comes from
+#    conda-forge too — it bundles the HDF4 C library the TEMIS reader needs
+#    (without it the plugin silently doesn't register).
 RUN micromamba install -y -n base -c conda-forge \
         python=3.12 \
         libgdal \
         rasterio \
         exactextract \
+        pyhdf \
         git \
     && micromamba clean --all --yes
 
@@ -38,14 +41,14 @@ RUN grep -vi "spacescans-pipeline" requirements.txt > /tmp/req.txt \
     && python -m pip install --no-cache-dir -r /tmp/req.txt
 
 # 3) The pipeline package, installed straight from its public GitHub repo
-#    (IU-Ultraman/spacescans), pinned to a release tag, WITH its [geo,rda]
-#    extras (geopandas / shapely / pyproj / duckdb / pyreadr / mercantile from
-#    pip; rasterio + exactextract already satisfied by conda-forge above).
-#    Provides `import spacescans` and the `spacescans` CLI. Bump SPACESCANS_REF
-#    to pull a newer release.
+#    (IU-Ultraman/spacescans), pinned to a release tag, WITH its
+#    [geo,rda,hdf4] extras (geopandas / shapely / pyproj / duckdb / pyreadr /
+#    mercantile from pip; rasterio + exactextract + pyhdf already satisfied by
+#    conda-forge above). Provides `import spacescans` and the `spacescans`
+#    CLI. Bump SPACESCANS_REF to pull a newer release.
 ARG SPACESCANS_REF=v0.2.0
 RUN python -m pip install --no-cache-dir \
-    "spacescans-pipeline[geo,rda] @ git+https://github.com/IU-Ultraman/spacescans.git@${SPACESCANS_REF}"
+    "spacescans-pipeline[geo,rda,hdf4] @ git+https://github.com/IU-Ultraman/spacescans.git@${SPACESCANS_REF}"
 
 # 4) Backend source.
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /app

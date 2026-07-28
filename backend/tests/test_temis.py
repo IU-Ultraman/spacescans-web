@@ -60,7 +60,7 @@ def templates_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (templates / "c3" / "temis_grid_demo.yaml").write_text(yaml.safe_dump({
         "name": "c3_temis_demo",
         "buffer": {"patient_file": "PLACEHOLDER", "buffer_m": 270},
-        "source": {"file": "output/python/270m/TEMIS/C3/temis_template.tif"},
+        "source": {"file": "TEMIS/C3/temis_template.tif"},
         "output": {"path": "PLACEHOLDER"},
     }))
     (templates / "c4" / "temis_demo.yaml").write_text(yaml.safe_dump({

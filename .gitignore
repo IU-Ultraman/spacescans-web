@@ -14,6 +14,7 @@ pipeline-data/**
 !pipeline-data/README.md
 !pipeline-data/**/.gitkeep
 !pipeline-data/FARA/C4/varnameCountRemoved.csv
+!pipeline-data/TEMIS/C3/temis_template.tif
 !pipeline-data/NDI/C4/ndi_bg_acs5_2008_2012_to_2020_2024_nationwide_summaryfile_xgboost.rds
 !pipeline-data/Walkability/C4/epawalkind_nationwide_2016_2021.Rda
 !pipeline-data/Community_Organization_Density/C4/cbp_nationwide_0519.Rda

@@ -29,6 +29,7 @@ pipeline-data/
 ├── NHD/C4/                                 NHDPlus_H_National_Release_2_GDB.gdb  (USGS NHDPlus HR)
 ├── Noise/C3/                               CONUS_*_L50dBA_*.tif  (NPS soundscape noise)
 ├── VNL/C3/                                 VNL_v21_npp_*.tif  (VIIRS nighttime lights)
+├── TEMIS/C3/                               temis_template.tif  (ships with the repo)
 ├── TEMIS/C4/raw/                           uvddc/ uvdec/ ...  (KNMI TEMIS UV)
 ├── TIGER/C4/                               tiger{2013..2019}_roads/  (Census TIGER roads)
 ├── County/C3/                              tl_2010_us_county10/*.shp  (Census county boundaries)

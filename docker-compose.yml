@@ -11,6 +11,9 @@ services:
     build:
       context: ./backend
     image: spacescans-web-backend
+    # Auto-recover from crashes (e.g. an OOM-killed process) instead of
+    # leaving the frontend with "Failed to fetch" until someone intervenes.
+    restart: unless-stopped
     environment:
       # The exposure dataset folders (BG/, Noise/, TIGER/, ...) live directly
       # under the data root, mounted at /project. The pipeline resolves
@@ -44,6 +47,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     image: spacescans-web-frontend
+    restart: unless-stopped
     ports:
       - "3000:3000"
     depends_on:
