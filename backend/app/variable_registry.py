@@ -232,33 +232,28 @@ def _assert_vnl_data_present(payload: dict[str, Any]) -> None:
 
 
 def _assert_fara_data_present(payload: dict[str, Any]) -> None:
-    """Pre-flight: FARA C4 .Rda + label CSV exist for each fara_tract variable.
+    """Pre-flight: FARA C4 label CSV exists once the .Rda has been downloaded.
 
-    Raises MetadataSchemaError if a declared fara_tract variable's on-disk
-    product is missing — specifically
-    {DATA_ROOT}/FARA/C4/fara_nationwide_2010_2019_interpolated.Rda
-    and {DATA_ROOT}/FARA/C4/varnameCountRemoved.csv.
+    Provisioning is keyed on the .Rda itself
+    ({DATA_ROOT}/FARA/C4/fara_nationwide_2010_2019_interpolated.Rda):
+    varnameCountRemoved.csv ships IN the repo, so "the C4 dir has files"
+    does not mean the operator downloaded anything — a fresh clone must
+    still load the catalog (the dir-based _unprovisioned check used by the
+    other pre-flights would misread the shipped CSV as provisioned data).
 
-    Short-circuits while the C4 dir is unprovisioned (see _unprovisioned).
-    Mirrors _assert_nhd_data_present / _assert_vnl_data_present
-    (Sprint 8 I1 / Sprint 10 T4 pattern).
-
-    Note: varnameCountRemoved.csv ships in the repo, so in practice only
-    the .Rda can be missing here.
+    Rda absent  -> skip (not downloaded yet; the run itself reports it).
+    Rda present -> the label CSV must exist too (it can be missing when
+    SPACESCANS_DATA_HOST points outside the repo tree).
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "FARA" / "C4"
-    if _unprovisioned(root):
+    rda = root / "fara_nationwide_2010_2019_interpolated.Rda"
+    if not rda.exists():
         return
     for key, m in payload["variables"].items():
         if m.get("experiment") != "fara_tract":
             continue
-        rda = root / "fara_nationwide_2010_2019_interpolated.Rda"
         csv = root / "varnameCountRemoved.csv"
-        if not rda.exists():
-            raise MetadataSchemaError(
-                f"fara_tract variable {key!r} missing data: {rda}"
-            )
         if not csv.exists():
             raise MetadataSchemaError(
                 f"fara_tract variable {key!r} missing label CSV: {csv}"

@@ -474,6 +474,47 @@ def test_preflights_skip_on_the_gitkeep_only_skeleton(tmp_path, monkeypatch):
     assert len(payload["variables"]) == 9
 
 
+def test_preflights_skip_on_an_actual_fresh_clone_tree(tmp_path, monkeypatch):
+    """Regression (codespace 2026-07-28): the repo does NOT ship a
+    dotfiles-only skeleton — six small data files ride along (FARA label
+    CSV, TEMIS C3 template, NDI/Walkability/CBP artifacts). The FARA CSV
+    made _unprovisioned() report FARA/C4 as provisioned, so the pre-flight
+    demanded the 427 MB .Rda and GET /api/variables 500'd on every fresh
+    clone. This fixture mirrors `git archive HEAD pipeline-data` exactly;
+    keep it in sync when committing new files under pipeline-data/.
+    """
+    from app import variable_registry as vr
+    from app.config import settings
+
+    for rel in (
+        "TIGER/C4", "NHD/C4", "Noise/C3", "VNL/C3",
+        "TEMIS/C4/raw/uvddc", "TEMIS/C4/raw/uvdec",
+        "TEMIS/C4/raw/uvdvc", "TEMIS/C4/raw/uvief",
+        "BG/C3", "County/C3", "TRACT/C3", "ZCTA5/C3",
+    ):
+        d = tmp_path / rel
+        d.mkdir(parents=True)
+        (d / ".gitkeep").touch()
+    for rel in (
+        "README.md",
+        "FARA/C4/varnameCountRemoved.csv",
+        "TEMIS/C3/temis_template.tif",
+        "NDI/C4/ndi_bg_acs5_2008_2012_to_2020_2024_nationwide"
+        "_summaryfile_xgboost.rds",
+        "Walkability/C4/epawalkind_nationwide_2016_2021.Rda",
+        "Community_Organization_Density/C4/cbp_nationwide_0519.Rda",
+        "Community_Organization_Density/C4/zbp_nationwide_0521.Rda",
+    ):
+        f = tmp_path / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_bytes(b"\x00")
+
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert len(payload["variables"]) == 9
+
+
 def test_preflight_reports_cleanly_when_a_dataset_path_is_a_file(
     tmp_path, monkeypatch
 ):
@@ -992,19 +1033,17 @@ def test_temis_preflight_raises_when_no_uv_subdir(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def _make_fara_tree(root: Path, *, with_files: bool = True) -> Path:
-    """Build a fake {root}/FARA/C4/ tree. with_files=False leaves a
-    half-downloaded C4 (some file, neither required artifact) so the
-    data-missing branch can be exercised — an entirely empty dir reads as
-    "not downloaded yet" and is skipped by design.
+def _make_fara_tree(root: Path, *, rda: bool = True, csv: bool = True) -> Path:
+    """Build a fake {root}/FARA/C4/ tree. Provisioning is keyed on the
+    .Rda (the label CSV ships in the repo, so its presence alone must not
+    count as downloaded data — see _assert_fara_data_present).
     """
     c4 = root / "FARA" / "C4"
     c4.mkdir(parents=True, exist_ok=True)
-    if with_files:
+    if rda:
         (c4 / "fara_nationwide_2010_2019_interpolated.Rda").write_bytes(b"\x00")
+    if csv:
         (c4 / "varnameCountRemoved.csv").write_text("var,label\n")
-    else:
-        (c4 / "fara_2019_raw.csv").write_text("id\n")
     return c4
 
 
@@ -1104,14 +1143,32 @@ def test_fara_preflight_passes_when_files_present(tmp_path, monkeypatch):
     _make_noise_tree(tmp_path, with_tifs=True)
     _make_vnl_tree(tmp_path, with_tif=True)
     _make_temis_tree(tmp_path, with_subdir=True)
-    _make_fara_tree(tmp_path, with_files=True)
+    _make_fara_tree(tmp_path)
     monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
 
     payload = vr.load_variables(force=True)  # must not raise
     assert "fara_tract" in payload["variables"]
 
 
-def test_fara_preflight_raises_when_rda_missing(tmp_path, monkeypatch):
+def test_fara_preflight_skips_when_only_shipped_csv_present(
+    tmp_path, monkeypatch
+):
+    """Fresh-clone regression (codespace 2026-07-28): the repo ships
+    varnameCountRemoved.csv inside FARA/C4, so the dir is never
+    dotfiles-only. The pre-flight must key on the .Rda — CSV present but
+    Rda absent is the NORMAL fresh-clone state, not a half-download.
+    """
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_fara_tree(tmp_path, rda=False, csv=True)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "fara_tract" in payload["variables"]
+
+
+def test_fara_preflight_raises_when_label_csv_missing(tmp_path, monkeypatch):
     from app import variable_registry as vr
     from app.config import settings
 
@@ -1120,15 +1177,16 @@ def test_fara_preflight_raises_when_rda_missing(tmp_path, monkeypatch):
     _make_noise_tree(tmp_path, with_tifs=True)
     _make_vnl_tree(tmp_path, with_tif=True)
     _make_temis_tree(tmp_path, with_subdir=True)
-    # FARA C4 root exists (no short-circuit) but no .Rda / label CSV.
-    _make_fara_tree(tmp_path, with_files=False)
+    # .Rda downloaded but the label CSV is absent (data root outside the
+    # repo tree, e.g. SPACESCANS_DATA_HOST pointing at a bare data dir).
+    _make_fara_tree(tmp_path, rda=True, csv=False)
     monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
 
     with pytest.raises(vr.MetadataSchemaError) as exc_info:
         vr.load_variables(force=True)
     msg = str(exc_info.value)
     assert "fara_tract" in msg
-    assert "fara_nationwide_2010_2019_interpolated.Rda" in msg
+    assert "varnameCountRemoved.csv" in msg
 
 
 def test_schema_allows_optional_ontology_id():

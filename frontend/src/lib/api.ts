@@ -47,10 +47,15 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: "Unknown error" }));
-    throw new ApiError(
-      res.status,
-      body.detail || body.error || "Request failed",
-    );
+    // detail may be a structured object ({error, message, ...}) — FastAPI
+    // allows any JSON there and our data pre-flights use that form. Pick a
+    // human-readable string so the UI never shows "[object Object]".
+    const raw = body.detail ?? body.error ?? "Request failed";
+    const message =
+      typeof raw === "string"
+        ? raw
+        : raw?.message || raw?.error || JSON.stringify(raw);
+    throw new ApiError(res.status, message);
   }
 
   return res.json();
