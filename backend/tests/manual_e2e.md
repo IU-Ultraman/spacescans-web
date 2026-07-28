@@ -9,7 +9,7 @@ It is not part of automated pytest; run it before publishing any release.
   - `SPACESCANS_DATA_DIR=/Users/xai/Desktop/spacescans-all/spacescans-web/pipeline-data` (data root — the dir that contains the dataset folders `BG/`, `Noise/`, `TIGER/`, …)
   - `SPACESCANS_PIPELINE_PYTHON=/Users/xai/miniconda3/envs/spacescans/bin/python`
   - `SPACESCANS_PIPELINE_CLI=/Users/xai/miniconda3/envs/spacescans/bin/spacescans`
-  - `SPACESCANS_CONFIG_TEMPLATES_DIR=/Users/xai/Desktop/spacescans-project/configs`
+  - `SPACESCANS_CONFIG_TEMPLATES_DIR=/Users/xai/Desktop/spacescans-all/spacescans-web/configs`
 - Frontend deps installed: `(cd frontend && npm install)`.
 - Backend deps installed in the spacescans conda env:
   `(cd backend && /Users/xai/miniconda3/envs/spacescans/bin/pip install -r requirements.txt)`.
@@ -19,7 +19,7 @@ It is not part of automated pytest; run it before publishing any release.
 1. **Start backend**
 
    ```bash
-   cd /Users/xai/Desktop/spacescans-project/spacescans-web/backend
+   cd /Users/xai/Desktop/spacescans-all/spacescans-web/backend
    /Users/xai/miniconda3/envs/spacescans/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
@@ -28,7 +28,7 @@ It is not part of automated pytest; run it before publishing any release.
 2. **Start frontend**
 
    ```bash
-   cd /Users/xai/Desktop/spacescans-project/spacescans-web/frontend
+   cd /Users/xai/Desktop/spacescans-all/spacescans-web/frontend
    npm run dev
    ```
 
@@ -36,16 +36,12 @@ It is not part of automated pytest; run it before publishing any release.
 
 3. **Sign up + log in** if you don't already have an account.
 
-4. **Prepare a small CSV** — first 100 rows of the demo cohort:
-
-   ```bash
-   head -101 /Users/xai/Desktop/spacescans-project/data_full/demo_patients_conus_fast_100000.csv \
-     > /tmp/smoke_100.csv
-   ```
+4. **Smoke cohort** — use the in-repo fixture
+   `backend/tests/fixtures/smoke_100.csv` (100 patients, 9 columns).
 
 5. **Create a new task**, name it `smoke-test`.
 
-6. **Upload step** — drop `/tmp/smoke_100.csv`. Verify the validation panel shows 100 rows and 9 columns.
+6. **Upload step** — drop `backend/tests/fixtures/smoke_100.csv`. Verify the validation panel shows 100 rows and 9 columns.
 
 7. **Buffer step** — shape locked to circle. Set size to 270 m and raster_res_m to 25. Verify the disabled square button shows the tooltip on hover.
 
