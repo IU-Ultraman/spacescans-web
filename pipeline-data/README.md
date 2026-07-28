@@ -3,7 +3,8 @@
 This folder is the pipeline's data root (`SPACESCANS_DATA_DIR` → mounted at
 `/project` in Docker). **The big datasets are gitignored** — never committed.
 What ships with the repo: the folder skeleton (a `.gitkeep` per dataset dir),
-this README, and a handful of small files listed in group 3 below.
+this README, and the small committed files marked "(ships with the repo)" in
+the tree below.
 
 Drop the data in the layout below. Config templates reference these paths
 relative to the data root (e.g. `Walkability/C4/...`), so the subfolder
@@ -40,7 +41,7 @@ Only the datasets for the variables you actually run are required. The in-app
 
 ---
 
-## Where the data comes from — three groups
+## Where the data comes from
 
 ### 1. The deployer's Google Drive folder (one-stop download)
 
@@ -71,10 +72,3 @@ also keeps the original-source instructions as a fallback.
 | --- | --- | --- |
 | VNL nighttime lights | EOG (Earth Observation Group) — **free account required** | EOG's own terms gate the download; we can't relay it |
 | TEMIS UV (daily HDFs) | KNMI/ESA TEMIS mirror | © KNMI/ESA — credits + no explicit redistribution grant, so each deployment downloads its own copy; the **first run auto-converts** the archive to fast parquet (~2 min, one-time) |
-
-### 3. Ships with the repo (nothing to do)
-
-`NDI/C4/*.rds`, `Walkability/C4/*.Rda`, `Community_Organization_Density/C4/*.Rda`
-(small preprocessed artifacts), `FARA/C4/varnameCountRemoved.csv` (column
-lookup), and `TEMIS/C3/temis_template.tif` (grid template) are committed —
-present in every clone.
