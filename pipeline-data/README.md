@@ -46,7 +46,11 @@ Only the datasets for the variables you actually run are required. The in-app
 ### 1. The deployer's Google Drive folder (one-stop download)
 
 One shared folder holds these archives (each with a `MANIFEST.txt` inside and
-a `.sha256` checksum file beside it):
+a `.sha256` checksum file beside it). **The extract commands below are exact —
+copy them as-is.** Each archive already contains its final folder level
+(e.g. `bg_boundaries` unpacks a `C3/`, the cache archives unpack a
+`tiger_roads_filtered/` / `nhd_features/`), so the `-C` target is the
+*parent* of that folder — don't append the last path segment yourself:
 
 | Archive | Extract with | Why it's on Drive instead of an official site |
 | --- | --- | --- |
