@@ -266,32 +266,46 @@ def _assert_fara_data_present(payload: dict[str, Any]) -> None:
 
 
 def _assert_temis_data_present(payload: dict[str, Any]) -> None:
-    """Pre-flight: TEMIS C4 raw-HDF subdirs exist for each temis variable.
+    """Pre-flight: UV data exists for each temis variable.
 
-    Raises MetadataSchemaError if a declared temis variable's on-disk
-    product is missing — specifically at least one of the four UV-variable
-    subdirs (uvddc / uvdec / uvdvc / uvief) under
-    {DATA_ROOT}/TEMIS/C4/raw/.
+    Two provisioning forms are accepted, matching the reader:
+      * converted parquet — {DATA_ROOT}/TEMIS/C4/converted/ with a
+        manifest.json (the reader's fast path), and/or
+      * raw daily HDFs — at least one of the four UV-variable subdirs
+        (uvddc / uvdec / uvdvc / uvief) under {DATA_ROOT}/TEMIS/C4/raw/
+        actually holding files.
 
-    Short-circuits while the raw/ dir is unprovisioned (see
-    _unprovisioned). Mirrors _assert_noise_data_present /
-    _assert_vnl_data_present (Sprint 9 T4 / Sprint 10 T4 pattern).
+    The repo ships the four UV subdirs as an empty skeleton (so users see
+    what to download where); skeleton-only counts as unprovisioned → the
+    check skips rather than passing vacuously or failing the catalog.
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "TEMIS" / "C4" / "raw"
-    if _unprovisioned(root):
-        return
+    conv_manifest = (settings.SPACESCANS_DATA_DIR / "TEMIS" / "C4"
+                     / "converted" / "manifest.json")
     for key, m in payload["variables"].items():
         if m.get("experiment") != "temis":
             continue
-        # gridded linkage needs at least one of the four UV subdirs — the
+        if conv_manifest.exists():
+            continue
+        # gridded linkage needs at least one UV subdir WITH data — the
         # temis reader plugin walks each UV var subdir under exposure.file.
-        present = [name for name in _TEMIS_UV_SUBDIRS if (root / name).is_dir()]
-        if not present:
-            raise MetadataSchemaError(
-                f"temis variable {key!r} missing data: no UV subdir "
-                f"(expected one of {list(_TEMIS_UV_SUBDIRS)}) under {root}"
-            )
+        if any(not _unprovisioned(root / name) for name in _TEMIS_UV_SUBDIRS):
+            continue
+        # No data anywhere. Distinguish "nothing downloaded yet" (raw/ is
+        # absent or holds only the skeleton subdirs/dotfiles → skip) from a
+        # half-provisioned raw/ holding stray files (→ raise).
+        strays = ([p for p in root.iterdir()
+                   if not p.name.startswith(".")
+                   and p.name not in _TEMIS_UV_SUBDIRS]
+                  if root.exists() else [])
+        if not strays:
+            continue
+        raise MetadataSchemaError(
+            f"temis variable {key!r} missing data: no converted parquet at "
+            f"{conv_manifest.parent} and no UV data "
+            f"(expected files under one of {list(_TEMIS_UV_SUBDIRS)}) in {root}"
+        )
 
 
 def load_variables(*, force: bool = False) -> dict[str, Any]:

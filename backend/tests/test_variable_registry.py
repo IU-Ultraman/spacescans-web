@@ -460,7 +460,9 @@ def test_preflights_skip_on_the_gitkeep_only_skeleton(tmp_path, monkeypatch):
 
     for rel in (
         "TIGER/C4", "NHD/C4", "Noise/C3", "VNL/C3", "FARA/C4",
-        "TEMIS/C4/raw", "BG/C3", "County/C3", "TRACT/C3", "ZCTA5/C3",
+        "TEMIS/C4/raw", "TEMIS/C4/raw/uvddc", "TEMIS/C4/raw/uvdec",
+        "TEMIS/C4/raw/uvdvc", "TEMIS/C4/raw/uvief",
+        "BG/C3", "County/C3", "TRACT/C3", "ZCTA5/C3",
         "NDI/C4", "Walkability/C4", "Community_Organization_Density/C4",
     ):
         d = tmp_path / rel
@@ -882,14 +884,15 @@ def _make_vnl_tree(root: Path, *, with_tif: bool = True) -> Path:
 
 def _make_temis_tree(root: Path, *, with_subdir: bool = True) -> Path:
     """Build a fake {root}/TEMIS/C4/raw/ tree. with_subdir=False leaves a
-    half-downloaded raw/ (some file, no UV subdir) so the
-    missing-UV-subdir branch can be exercised — an entirely empty dir
-    reads as "not downloaded yet" and is skipped by design.
+    half-downloaded raw/ (some stray file, no UV data) so the
+    missing-data branch can be exercised — a skeleton-only tree (empty UV
+    subdirs) reads as "not downloaded yet" and is skipped by design.
     """
     raw = root / "TEMIS" / "C4" / "raw"
     raw.mkdir(parents=True, exist_ok=True)
     if with_subdir:
         (raw / "uvief").mkdir(exist_ok=True)
+        (raw / "uvief" / "uvief20130101.hdf").write_bytes(b"\x00")
     else:
         (raw / "index.html").write_text("<html>listing</html>\n")
     return raw
@@ -939,6 +942,26 @@ def test_temis_preflight_passes_when_subdir_present(tmp_path, monkeypatch):
     _make_noise_tree(tmp_path, with_tifs=True)
     _make_vnl_tree(tmp_path, with_tif=True)
     _make_temis_tree(tmp_path, with_subdir=True)
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert "temis" in payload["variables"]
+
+
+def test_temis_preflight_accepts_converted_parquet_without_raw(tmp_path, monkeypatch):
+    """A converted/manifest.json (the reader's fast path) provisions temis
+    even when raw/ holds stray junk that would otherwise raise."""
+    from app import variable_registry as vr
+    from app.config import settings
+
+    _make_tiger_tree(tmp_path, range(2013, 2020))
+    _make_nhd_tree(tmp_path, with_gdb=True)
+    _make_noise_tree(tmp_path, with_tifs=True)
+    _make_vnl_tree(tmp_path, with_tif=True)
+    _make_temis_tree(tmp_path, with_subdir=False)  # stray file, no UV data
+    conv = tmp_path / "TEMIS" / "C4" / "converted"
+    conv.mkdir(parents=True)
+    (conv / "manifest.json").write_text("{}")
     monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
 
     payload = vr.load_variables(force=True)  # must not raise
