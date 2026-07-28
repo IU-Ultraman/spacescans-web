@@ -4,9 +4,12 @@
 # Docker
 # docker compose local config — created from .env.docker.example
 .env
-# user-supplied exposure data (several GB) — keep only the layout README and
-# the folder skeleton (.gitkeep); the datasets themselves are never committed
+# user-supplied exposure data (several GB) — keep the layout README, the
+# folder skeleton (.gitkeep), and the FARA column-selection table (3.7 KB,
+# USDA public-domain column labels the linkage needs); the datasets
+# themselves are never committed
 pipeline-data/**
 !pipeline-data/**/
 !pipeline-data/README.md
 !pipeline-data/**/.gitkeep
+!pipeline-data/FARA/C4/varnameCountRemoved.csv

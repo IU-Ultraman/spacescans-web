@@ -1,0 +1,45 @@
+var,label
+LAPOP1_10share,Percentage of low access population at 1 mile for urban and 10 miles for rural
+LALOWI1_10share,Percentage of low income and low access population at 1 mile for urban and 10 miles for rural
+LAHUNV1_10share,Percentage of low access population with housing units without vehicle access at 1 mile for urban and 10 miles for rural
+LAKIDS1_10share,Percentage of children age 0-17 with low access at 1 mile for urban and 10 miles for rural
+LASENIORS1_10share,Percentage of seniors age 65+ with low access at 1 mile for urban and 10 miles for rural
+LILATracts_1And10,Flag for low income low access tracts at 1 mile for urban and 10 miles for rural
+LA1and10,Flag for low access tract at 1 mile for urban areas and 10 miles for rural areas
+LILATracts_halfAnd10,Flag for low income low access tracts at 0.5 mile for urban and 10 miles for rural
+LILATracts_1And20,Flag for low income low access tracts at 1 mile for urban and 20 miles for rural
+LAhalfand10,Flag for low access tract at 0.5 mile for urban and 10 miles for rural
+LA1and20,Flag for low access tract at 1 mile for urban and 20 miles for rural
+LATracts_half,Flag for low access tract at 0.5 mile
+LATracts1,Flag for low access tract at 1 mile
+LATracts10,Flag for low access tract at 10 miles
+LATracts20,Flag for low access tract at 20 miles
+LATractsVehicle_20,Flag for low access tract using vehicle access and at 20 miles  in rural areas
+HUNVFlag,"Flag for tract where >= 100 of households do not have a vehicle, and beyond 1/2 mile from supermarket"
+GroupQuartersFlag,"Group quarters, tract with high share (>=67%)"
+PCTGQTRS,Percent of tract population residing in group quarters
+LowIncomeTracts,Flag for low income tract
+lapophalfshare,Percentage of low access population at 1/2 mile
+lalowihalfshare,Percentage of low access population that are low income at 1/2 mile
+lakidshalfshare,Percentage of low access population that are kids at 1/2 mile
+laseniorshalfshare,Percentage of low access population that are seniors at 1/2 mile
+lahunvhalfshare,Percentage of low access population with housing units without vehicle access at 1/2 mile
+lapop1share,Percentage of low access population at 1 mile
+lalowi1share,Percentage of low access population that are low income at 1 mile
+lakids1share,Percentage of low access population that are kids at 1 mile
+laseniors1share,Percentage of low access population that are seniors at 1 mile
+lahunv1share,Percentage of low access population with housing units without vehicle access at 1 mile
+lapop10share,Percentage of low access population at 10 mile
+lalowi10share,Percentage of low access population that are low income at 10 mile
+lakids10share,Percentage of low access population that are kids at 10 mile
+laseniors10share,Percentage of low access population that are seniors at 10 mile
+lahunv10share,Percentage of low access population with housing units without vehicle access at 10 mile
+lapop20share,Percentage of low access population at 20 mile
+lalowi20share,Percentage of low access population that are low income at 20 mile
+lakids20share,Percentage of low access population that are kids at 20 mile
+laseniors20share,Percentage of low access population that are seniors at 20 mile
+lahunv20share,Percentage of low access population with housing units without vehicle access at 20 mile
+LAPOP05_10share,Percentage of low access population at 1/2 mile for urban and 10 miles for rural
+LAPOP1_20share,Percentage of low access population at 1 mile for urban and 20 miles for rural
+LALOWI05_10share,Percentage of low income and low access population at 1/2 mile for urban and 10 miles for rural
+LALOWI1_20share,Percentage of low income and low access population at 1 mile for urban and 20 miles for rural
