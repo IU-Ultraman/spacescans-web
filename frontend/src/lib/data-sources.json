@@ -36,24 +36,23 @@
         "fara_tract"
       ],
       "role": "Boundary geometry",
-      "sourceName": "US Census Bureau — TIGER/Line 2010",
-      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/",
-      "license": "US federal public domain — free to use and redistribute.",
+      "sourceName": "Deployer-distributed archive (Google Drive)",
+      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "license": "US Census Bureau TIGER/Line 2010 — US federal public domain; free to use and redistribute.",
       "access": "public",
-      "size": "51 per-state files",
+      "size": "~580 MB extracted (51 statewide sets)",
       "files": [
         {
-          "name": "tl_2010_{ss}_tract10.zip × 51",
-          "note": "STATEWIDE files — 2-digit state FIPS (not the 5-digit per-county files)"
+          "name": "tract_boundaries_v1.tar.gz",
+          "note": "51 statewide 2010 tract sets; MANIFEST.txt inside; sha256 in boundaries_v1.sha256 next to it"
         }
       ],
       "placeDir": [
         "TRACT/C3/tl_2010_{ss}_tract10/  (one subfolder per state)"
       ],
       "notes": [
-        "The TIGER2010/TRACT/2010/ folder lists BOTH per-county files (5-digit FIPS, e.g. tl_2010_06037_tract10.zip) and statewide files (2-digit FIPS, e.g. tl_2010_06_tract10.zip). Download the STATEWIDE (2-digit) ones — the pipeline expects tl_2010_{ss}_tract10.",
-        "No single national tract file — fetch all 51 statewide files (or just the states your cohort covers).",
-        "Unzip each into a subfolder named after the file basename (.shp + sidecars)."
+        "Extract at the data root's TRACT/ so the archive's C3/ folder lands there: tar -xzf tract_boundaries_v1.tar.gz -C pipeline-data/TRACT/",
+        "Prefer the original source? Grab the 51 STATEWIDE tl_2010_{ss}_tract10.zip (2-digit FIPS) from https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/ and unzip each into TRACT/C3/."
       ]
     },
     {
@@ -119,23 +118,24 @@
         "ndi"
       ],
       "role": "Boundary geometry",
-      "sourceName": "US Census Bureau — TIGER/Line 2010",
-      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2010/BG/2010/",
-      "license": "US federal public domain — free to use and redistribute.",
+      "sourceName": "Deployer-distributed archive (Google Drive)",
+      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "license": "US Census Bureau TIGER/Line — US federal public domain; free to use and redistribute (credit the Census Bureau).",
       "access": "public",
-      "size": "per-state (50 + DC)",
+      "size": "one archive covers both BG vintages (~2.1 GB extracted)",
       "files": [
         {
-          "name": "tl_2010_{ss}_bg10.zip × 51",
-          "note": "statewide files — 2-digit state FIPS (not the 5-digit per-county files)"
+          "name": "bg_boundaries_v1.tar.gz",
+          "note": "51 statewide 2010-vintage sets AND the 51 2020-vintage sets in one archive; MANIFEST.txt inside; sha256 in boundaries_v1.sha256 next to it"
         }
       ],
       "placeDir": [
         "BG/C3/tiger2010_bg10_states/tl_2010_{ss}_bg10/"
       ],
       "notes": [
-        "The TIGER2010/BG/2010/ folder has both 5-digit per-county and 2-digit statewide files — grab the statewide tl_2010_{ss}_bg10.",
-        "Unzip each into a subfolder named after the file basename (.shp + sidecars); join column is GEOID10."
+        "Extract at the data root's BG/ so the archive's C3/ folder lands there: tar -xzf bg_boundaries_v1.tar.gz -C pipeline-data/BG/",
+        "One download covers this card AND the 2020-vintage card below.",
+        "Prefer the original source? Grab the 51 statewide tl_2010_{ss}_bg10.zip from https://www2.census.gov/geo/tiger/TIGER2010/BG/2010/ (2-digit state FIPS, not the 5-digit per-county files) and unzip each into BG/C3/tiger2010_bg10_states/."
       ]
     },
     {
@@ -146,24 +146,25 @@
         "ndi"
       ],
       "role": "Boundary geometry",
-      "sourceName": "US Census Bureau — TIGER/Line 2024 (2020 BG vintage)",
-      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2024/BG/",
-      "license": "US federal public domain — free to use and redistribute.",
+      "sourceName": "Deployer-distributed archive (Google Drive)",
+      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "license": "US Census Bureau TIGER/Line 2024 (2020 BG vintage) — US federal public domain; free to use and redistribute.",
       "access": "public",
-      "size": "~750 MB (51 states)",
+      "size": "included in bg_boundaries_v1.tar.gz (see the 2010 card)",
       "files": [
         {
-          "name": "tl_2024_{ss}_bg.zip × 51",
-          "note": "or just run the bundled download script"
+          "name": "bg_boundaries_v1.tar.gz",
+          "note": "same archive as the 2010-vintage card — one download covers both"
         }
       ],
       "placeDir": [
         "BG/C3/tiger2024_bg_states/tl_2024_{ss}_bg/"
       ],
       "notes": [
-        "Fastest: run `bash scripts/download_bg_2020_shapefiles.sh` from the repo root (idempotent).",
+        "Covered by the same archive as the 2010 card: tar -xzf bg_boundaries_v1.tar.gz -C pipeline-data/BG/",
+        "Prefer the original source? Grab the 51 statewide tl_2024_{ss}_bg.zip from https://www2.census.gov/geo/tiger/TIGER2024/BG/ and unzip each into BG/C3/tiger2024_bg_states/.",
         "Join column is GEOID (some products expose GEOID20 — if so, edit join_col in bg_us_2020_demo.yaml).",
-        "Only NDI needs this — its ACS 2020-2024 periods use 2020-Census BG boundaries; walkability does not."
+        "Only NDI needs the 2020 vintage — its ACS 2020-2024 periods use 2020-Census BG boundaries; walkability does not."
       ]
     },
     {
@@ -215,11 +216,11 @@
       "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
       "license": "Derived from USGS NHDPlus High Resolution (National Release 2) — US federal public domain; free to use and redistribute (credit USGS).",
       "access": "public",
-      "size": "~45 GB archive (47 GB extracted)",
+      "size": "35.8 GB archive (47 GB extracted)",
       "files": [
         {
           "name": "nhd_features_cache_v1.tar.gz",
-          "note": "flow/water/area/coast features per 0.5° tile, full CONUS (14,856 parquets); MANIFEST.txt inside; sha256 in the .sha256 file next to the archive"
+          "note": "flow/water/area/coast features per 0.5° tile, full CONUS (14,856 parquets); MANIFEST.txt inside; sha256: 512e70216ac6cc5ddba8704607b3643d31c0c29ca8615352ce954877069ed4ad"
         }
       ],
       "placeDir": [
