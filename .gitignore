@@ -18,3 +18,6 @@ pipeline-data/**
 !pipeline-data/Walkability/C4/epawalkind_nationwide_2016_2021.Rda
 !pipeline-data/Community_Organization_Density/C4/cbp_nationwide_0519.Rda
 !pipeline-data/Community_Organization_Density/C4/zbp_nationwide_0521.Rda
+
+# internal working docs (plans/specs/preflight notes) — kept locally, not shipped
+docs/superpowers/
