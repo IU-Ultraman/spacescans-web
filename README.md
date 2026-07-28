@@ -15,9 +15,9 @@ The only thing you install yourself is **Docker** (Docker Desktop on
 macOS/Windows, Docker Engine on Linux).
 
 > **Docker Desktop users (macOS/Windows):** give the Docker VM enough
-> memory — **Settings → Resources → Memory ≥ 24 GB**. The pipeline reads
-> multi-GB rasters inside the VM; at the ~8 GB default the run gets
-> OOM-killed. Linux needs no setting — containers see all host RAM.
+> memory — **Settings → Resources → Memory ≥ 12 GB**. The pipeline works
+> on multi-GB geodata inside the VM; at the ~8 GB default a large run can
+> get OOM-killed. Linux needs no setting — containers see all host RAM.
 
 ```bash
 git clone https://github.com/IU-Ultraman/spacescans-web.git
