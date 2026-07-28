@@ -46,27 +46,22 @@ Only the datasets for the variables you actually run are required. The in-app
 ### 1. The deployer's Google Drive folder (one-stop download)
 
 One shared folder holds these archives (each with a `MANIFEST.txt` inside;
-verify downloads against the folder's `SHA256SUMS.txt`). Every archive
-carries its full path from the data root, so **extraction is the same one
-command for all of them, run from the repo root**:
+verify downloads against the folder's `SHA256SUMS.txt`). Run each command
+below from the repo root, exactly as written:
 
-```bash
-tar -xzf <archive>.tar.gz -C pipeline-data/
-```
+| Archive | Extract with | Why it's on Drive instead of an official site |
+| --- | --- | --- |
+| `tiger_roads_filtered_cache_v1.tar.gz` (1.7 GB) | `tar -xzf tiger_roads_filtered_cache_v1.tar.gz -C pipeline-data/` | **derived cache** — S1100/S1200-filtered roads per (county, year); replaces 28 GB of per-county Census zips *and* the first-run filtering |
+| `nhd_features_cache_v1.tar.gz` (36 GB) | `tar -xzf nhd_features_cache_v1.tar.gz -C pipeline-data/` | **derived cache** — pretiled NHDPlus water features; replaces the 61 GB GDB *and* hours of first-run tiling |
+| `fara_nationwide_2010_2019_interpolated.Rda` (427 MB) | `mv fara_nationwide_2010_2019_interpolated.Rda pipeline-data/FARA/C4/` | **preprocessed artifact** — interpolated from USDA FARA; not downloadable anywhere else |
+| `bg_boundaries_v1.tar.gz` (1.25 GB) | `tar -xzf bg_boundaries_v1.tar.gz -C pipeline-data/` | **too tedious by hand** — 102 statewide shapefile zips (51 × 2010 vintage + 51 × 2020 vintage) |
+| `tract_boundaries_v1.tar.gz` (0.33 GB) | `tar -xzf tract_boundaries_v1.tar.gz -C pipeline-data/` | **too tedious by hand** — 51 statewide shapefile zips |
+| `county_boundaries_v1.tar.gz` (70 MB) | `tar -xzf county_boundaries_v1.tar.gz -C pipeline-data/` | **convenience** — one-stop with the rest |
+| `zcta5_boundaries_v1.tar.gz` (0.49 GB) | `tar -xzf zcta5_boundaries_v1.tar.gz -C pipeline-data/` | **convenience** — one-stop with the rest |
+| `noise_v1.tar.gz` (1.11 GB) | `tar -xzf noise_v1.tar.gz -C pipeline-data/` | **convenience** — three NPS TIFs, exact filenames required |
 
-(The one non-archive is the FARA `.Rda` — just drop it into
-`pipeline-data/FARA/C4/`.)
-
-| Archive | Why it's on Drive instead of an official site |
-| --- | --- |
-| `tiger_roads_filtered_cache_v1.tar.gz` (1.7 GB) | **derived cache** — S1100/S1200-filtered roads per (county, year); replaces 28 GB of per-county Census zips *and* the first-run filtering |
-| `nhd_features_cache_v1.tar.gz` (36 GB) | **derived cache** — pretiled NHDPlus water features; replaces the 61 GB GDB *and* hours of first-run tiling |
-| `fara_nationwide_2010_2019_interpolated.Rda` (427 MB) | **preprocessed artifact** — interpolated from USDA FARA; not downloadable anywhere else |
-| `bg_boundaries_v1.tar.gz` (1.25 GB) | **too tedious by hand** — 102 statewide shapefile zips (51 × 2010 vintage + 51 × 2020 vintage) |
-| `tract_boundaries_v1.tar.gz` (0.33 GB) | **too tedious by hand** — 51 statewide shapefile zips |
-| `county_boundaries_v1.tar.gz` (70 MB) | **convenience** — one-stop with the rest |
-| `zcta5_boundaries_v1.tar.gz` (0.49 GB) | **convenience** — one-stop with the rest |
-| `noise_v1.tar.gz` (1.11 GB) | **convenience** — three NPS TIFs, exact filenames required |
+Every archive carries its full path from the data root, so the `tar`
+command is identical for all of them.
 
 Everything in this group is either US-federal public domain (Census
 TIGER/Line under CC0, USGS NHDPlus, USDA FARA, NPS sound model — free to
