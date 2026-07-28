@@ -1,0 +1,18 @@
+{
+  "name": "spacescans-web",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "16gb",
+    "storage": "64gb"
+  },
+  "forwardPorts": [3000, 8000],
+  "portsAttributes": {
+    "3000": { "label": "frontend (open this)" },
+    "8000": { "label": "backend API" }
+  },
+  "postCreateCommand": "cp -n .env.docker.example .env || true"
+}
