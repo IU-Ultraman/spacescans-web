@@ -22,3 +22,7 @@ pipeline-data/**
 
 # internal working docs (plans/specs/preflight notes) — kept locally, not shipped
 docs/superpowers/
+
+# macOS Finder cruft — anywhere in the tree
+.DS_Store
+**/.DS_Store
