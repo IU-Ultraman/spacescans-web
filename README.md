@@ -17,27 +17,20 @@ macOS/Windows, Docker Engine on Linux).
 ```bash
 git clone https://github.com/IU-Ultraman/spacescans-web.git
 cd spacescans-web
-cp .env.docker.example .env      # then set SECRET_KEY — see step 2
+cp .env.docker.example .env      # then set SECRET_KEY — see step 1
 docker compose up --build        # first build takes a few minutes
 ```
 
-Before the first run, put the exposure datasets (several GB) in
-`pipeline-data/` — see step 1. Then open `http://localhost:3000` and
-**sign up** to create an account.
+Then open `http://localhost:3000` and **sign up** to create an account.
+
+The app runs without any exposure data — sign in and open **Data Setup**,
+which lists every dataset, where to download it, and the exact folder to
+drop it into under `pipeline-data/`. Add only the datasets for the
+variables you plan to run.
 
 ---
 
-## 1. Data
-
-Put the exposure datasets (several GB, one folder per dataset — `BG/`,
-`Noise/`, `TIGER/`, …) directly in **`pipeline-data/`** — see
-[pipeline-data/README.md](pipeline-data/README.md) for the exact layout
-and per-dataset sources. Already have the data elsewhere? Skip copying and set
-`SPACESCANS_DATA_HOST=/abs/path` in `.env`.
-
----
-
-## 2. Configure
+## 1. Configure
 
 ```bash
 cp .env.docker.example .env
@@ -60,7 +53,7 @@ secret for anything else.
 
 ---
 
-## 3. Run
+## 2. Run
 
 ```bash
 docker compose up --build

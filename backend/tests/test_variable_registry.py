@@ -399,6 +399,29 @@ def test_tiger_preflight_skips_when_root_missing(tmp_path, monkeypatch):
     assert "variables" in payload
 
 
+def test_preflights_skip_on_the_gitkeep_only_skeleton(tmp_path, monkeypatch):
+    """A fresh clone ships pipeline-data/ as empty dirs holding only
+    .gitkeep. Every pre-flight must treat that as unprovisioned so the app
+    still boots — users discover what to download on the Data Setup page,
+    which they can only reach if the server is up.
+    """
+    from app import variable_registry as vr
+    from app.config import settings
+
+    for rel in (
+        "TIGER/C4", "NHD/C4", "Noise/C3", "VNL/C3", "FARA/C4",
+        "TEMIS/C4/raw", "BG/C3", "County/C3", "TRACT/C3", "ZCTA5/C3",
+        "NDI/C4", "Walkability/C4", "Community_Organization_Density/C4",
+    ):
+        d = tmp_path / rel
+        d.mkdir(parents=True)
+        (d / ".gitkeep").touch()
+    monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
+
+    payload = vr.load_variables(force=True)  # must not raise
+    assert len(payload["variables"]) == 9
+
+
 # ---------------------------------------------------------------------------
 # Sprint 8 I1: NHD C4 server-boot pre-flight (mirror of TIGER H2 pattern)
 # ---------------------------------------------------------------------------
@@ -406,13 +429,16 @@ def test_tiger_preflight_skips_when_root_missing(tmp_path, monkeypatch):
 
 def _make_nhd_tree(root: Path, *, with_gdb: bool = True) -> Path:
     """Build a fake {root}/NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb/
-    tree. with_gdb=False creates only the C4 parent so the GDB-missing
-    branch can be exercised.
+    tree. with_gdb=False leaves a half-downloaded C4 (some file, no GDB)
+    so the GDB-missing branch can be exercised — an entirely empty dir
+    reads as "not downloaded yet" and is skipped by design.
     """
     c4 = root / "NHD" / "C4"
     c4.mkdir(parents=True, exist_ok=True)
     if with_gdb:
         (c4 / "NHDPlus_H_National_Release_2_GDB.gdb").mkdir()
+    else:
+        (c4 / "NHDPlus_H_National_Release_2_GDB.zip.part").write_bytes(b"\x00")
     return c4
 
 
@@ -629,8 +655,10 @@ def test_real_metadata_file_contains_noise_with_runner_module():
 
 
 def _make_noise_tree(root: Path, *, with_tifs: bool = True) -> Path:
-    """Build a fake {root}/Noise/C3/ tree. with_tifs=False creates
-    only the C3 parent so the TIF-missing branch can be exercised.
+    """Build a fake {root}/Noise/C3/ tree. with_tifs=False leaves a
+    half-downloaded C3 (some file, no TIFs) so the TIF-missing branch can
+    be exercised — an entirely empty dir reads as "not downloaded yet"
+    and is skipped by design.
     """
     c3 = root / "Noise" / "C3"
     c3.mkdir(parents=True, exist_ok=True)
@@ -641,6 +669,8 @@ def _make_noise_tree(root: Path, *, with_tifs: bool = True) -> Path:
             "CONUS_sumDay_L50dBA_nat.tif",
         ):
             (c3 / tif).write_bytes(b"\x00")  # empty file is enough for exists() check
+    else:
+        (c3 / "AK_L50dBA_sumDay_exi.tif").write_bytes(b"\x00")  # wrong region
     return c3
 
 
@@ -733,25 +763,32 @@ def test_list_experiments_after_vnl_and_temis_added():
 
 
 def _make_vnl_tree(root: Path, *, with_tif: bool = True) -> Path:
-    """Build a fake {root}/VNL/C3/ tree. with_tif=False creates
-    only the C3 parent so the TIF-missing branch can be exercised.
+    """Build a fake {root}/VNL/C3/ tree. with_tif=False leaves a
+    half-downloaded C3 (some file, no VNL_v21_*.tif) so the TIF-missing
+    branch can be exercised — an entirely empty dir reads as "not
+    downloaded yet" and is skipped by design.
     """
     c3 = root / "VNL" / "C3"
     c3.mkdir(parents=True, exist_ok=True)
     if with_tif:
         (c3 / "VNL_v21_npp_2013_global_vcmcfg_c202205302300.average_masked.dat.tif").write_bytes(b"\x00")
+    else:
+        (c3 / "README.txt").write_text("download in progress\n")
     return c3
 
 
 def _make_temis_tree(root: Path, *, with_subdir: bool = True) -> Path:
-    """Build a fake {root}/TEMIS/C4/raw/ tree. with_subdir=False
-    creates only the raw parent so the missing-UV-subdir branch can be
-    exercised.
+    """Build a fake {root}/TEMIS/C4/raw/ tree. with_subdir=False leaves a
+    half-downloaded raw/ (some file, no UV subdir) so the
+    missing-UV-subdir branch can be exercised — an entirely empty dir
+    reads as "not downloaded yet" and is skipped by design.
     """
     raw = root / "TEMIS" / "C4" / "raw"
     raw.mkdir(parents=True, exist_ok=True)
     if with_subdir:
         (raw / "uvief").mkdir(exist_ok=True)
+    else:
+        (raw / "index.html").write_text("<html>listing</html>\n")
     return raw
 
 
@@ -830,14 +867,18 @@ def test_temis_preflight_raises_when_no_uv_subdir(tmp_path, monkeypatch):
 
 
 def _make_fara_tree(root: Path, *, with_files: bool = True) -> Path:
-    """Build a fake {root}/FARA/C4/ tree. with_files=False creates
-    only the C4 parent so the data-missing branch can be exercised.
+    """Build a fake {root}/FARA/C4/ tree. with_files=False leaves a
+    half-downloaded C4 (some file, neither required artifact) so the
+    data-missing branch can be exercised — an entirely empty dir reads as
+    "not downloaded yet" and is skipped by design.
     """
     c4 = root / "FARA" / "C4"
     c4.mkdir(parents=True, exist_ok=True)
     if with_files:
         (c4 / "fara_nationwide_2010_2019_interpolated.Rda").write_bytes(b"\x00")
         (c4 / "varnameCountRemoved.csv").write_text("var,label\n")
+    else:
+        (c4 / "fara_2019_raw.csv").write_text("id\n")
     return c4
 
 

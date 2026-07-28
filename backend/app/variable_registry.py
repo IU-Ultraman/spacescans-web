@@ -69,6 +69,21 @@ def _discover_experiments() -> set[str]:
     }
 
 
+def _unprovisioned(root: Path) -> bool:
+    """True when a dataset dir holds no data yet — absent, or only the
+    committed `.gitkeep` skeleton (plus OS cruft like .DS_Store).
+
+    The repo ships pipeline-data/ as an empty folder skeleton, so a fresh
+    clone has every dataset dir present but empty. Treating that as
+    provisioned would make the app refuse to boot before any data is
+    downloaded — and the in-app Data Setup page is where users learn what
+    to download.
+    """
+    if not root.exists():
+        return True
+    return not any(p for p in root.iterdir() if not p.name.startswith("."))
+
+
 def _assert_tiger_data_present(payload: dict[str, Any]) -> None:
     """Pre-flight: TIGER C4 tile subdirs exist for each coverage_year.
 
@@ -82,7 +97,7 @@ def _assert_tiger_data_present(payload: dict[str, Any]) -> None:
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "TIGER" / "C4"
-    if not root.exists():
+    if _unprovisioned(root):
         return
     for key, m in payload["variables"].items():
         if m.get("experiment") != "tiger_proximity":
@@ -111,7 +126,7 @@ def _assert_nhd_data_present(payload: dict[str, Any]) -> None:
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "NHD" / "C4"
-    if not root.exists():
+    if _unprovisioned(root):
         return
     for key, m in payload["variables"].items():
         if m.get("experiment") != "nhd_bluespace":
@@ -151,7 +166,7 @@ def _assert_noise_data_present(payload: dict[str, Any]) -> None:
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "Noise" / "C3"
-    if not root.exists():
+    if _unprovisioned(root):
         return
     for key, m in payload["variables"].items():
         if m.get("experiment") != "noise":
@@ -183,7 +198,7 @@ def _assert_vnl_data_present(payload: dict[str, Any]) -> None:
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "VNL" / "C3"
-    if not root.exists():
+    if _unprovisioned(root):
         return
     for key, m in payload["variables"].items():
         if m.get("experiment") != "vnl":
@@ -215,7 +230,7 @@ def _assert_fara_data_present(payload: dict[str, Any]) -> None:
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "FARA" / "C4"
-    if not root.exists():
+    if _unprovisioned(root):
         return
     for key, m in payload["variables"].items():
         if m.get("experiment") != "fara_tract":
@@ -248,7 +263,7 @@ def _assert_temis_data_present(payload: dict[str, Any]) -> None:
     """
     from app.config import settings
     root = settings.SPACESCANS_DATA_DIR / "TEMIS" / "C4" / "raw"
-    if not root.exists():
+    if _unprovisioned(root):
         return
     for key, m in payload["variables"].items():
         if m.get("experiment") != "temis":
