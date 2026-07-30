@@ -76,7 +76,7 @@ also keeps the original-source instructions as a fallback.
 
 ### 2. Original sources only (license terms require it)
 
-| Dataset | Where | Why not on Drive |
-| --- | --- | --- |
-| VNL nighttime lights | EOG (Earth Observation Group) — **free account required** | EOG's own terms gate the download; we can't relay it |
-| TEMIS UV (daily HDFs) | KNMI/ESA TEMIS mirror | © KNMI/ESA — credits + no explicit redistribution grant, so each deployment downloads its own copy; the **first run auto-converts** the archive to fast parquet (~2 min, one-time) |
+| Dataset | Where |
+| --- | --- |
+| VNL nighttime lights | [EOG (Earth Observation Group)](https://eogdata.mines.edu/products/vnl/) — **free account required** |
+| TEMIS UV (daily HDFs) | [KNMI — TEMIS UV archive](https://www.temis.nl/uvradiation/UVarchive.php) — the **first run auto-converts** the download to fast parquet (~2 min, one-time) |
