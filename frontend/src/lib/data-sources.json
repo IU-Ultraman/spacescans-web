@@ -9,8 +9,8 @@
         "cbp_zcta5"
       ],
       "role": "Boundary geometry",
-      "sourceName": "Deployer-distributed archive (Google Drive)",
-      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "sourceName": "Deployer-distributed archive (OneDrive)",
+      "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
       "license": "Repackaged US Census Bureau TIGER/Line 2010 — US federal public domain (CC0); credit the Census Bureau.",
       "access": "public",
       "size": "~70 MB archive (116 MB extracted)",
@@ -37,8 +37,8 @@
         "fara_tract"
       ],
       "role": "Boundary geometry",
-      "sourceName": "Deployer-distributed archive (Google Drive)",
-      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "sourceName": "Deployer-distributed archive (OneDrive)",
+      "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
       "license": "US Census Bureau TIGER/Line 2010 — US federal public domain; free to use and redistribute.",
       "access": "public",
       "size": "~580 MB extracted (51 statewide sets)",
@@ -64,8 +64,8 @@
         "cbp_zcta5"
       ],
       "role": "Boundary geometry",
-      "sourceName": "Deployer-distributed archive (Google Drive)",
-      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "sourceName": "Deployer-distributed archive (OneDrive)",
+      "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
       "license": "Repackaged US Census Bureau TIGER/Line 2010 — US federal public domain (CC0); credit the Census Bureau.",
       "access": "public",
       "size": "~0.5 GB archive (801 MB extracted)",
@@ -91,8 +91,8 @@
         "tiger_proximity"
       ],
       "role": "Road geometry",
-      "sourceName": "Deployer-distributed archive (Google Drive)",
-      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "sourceName": "Deployer-distributed archive (OneDrive)",
+      "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
       "license": "Derived from US Census Bureau TIGER/Line ROADS — US federal public domain; free to use and redistribute (credit the Census Bureau).",
       "access": "public",
       "size": "1.72 GB archive (2.8 GB extracted)",
@@ -120,8 +120,8 @@
         "ndi"
       ],
       "role": "Boundary geometry",
-      "sourceName": "Deployer-distributed archive (Google Drive)",
-      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "sourceName": "Deployer-distributed archive (OneDrive)",
+      "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
       "license": "US Census Bureau TIGER/Line — US federal public domain; free to use and redistribute (credit the Census Bureau).",
       "access": "public",
       "size": "one archive covers both BG vintages (~2.1 GB extracted)",
@@ -148,8 +148,8 @@
         "ndi"
       ],
       "role": "Boundary geometry",
-      "sourceName": "Deployer-distributed archive (Google Drive)",
-      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "sourceName": "Deployer-distributed archive (OneDrive)",
+      "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
       "license": "US Census Bureau TIGER/Line 2024 (2020 BG vintage) — US federal public domain; free to use and redistribute.",
       "access": "public",
       "size": "included in bg_boundaries_v1.tar.gz (see the 2010 card)",
@@ -177,8 +177,8 @@
         "noise"
       ],
       "role": "Gridded values",
-      "sourceName": "Deployer-distributed archive (Google Drive)",
-      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "sourceName": "Deployer-distributed archive (OneDrive)",
+      "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
       "license": "US National Park Service geospatial sound model — US federal work, freely available; credit NPS (Mennitt, Sherrill & Fristrup).",
       "access": "public",
       "size": "~1.1 GB archive (1.2 GB extracted)",
@@ -208,8 +208,8 @@
         "nhd_bluespace"
       ],
       "role": "Water geometry",
-      "sourceName": "Deployer-distributed archive (Google Drive)",
-      "sourceUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
+      "sourceName": "Deployer-distributed archive (OneDrive)",
+      "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
       "license": "Derived from USGS NHDPlus High Resolution (National Release 2) — US federal public domain; free to use and redistribute (credit USGS).",
       "access": "public",
       "size": "35.8 GB archive (47 GB extracted)",
@@ -343,8 +343,8 @@
       "placeDir": [
         "FARA/C4/"
       ],
-      "downloadUrl": "https://drive.google.com/REPLACE_WITH_DRIVE_FOLDER_LINK",
-      "downloadNote": "fara_nationwide_2010_2019_interpolated.Rda (427 MB) from the same Google Drive folder as the TIGER cache; drop it in FARA/C4/. Derived from USDA ERS FARA (US federal public domain)."
+      "downloadUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
+      "downloadNote": "fara_nationwide_2010_2019_interpolated.Rda (427 MB) from the same OneDrive folder as the TIGER cache; drop it in FARA/C4/. Derived from USDA ERS FARA (US federal public domain)."
     }
   ]
 }

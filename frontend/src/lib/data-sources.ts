@@ -46,7 +46,7 @@ export interface PresetDataset {
    * placeDir guard test keeps covering them. */
   shipped?: boolean;
   /** Set when the deployer distributes the artifact for download (e.g. a
-   * Google Drive archive) instead of handing it over out of band. */
+   * OneDrive archive) instead of handing it over out of band. */
   downloadUrl?: string;
   downloadNote?: string;
 }

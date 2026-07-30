@@ -23,14 +23,14 @@ pipeline-data/
 ├── NDI/C4/                                 ndi_bg_acs5_..._xgboost.rds  (ships with the repo)
 ├── Walkability/C4/                         epawalkind_nationwide_2016_2021.Rda  (ships with the repo)
 ├── Community_Organization_Density/C4/      cbp_nationwide_*.Rda , zbp_nationwide_*.Rda  (ship with the repo)
-├── FARA/C4/                                fara_nationwide_2010_2019_interpolated.Rda  (Google Drive; varnameCountRemoved.csv ships with the repo)
-├── cache/C3/nhd_features/                  tile_gx*_gy*_{flow,water,area,coast}.parquet  (Google Drive; raw GDB not needed)
-├── cache/C3/tiger_roads_filtered/          {year}/{SSCCC}.parquet  (Google Drive; raw Census zips not needed)
-├── BG/C3/                                  tiger2010_bg10_states/ , tiger2024_bg_states/  (Google Drive)
-├── TRACT/C3/                               tl_2010_<ss>_tract10/*.shp  (Google Drive)
-├── County/C3/                              tl_2010_us_county10/*.shp  (Google Drive)
-├── ZCTA5/C3/                               tl_2010_us_zcta510/*.shp  (Google Drive)
-├── Noise/C3/                               CONUS_*_L50dBA_*.tif  (Google Drive)
+├── FARA/C4/                                fara_nationwide_2010_2019_interpolated.Rda  (OneDrive; varnameCountRemoved.csv ships with the repo)
+├── cache/C3/nhd_features/                  tile_gx*_gy*_{flow,water,area,coast}.parquet  (OneDrive; raw GDB not needed)
+├── cache/C3/tiger_roads_filtered/          {year}/{SSCCC}.parquet  (OneDrive; raw Census zips not needed)
+├── BG/C3/                                  tiger2010_bg10_states/ , tiger2024_bg_states/  (OneDrive)
+├── TRACT/C3/                               tl_2010_<ss>_tract10/*.shp  (OneDrive)
+├── County/C3/                              tl_2010_us_county10/*.shp  (OneDrive)
+├── ZCTA5/C3/                               tl_2010_us_zcta510/*.shp  (OneDrive)
+├── Noise/C3/                               CONUS_*_L50dBA_*.tif  (OneDrive)
 ├── VNL/C3/                                 VNL_v21_npp_*.tif  (EOG — account required)
 ├── TEMIS/C3/                               temis_template.tif  (ships with the repo)
 └── TEMIS/C4/raw/                           uvddc/ uvdec/ ...  (KNMI TEMIS — see group 2)
@@ -43,13 +43,15 @@ Only the datasets for the variables you actually run are required. The in-app
 
 ## Where the data comes from
 
-### 1. The deployer's Google Drive folder (one-stop download)
+### 1. The deployer's OneDrive folder (one-stop download)
+
+<https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck>
 
 One shared folder holds these archives (each with a `MANIFEST.txt` inside;
 verify downloads against the folder's `SHA256SUMS.txt`). Run each command
 below from the repo root, exactly as written:
 
-| Archive | Extract with | Why it's on Drive instead of an official site |
+| Archive | Extract with | Why it's on OneDrive instead of an official site |
 | --- | --- | --- |
 | `tiger_roads_filtered_cache_v1.tar.gz` (1.7 GB) | `tar -xzf tiger_roads_filtered_cache_v1.tar.gz -C pipeline-data/` | **derived cache** — S1100/S1200-filtered roads per (county, year); replaces 28 GB of per-county Census zips *and* the first-run filtering |
 | `nhd_features_cache_v1.tar.gz` (36 GB) | `tar -xzf nhd_features_cache_v1.tar.gz -C pipeline-data/` | **derived cache** — pretiled NHDPlus water features; replaces the 61 GB GDB *and* hours of first-run tiling |
