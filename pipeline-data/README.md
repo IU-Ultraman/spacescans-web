@@ -53,16 +53,16 @@ One shared folder holds these archives (each with a `MANIFEST.txt` inside;
 verify downloads against the folder's `SHA256SUMS.txt`). Run each command
 below from the repo root, exactly as written:
 
-| Archive | Extract with | Why it's on OneDrive instead of an official site |
-| --- | --- | --- |
-| `tiger_roads_filtered_cache_v1.tar.gz` (1.7 GB) | `tar -xzf tiger_roads_filtered_cache_v1.tar.gz -C pipeline-data/` | **derived cache** — S1100/S1200-filtered roads per (county, year); replaces 28 GB of per-county Census zips *and* the first-run filtering |
-| `nhd_features_cache_v1.tar.gz` (36 GB) | `tar -xzf nhd_features_cache_v1.tar.gz -C pipeline-data/` | **derived cache** — pretiled NHDPlus water features; replaces the 61 GB GDB *and* hours of first-run tiling |
-| `fara_nationwide_2010_2019_interpolated.Rda` (427 MB) | `mv fara_nationwide_2010_2019_interpolated.Rda pipeline-data/FARA/C4/` | **preprocessed artifact** — interpolated from USDA FARA; not downloadable anywhere else |
-| `bg_boundaries_v1.tar.gz` (1.25 GB) | `tar -xzf bg_boundaries_v1.tar.gz -C pipeline-data/` | **too tedious by hand** — 102 statewide shapefile zips (51 × 2010 vintage + 51 × 2020 vintage) |
-| `tract_boundaries_v1.tar.gz` (0.33 GB) | `tar -xzf tract_boundaries_v1.tar.gz -C pipeline-data/` | **too tedious by hand** — 51 statewide shapefile zips |
-| `county_boundaries_v1.tar.gz` (70 MB) | `tar -xzf county_boundaries_v1.tar.gz -C pipeline-data/` | **convenience** — one-stop with the rest |
-| `zcta5_boundaries_v1.tar.gz` (0.49 GB) | `tar -xzf zcta5_boundaries_v1.tar.gz -C pipeline-data/` | **convenience** — one-stop with the rest |
-| `noise_v1.tar.gz` (1.11 GB) | `tar -xzf noise_v1.tar.gz -C pipeline-data/` | **convenience** — three NPS TIFs, exact filenames required |
+| Archive — exposome variable(s) it feeds | Extract with |
+| --- | --- |
+| `tiger_roads_filtered_cache_v1.tar.gz` (1.7 GB) — **Road Proximity** | `tar -xzf tiger_roads_filtered_cache_v1.tar.gz -C pipeline-data/` |
+| `nhd_features_cache_v1.tar.gz` (36 GB) — **Bluespace** | `tar -xzf nhd_features_cache_v1.tar.gz -C pipeline-data/` |
+| `fara_nationwide_2010_2019_interpolated.Rda` (427 MB) — **Food Access (FARA)** | `mv fara_nationwide_2010_2019_interpolated.Rda pipeline-data/FARA/C4/` |
+| `bg_boundaries_v1.tar.gz` (1.25 GB) — **Walkability + NDI** (2010 & 2020 vintages in one archive) | `tar -xzf bg_boundaries_v1.tar.gz -C pipeline-data/` |
+| `tract_boundaries_v1.tar.gz` (0.33 GB) — **Food Access (FARA)** | `tar -xzf tract_boundaries_v1.tar.gz -C pipeline-data/` |
+| `county_boundaries_v1.tar.gz` (70 MB) — **Road Proximity + Community Organization Density** | `tar -xzf county_boundaries_v1.tar.gz -C pipeline-data/` |
+| `zcta5_boundaries_v1.tar.gz` (0.49 GB) — **Community Organization Density** | `tar -xzf zcta5_boundaries_v1.tar.gz -C pipeline-data/` |
+| `noise_v1.tar.gz` (1.11 GB) — **Noise** | `tar -xzf noise_v1.tar.gz -C pipeline-data/` |
 
 Every archive carries its full path from the data root, so the `tar`
 command is identical for all of them.

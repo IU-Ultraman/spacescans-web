@@ -17,7 +17,7 @@
       "files": [
         {
           "name": "county_boundaries_v1.tar.gz",
-          "note": "MANIFEST.txt inside; verify with SHA256SUMS.txt in the Drive folder"
+          "note": "MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
         }
       ],
       "placeDir": [
@@ -45,7 +45,7 @@
       "files": [
         {
           "name": "tract_boundaries_v1.tar.gz",
-          "note": "51 statewide 2010 tract sets; MANIFEST.txt inside; verify with SHA256SUMS.txt in the Drive folder"
+          "note": "51 statewide 2010 tract sets; MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
         }
       ],
       "placeDir": [
@@ -72,7 +72,7 @@
       "files": [
         {
           "name": "zcta5_boundaries_v1.tar.gz",
-          "note": "MANIFEST.txt inside; verify with SHA256SUMS.txt in the Drive folder"
+          "note": "MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
         }
       ],
       "placeDir": [
@@ -99,7 +99,7 @@
       "files": [
         {
           "name": "tiger_roads_filtered_cache_v1.tar.gz",
-          "note": "S1100/S1200 roads, one parquet per (county, year), all 22,618 county-years 2013–2019; MANIFEST.txt inside.; verify with SHA256SUMS.txt in the Drive folder"
+          "note": "S1100/S1200 roads, one parquet per (county, year), all 22,618 county-years 2013–2019; MANIFEST.txt inside.; verify with SHA256SUMS.txt in the OneDrive folder"
         }
       ],
       "placeDir": [
@@ -128,7 +128,7 @@
       "files": [
         {
           "name": "bg_boundaries_v1.tar.gz",
-          "note": "51 statewide 2010-vintage sets AND the 51 2020-vintage sets in one archive; MANIFEST.txt inside; verify with SHA256SUMS.txt in the Drive folder"
+          "note": "51 statewide 2010-vintage sets AND the 51 2020-vintage sets in one archive; MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
         }
       ],
       "placeDir": [
@@ -156,7 +156,7 @@
       "files": [
         {
           "name": "bg_boundaries_v1.tar.gz",
-          "note": "same archive as the 2010-vintage card — one download covers both; MANIFEST.txt inside; verify with SHA256SUMS.txt in the Drive folder"
+          "note": "same archive as the 2010-vintage card — one download covers both; MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
         }
       ],
       "placeDir": [
@@ -185,7 +185,7 @@
       "files": [
         {
           "name": "noise_v1.tar.gz",
-          "note": "MANIFEST.txt inside; verify with SHA256SUMS.txt in the Drive folder"
+          "note": "MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
         }
       ],
       "placeDir": [
@@ -216,7 +216,7 @@
       "files": [
         {
           "name": "nhd_features_cache_v1.tar.gz",
-          "note": "flow/water/area/coast features per 0.5° tile, full CONUS (14,856 parquets); MANIFEST.txt inside; verify with SHA256SUMS.txt in the Drive folder"
+          "note": "flow/water/area/coast features per 0.5° tile, full CONUS (14,856 parquets); MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
         }
       ],
       "placeDir": [
