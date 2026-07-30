@@ -76,7 +76,10 @@ also keeps the original-source instructions as a fallback.
 
 ### 2. Original sources only (license terms require it)
 
-| Dataset | Where |
-| --- | --- |
-| VNL nighttime lights | [EOG (Earth Observation Group)](https://eogdata.mines.edu/products/vnl/) — **free account required** |
-| TEMIS UV (daily HDFs) | [KNMI — TEMIS UV archive](https://www.temis.nl/uvradiation/UVarchive.php) — the **first run auto-converts** the download to fast parquet (~2 min, one-time) |
+| Dataset | Download what | Put it in |
+| --- | --- | --- |
+| VNL nighttime lights — [EOG (Earth Observation Group)](https://eogdata.mines.edu/products/vnl/), **free account required** | `VNL_v21_npp_{year}_global_*.average_masked.dat.tif.gz`, one per year **2013–2019** (pick the *average_masked* variant, ~11 GB/year uncompressed). `gunzip` each after download; keep the original filenames — the reader parses the year from them | `pipeline-data/VNL/C3/` |
+| TEMIS UV — [KNMI UV archive](https://www.temis.nl/uvradiation/UVarchive.php) | daily `{var}YYYYMMDD.hdf` for the four variables `uvief`, `uvdec`, `uvdvc`, `uvddc`, years **2013–2019** (~10,000 files, ~29 GB). Scriptable from the mirror: `https://d1qb6yzwaaq4he.cloudfront.net/uvradiation/v2.0/{year}/{mm}/{var}YYYYMMDD.hdf` | `pipeline-data/TEMIS/C4/raw/{var}/{year}/` — one folder per variable, then per year (the committed `raw/uv*` dirs mark the spots) |
+
+The first run auto-converts the TEMIS HDFs to compact parquet (one-time,
+~2 min); every later run reads parquet in seconds — no manual step.
