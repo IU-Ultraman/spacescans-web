@@ -11,5 +11,7 @@
     "3000": { "label": "frontend (open this)" },
     "8000": { "label": "backend API" }
   },
-  "postCreateCommand": "bash -c 'cp -n .env.docker.example .env || true; grep -q change-me-to-a-real-secret .env && sed -i \"s/^SECRET_KEY=.*/SECRET_KEY=$(openssl rand -hex 32)/\" .env; if [ -n \"$CODESPACE_NAME\" ] && ! grep -q ^NEXT_PUBLIC_API_URL=https .env; then sed -i \"s|^NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=https://${CODESPACE_NAME}-8000.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}|\" .env; fi; true'"
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "bash .devcontainer/post-start.sh",
+  "postAttachCommand": "bash .devcontainer/post-attach.sh"
 }

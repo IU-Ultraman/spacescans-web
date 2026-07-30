@@ -26,3 +26,4 @@ docs/superpowers/
 # macOS Finder cruft — anywhere in the tree
 .DS_Store
 **/.DS_Store
+.devcontainer/compose-up.log
