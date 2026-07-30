@@ -47,7 +47,7 @@ Only the datasets for the variables you actually run are required. The in-app
 
 ### 1. The deployer's OneDrive folder (one-stop download)
 
-<https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck>
+Download everything from **[the shared OneDrive folder](https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck)**.
 
 One shared folder holds these archives (each with a `MANIFEST.txt` inside;
 verify downloads against the folder's `SHA256SUMS.txt`). Run each command
