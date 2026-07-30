@@ -2,9 +2,11 @@
 
 This folder is the pipeline's data root (`SPACESCANS_DATA_DIR` → mounted at
 `/project` in Docker). **The big datasets are gitignored** — never committed.
-What ships with the repo: the folder skeleton (a `.gitkeep` per dataset dir),
-this README, and the small committed files marked "(ships with the repo)" in
-the tree below.
+What ships with the repo: this README, the small committed files marked
+"(ships with the repo)" in the tree below, and empty `VNL/` + `TEMIS/C4/raw/`
+skeleton dirs (those two are download-it-yourself datasets, so the dirs mark
+where the files go). Everything else appears when you extract the OneDrive
+archives — they carry their own paths relative to this folder.
 
 Drop the data in the layout below. Config templates reference these paths
 relative to the data root (e.g. `Walkability/C4/...`), so the subfolder

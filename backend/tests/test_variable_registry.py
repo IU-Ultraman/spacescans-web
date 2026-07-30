@@ -482,18 +482,21 @@ def test_preflights_skip_on_an_actual_fresh_clone_tree(tmp_path, monkeypatch):
     demanded the 427 MB .Rda and GET /api/variables 500'd on every fresh
     clone. This fixture mirrors `git archive HEAD pipeline-data` exactly;
     keep it in sync when committing new files under pipeline-data/.
+
+    (Since the gitkeep cleanup, the only skeleton dirs shipped are VNL/C3
+    and TEMIS/C4/raw/* — the download-it-yourself datasets. Everything
+    else materializes when the OneDrive archives are extracted.)
     """
     from app import variable_registry as vr
     from app.config import settings
 
     for rel in (
-        "TIGER/C4", "NHD/C4", "Noise/C3", "VNL/C3",
-        "TEMIS/C4/raw/uvddc", "TEMIS/C4/raw/uvdec",
+        "VNL/C3",
+        "TEMIS/C4/raw", "TEMIS/C4/raw/uvddc", "TEMIS/C4/raw/uvdec",
         "TEMIS/C4/raw/uvdvc", "TEMIS/C4/raw/uvief",
-        "BG/C3", "County/C3", "TRACT/C3", "ZCTA5/C3",
     ):
         d = tmp_path / rel
-        d.mkdir(parents=True)
+        d.mkdir(parents=True, exist_ok=True)
         (d / ".gitkeep").touch()
     for rel in (
         "README.md",
