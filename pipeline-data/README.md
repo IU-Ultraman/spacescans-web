@@ -49,9 +49,33 @@ Only the datasets for the variables you actually run are required. The in-app
 
 Download everything from **[the shared OneDrive folder](https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck)**.
 
-One shared folder holds these archives (each with a `MANIFEST.txt` inside;
-verify downloads against the folder's `SHA256SUMS.txt`). Run each command
-below from the repo root, exactly as written:
+Three ways to get these in place, all equivalent:
+
+- **Running the app on this machine?** Download from the folder, then run the
+  `tar` command in the table below from the repo root.
+- **Prefer not to touch a terminal?** Upload the downloaded archive on the
+  app's **Data Setup** page — the server verifies its checksum and extracts it
+  for you.
+- **App running somewhere else** (a Codespace, a remote VM, so there is no
+  local copy to upload)? Fetch it straight in, no browser involved:
+
+  ```bash
+  scripts/fetch_distribution.sh --list                       # what's available
+  scripts/fetch_distribution.sh tract_boundaries_v1.tar.gz   # one artifact
+  scripts/fetch_distribution.sh --small                      # all but the 38 GB NHD cache
+  ```
+
+  It downloads, verifies the SHA-256, extracts, and deletes the archive, so
+  peak disk is one archive rather than all of them.
+
+> **Codespaces disk:** a default codespace has ~32 GB. Everything except the
+> NHD cache fits (~5.8 GB downloaded, ~8.6 GB extracted). The NHD cache needs
+> ~89 GB and will not fit — run the bluespace variable on a machine with real
+> storage, or pick a larger machine type when creating the codespace.
+
+Each archive carries a `MANIFEST.txt` inside; the folder's `SHA256SUMS.txt`
+holds the checksums (both the upload panel and the fetch script check them for
+you). Run each command below from the repo root, exactly as written:
 
 | Archive — exposome variable(s) it feeds | Extract with |
 | --- | --- |
