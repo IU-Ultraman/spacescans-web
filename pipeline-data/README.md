@@ -56,37 +56,34 @@ disk is one archive, not all of them). No browser, no `tar` flags, identical on
 macOS and Linux. Some variables need two artifacts (values plus the boundary
 geometry they are linked through); pass both to one invocation:
 
-Sizes are **download → on disk after extraction** (an archive is deleted once
-extracted, so the transient peak is the larger of the two plus the archive):
-
-| Exposome variable | Download → on disk | Command |
+| Exposome variable | On disk | Command |
 | --- | --- | --- |
-| **Road Proximity** | 1.9 → 3.1 GB | `scripts/fetch_distribution.sh tiger_roads_filtered_cache_v1.tar.gz county_boundaries_v1.tar.gz` |
-| **Bluespace** | 38.5 → 50.3 GB | `scripts/fetch_distribution.sh nhd_features_cache_v1.tar.gz` |
-| **Food Access (FARA)** | 0.8 → 1.1 GB | `scripts/fetch_distribution.sh fara_nationwide_2010_2019_interpolated.Rda tract_boundaries_v1.tar.gz` |
-| **Walkability** | 1.3 → 2.3 GB | `scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz` |
-| **NDI** | 1.3 → 2.3 GB | `scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz` |
-| **Community Organization Density** | 0.6 → 1.0 GB | `scripts/fetch_distribution.sh zcta5_boundaries_v1.tar.gz county_boundaries_v1.tar.gz` |
-| **Noise** | 1.2 → 1.3 GB | `scripts/fetch_distribution.sh noise_v1.tar.gz` |
+| **Road Proximity** | 3.1 GB | `scripts/fetch_distribution.sh tiger_roads_filtered_cache_v1.tar.gz county_boundaries_v1.tar.gz` |
+| **Bluespace** | 50.3 GB | `scripts/fetch_distribution.sh nhd_features_cache_v1.tar.gz` |
+| **Food Access (FARA)** | 1.1 GB | `scripts/fetch_distribution.sh fara_nationwide_2010_2019_interpolated.Rda tract_boundaries_v1.tar.gz` |
+| **Walkability** | 2.3 GB | `scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz` |
+| **NDI** | 2.3 GB | `scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz` |
+| **Community Organization Density** | 1.0 GB | `scripts/fetch_distribution.sh zcta5_boundaries_v1.tar.gz county_boundaries_v1.tar.gz` |
+| **Noise** | 1.3 GB | `scripts/fetch_distribution.sh noise_v1.tar.gz` |
 | **Nighttime Lights (VNL)**, **UV (TEMIS)** | — | not redistributable — see group 2 below |
 
 Walkability and NDI share one archive, as do Road Proximity and Community
-Organization Density (both need county boundaries) — fetching a dataset you
-already have is a no-op re-download, not a duplicate on disk. All seven
-variables together come to 5.8 → 8.5 GB, plus Bluespace if you have room.
+Organization Density (both need county boundaries), so the shared parts are not
+stored twice — all seven variables together come to **8.5 GB**, plus Bluespace
+if you have room.
 
 Walkability, NDI and Community Organization Density also need a preprocessed
 `.Rda`/`.rds` panel, but those ship inside the repo — nothing to fetch.
 
 ```bash
-scripts/fetch_distribution.sh --list     # every artifact, download and extracted size
-scripts/fetch_distribution.sh --small    # all seven above in one go (5.8 → 8.5 GB)
+scripts/fetch_distribution.sh --list     # every artifact with its size
+scripts/fetch_distribution.sh --small    # all seven above in one go (8.5 GB)
 ```
 
 > **Codespaces disk:** a default codespace has ~32 GB, so `--small` fits
-> comfortably. Bluespace does not: the NHD cache needs 38.5 GB to download plus
-> 50.3 GB extracted (~89 GB peak). Run that variable on a machine with real
-> storage, or pick a larger machine type when creating the codespace.
+> comfortably. Bluespace does not — it needs ~89 GB free while unpacking. Run
+> that variable on a machine with real storage, or pick a larger machine type
+> when creating the codespace.
 
 Rather not use a terminal? The app's **Data Setup** page also takes archive
 uploads, and shows the same per-dataset command.
