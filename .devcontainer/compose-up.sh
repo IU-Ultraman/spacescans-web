@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # Bring the compose stack up. Shared by post-create (--build) and post-start.
-# Self-serializing: the flock makes concurrent invocations (e.g. post-start
-# firing while the first-creation background build is running) skip cleanly.
+# Runs SYNCHRONOUSLY inside the lifecycle hooks: backgrounded children are
+# reaped when the hook exits on Codespaces (observed 2026-07-31, even with
+# setsid+nohup), so we block instead. First creation streams the build into
+# the creation log; resumes take seconds when the images already exist.
+# The flock makes concurrent invocations skip cleanly instead of stacking.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 LOG=".devcontainer/compose-up.log"
 
 # .env must exist before ANY build (NEXT_PUBLIC_API_URL is baked into the
-# frontend image). post-create runs this too, but going through here covers
-# the resume path of a codespace that never ran the new post-create (e.g.
-# created before these hooks existed, then git-pulled). Idempotent.
+# frontend image at build time). Idempotent.
 bash .devcontainer/setup-env.sh
 
 exec 9>/tmp/compose-up.lock
@@ -26,4 +27,4 @@ flock -n 9 || { echo "compose-up already running — tail -f $LOG"; exit 0; }
   fi
   docker compose up -d "$@"
   echo "=== $(date -u '+%F %TZ') compose-up done rc=$?"
-} >>"$LOG" 2>&1
+} 2>&1 | tee -a "$LOG"
