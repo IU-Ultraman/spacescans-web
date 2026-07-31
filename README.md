@@ -30,10 +30,22 @@ docker compose up --build        # first build takes a few minutes
 
 Then open `http://localhost:3000` and **sign up** to create an account.
 
-The app runs without any exposure data — sign in and open **Data Setup**,
-which lists every dataset, where to download it, and the exact folder to
-drop it into under `pipeline-data/`. Add only the datasets for the
-variables you plan to run.
+The app runs without any exposure data. To add a dataset, run one command
+from this directory — it downloads from the deployer's shared folder,
+verifies the checksum and extracts it into `pipeline-data/`:
+
+```bash
+scripts/fetch_distribution.sh --list                       # what's available
+scripts/fetch_distribution.sh tract_boundaries_v1.tar.gz   # one dataset
+scripts/fetch_distribution.sh --small                      # all but the 38 GB NHD cache
+```
+
+Add only what the variables you plan to run need — the in-app **Data Setup**
+page shows the command for each variable, and takes archive uploads if you
+would rather not use a terminal. Datasets whose licenses forbid
+redistribution (VNL, TEMIS) are listed there with their original download
+sites. See [pipeline-data/README.md](pipeline-data/README.md) for the full
+layout.
 
 ---
 

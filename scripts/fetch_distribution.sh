@@ -43,14 +43,22 @@ case "${1:-}" in
   ""|-h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   --list) list_artifacts; exit 0 ;;
   --small)
-    mapfile -t NAMES < <(py "
+    # No mapfile/readarray here: macOS ships bash 3.2, where they don't exist.
+    NAMES=()
+    while IFS= read -r line; do
+      NAMES+=("$line")
+    done <<EOF
+$(py "
 import json
 m = json.load(open('$MANIFEST'))['artifacts']
 print('\n'.join(n for n in m if 'nhd' not in n))
 ")
+EOF
     ;;
   *) NAMES=("$@") ;;
 esac
+
+[ "${#NAMES[@]}" -gt 0 ] || { echo "nothing to fetch"; exit 1; }
 
 # The share link lives in the Data Setup catalog — one source of truth.
 SHARE_URL=$(py "
@@ -95,7 +103,10 @@ print(s['sha256'], s['kind'], s.get('dest', '-'))
 
   ARCHIVE="$WORK/$NAME"
   echo "==> $NAME"
-  if ! curl -sfL --max-time 21600 -b "$COOKIES" -o "$ARCHIVE" --progress-bar \
+  # No -s here: it would mute --progress-bar, leaving a 38 GB download looking
+  # like a hang. The bar goes to stderr; -f still turns HTTP errors into a
+  # non-zero exit.
+  if ! curl -fL --max-time 21600 -b "$COOKIES" -o "$ARCHIVE" --progress-bar \
       "https://$HOST/$SITE/_api/web/GetFileByServerRelativeUrl('$FOLDER/$NAME')/\$value"; then
     echo "    download failed"; rm -f "$ARCHIVE"; exit 1
   fi

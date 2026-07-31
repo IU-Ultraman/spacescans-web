@@ -47,56 +47,58 @@ Only the datasets for the variables you actually run are required. The in-app
 
 ### 1. The deployer's OneDrive folder (one-stop download)
 
-Download everything from **[the shared OneDrive folder](https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck)**.
+**One command per dataset, run from the repo root** — it downloads from the
+shared folder, verifies the SHA-256, extracts into place, and deletes the
+archive (so peak disk is one archive, not all of them). No browser, no `tar`
+flags, identical on macOS and Linux:
 
-Three ways to get these in place, all equivalent:
+| Dataset — exposome variable(s) it feeds | Command |
+| --- | --- |
+| Prefiltered TIGER roads (1.7 GB) — **Road Proximity** | `scripts/fetch_distribution.sh tiger_roads_filtered_cache_v1.tar.gz` |
+| Pretiled NHD water (38 GB) — **Bluespace** | `scripts/fetch_distribution.sh nhd_features_cache_v1.tar.gz` |
+| FARA interpolated panel (0.45 GB) — **Food Access** | `scripts/fetch_distribution.sh fara_nationwide_2010_2019_interpolated.Rda` |
+| Block-group boundaries (1.3 GB) — **Walkability + NDI** (both vintages) | `scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz` |
+| Tract boundaries (0.36 GB) — **Food Access** | `scripts/fetch_distribution.sh tract_boundaries_v1.tar.gz` |
+| County boundaries (0.07 GB) — **Road Proximity + Community Organization Density** | `scripts/fetch_distribution.sh county_boundaries_v1.tar.gz` |
+| ZCTA5 boundaries (0.52 GB) — **Community Organization Density** | `scripts/fetch_distribution.sh zcta5_boundaries_v1.tar.gz` |
+| NPS noise rasters (1.2 GB) — **Noise** | `scripts/fetch_distribution.sh noise_v1.tar.gz` |
 
-- **Running the app on this machine?** Download from the folder, then run the
-  `tar` command in the table below from the repo root.
-- **Prefer not to touch a terminal?** Upload the downloaded archive on the
-  app's **Data Setup** page — the server verifies its checksum and extracts it
-  for you.
-- **App running somewhere else** (a Codespace, a remote VM, so there is no
-  local copy to upload)? Fetch it straight in, no browser involved:
+```bash
+scripts/fetch_distribution.sh --list     # sizes, download and extracted
+scripts/fetch_distribution.sh --small    # all of the above except the 38 GB NHD cache
+```
+
+> **Codespaces disk:** a default codespace has ~32 GB. `--small` fits
+> (~5.8 GB downloaded, ~8.6 GB extracted); the NHD cache needs ~89 GB and will
+> not — run the bluespace variable on a machine with real storage, or pick a
+> larger machine type when creating the codespace.
+
+Two alternatives if the command doesn't suit:
+
+- **Already downloaded the archives, or the server has no internet?** Grab them
+  from **[the shared OneDrive folder](https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck)**
+  and extract by hand from the repo root — one identical command per archive
+  (`mv` the FARA `.Rda` into `pipeline-data/FARA/C4/` instead):
 
   ```bash
-  scripts/fetch_distribution.sh --list                       # what's available
-  scripts/fetch_distribution.sh tract_boundaries_v1.tar.gz   # one artifact
-  scripts/fetch_distribution.sh --small                      # all but the 38 GB NHD cache
+  tar --exclude='._*' --exclude='.DS_Store' -xzf <archive>.tar.gz -C pipeline-data/
   ```
 
-  It downloads, verifies the SHA-256, extracts, and deletes the archive, so
-  peak disk is one archive rather than all of them.
+  Every archive carries its full path from the data root, which is why the
+  command never changes. The `--exclude` flags drop macOS metadata files the
+  archives were packed with: macOS `tar` reabsorbs the `._x` sidecars silently,
+  but GNU `tar` on Linux would write one junk `._file` beside every real file
+  (~15k of them for the NHD cache). Nothing reads them either way — every
+  dataset resolves an exact filename — so extracting without the flags is safe,
+  just untidy. GNU tar additionally prints `Ignoring unknown extended header
+  keyword 'LIBARCHIVE.xattr...'`; that warning is harmless.
 
-> **Codespaces disk:** a default codespace has ~32 GB. Everything except the
-> NHD cache fits (~5.8 GB downloaded, ~8.6 GB extracted). The NHD cache needs
-> ~89 GB and will not fit — run the bluespace variable on a machine with real
-> storage, or pick a larger machine type when creating the codespace.
+- **Prefer a GUI?** Upload a downloaded archive on the app's **Data Setup**
+  page — the server checks the same SHA-256 and extracts it for you.
 
-Each archive carries a `MANIFEST.txt` inside; the folder's `SHA256SUMS.txt`
-holds the checksums (both the upload panel and the fetch script check them for
-you). Run each command below from the repo root, exactly as written:
-
-| Archive — exposome variable(s) it feeds | Extract with |
-| --- | --- |
-| `tiger_roads_filtered_cache_v1.tar.gz` (1.7 GB) — **Road Proximity** | `tar --exclude='._*' --exclude='.DS_Store' -xzf tiger_roads_filtered_cache_v1.tar.gz -C pipeline-data/` |
-| `nhd_features_cache_v1.tar.gz` (36 GB) — **Bluespace** | `tar --exclude='._*' --exclude='.DS_Store' -xzf nhd_features_cache_v1.tar.gz -C pipeline-data/` |
-| `fara_nationwide_2010_2019_interpolated.Rda` (427 MB) — **Food Access (FARA)** | `mv fara_nationwide_2010_2019_interpolated.Rda pipeline-data/FARA/C4/` |
-| `bg_boundaries_v1.tar.gz` (1.25 GB) — **Walkability + NDI** (2010 & 2020 vintages in one archive) | `tar --exclude='._*' --exclude='.DS_Store' -xzf bg_boundaries_v1.tar.gz -C pipeline-data/` |
-| `tract_boundaries_v1.tar.gz` (0.33 GB) — **Food Access (FARA)** | `tar --exclude='._*' --exclude='.DS_Store' -xzf tract_boundaries_v1.tar.gz -C pipeline-data/` |
-| `county_boundaries_v1.tar.gz` (70 MB) — **Road Proximity + Community Organization Density** | `tar --exclude='._*' --exclude='.DS_Store' -xzf county_boundaries_v1.tar.gz -C pipeline-data/` |
-| `zcta5_boundaries_v1.tar.gz` (0.49 GB) — **Community Organization Density** | `tar --exclude='._*' --exclude='.DS_Store' -xzf zcta5_boundaries_v1.tar.gz -C pipeline-data/` |
-| `noise_v1.tar.gz` (1.11 GB) — **Noise** | `tar --exclude='._*' --exclude='.DS_Store' -xzf noise_v1.tar.gz -C pipeline-data/` |
-
-Every archive carries its full path from the data root, so the `tar`
-command is identical for all of them. The `--exclude` flags drop macOS
-metadata files the archives were packed with: macOS `tar` reabsorbs the `._x`
-sidecars silently, but GNU `tar` on Linux would write one junk `._file` beside
-every real file (~15k of them for the NHD cache). Nothing reads them either way —
-every dataset is resolved by exact filename — so an extraction done without
-the flag is safe, just untidy. GNU tar also prints
-`Ignoring unknown extended header keyword 'LIBARCHIVE.xattr...'` for these
-archives; that warning is harmless.
+Each archive also carries a `MANIFEST.txt` inside, and the folder's
+`SHA256SUMS.txt` holds the published checksums (the script, the upload panel
+and `shasum -a 256 -c` all check the same digests).
 
 Everything in this group is either US-federal public domain (Census
 TIGER/Line under CC0, USGS NHDPlus, USDA FARA, NPS sound model — free to

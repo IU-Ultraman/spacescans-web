@@ -30,10 +30,13 @@ export interface SelfServeDataset {
   files: DatasetFile[];
   placeDir: string[];
   notes: string[];
-  /** One-line shell command for deployer-distributed archives. The archive
-   * carries data-root-relative paths, so this single command (run from the
-   * repo root) lands everything where the pipeline reads it — placeDir then
-   * just documents what the extraction creates. */
+  /** Primary one-liner for deployer-distributed artifacts: downloads from the
+   * shared folder, verifies the SHA-256 and extracts, all from the repo root.
+   * Works the same on macOS and Linux. */
+  fetch?: string;
+  /** Fallback for an archive you already downloaded: the archive carries
+   * data-root-relative paths, so this single command lands everything where
+   * the pipeline reads it — placeDir then documents what it creates. */
   extract?: string;
 }
 
@@ -54,6 +57,9 @@ export interface PresetDataset {
    * OneDrive archive) instead of handing it over out of band. */
   downloadUrl?: string;
   downloadNote?: string;
+  /** Primary one-liner that fetches + places this artifact (see
+   * SelfServeDataset.fetch). */
+  fetchCmd?: string;
 }
 
 export const SELF_SERVE_DATASETS = raw.selfServe as SelfServeDataset[];

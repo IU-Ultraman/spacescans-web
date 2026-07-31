@@ -78,17 +78,20 @@ export function SelfServeCard({ d }: { d: SelfServeDataset }) {
         </ul>
       </div>
 
-      {d.extract ? (
+      {d.fetch ? (
         <div className="space-y-1">
           <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-            <FolderInput className="size-3.5" /> Extract (from the repo root)
-            — or upload the archive at the top of this page
+            <FolderInput className="size-3.5" /> Get it — one command from the
+            repo root
           </p>
           <code className="block w-fit max-w-full break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
-            {d.extract}
+            {d.fetch}
           </code>
           <p className="text-[11px] text-muted-foreground">
-            The archive carries its own paths — this one command creates:
+            Downloads, verifies the checksum and extracts — same on macOS and
+            Linux. Already downloaded it? Run{" "}
+            <code className="rounded bg-muted px-1 py-0.5">{d.extract}</code>{" "}
+            instead, or upload the archive at the top of this page. Creates:
           </p>
           <ul className="space-y-0.5">
             {d.placeDir.map((p) => (
@@ -157,17 +160,25 @@ export function PresetCard({ d }: { d: PresetDataset }) {
         ))}
       </div>
       {d.downloadUrl ? (
-        <p className="pt-1 text-[11px] text-muted-foreground">
-          <a
-            href={d.downloadUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium text-foreground underline underline-offset-2"
-          >
-            Download from the deployer&apos;s archive
-          </a>
-          {d.downloadNote ? <> — {d.downloadNote}</> : null}
-        </p>
+        <div className="space-y-1 pt-1">
+          {d.fetchCmd ? (
+            <code className="block w-fit max-w-full break-all rounded bg-muted px-2 py-1 text-[11px] text-foreground">
+              {d.fetchCmd}
+            </code>
+          ) : null}
+          <p className="text-[11px] text-muted-foreground">
+            {d.fetchCmd ? "One command from the repo root, or " : null}
+            <a
+              href={d.downloadUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-foreground underline underline-offset-2"
+            >
+              download from the deployer&apos;s archive
+            </a>
+            {d.downloadNote ? <> — {d.downloadNote}</> : null}
+          </p>
+        </div>
       ) : (
         <p className="pt-1 text-[11px] text-muted-foreground">
           Supplied by the deployer — not downloadable from an official site.
