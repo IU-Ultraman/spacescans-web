@@ -47,10 +47,13 @@ Only the datasets for the variables you actually run are required. The in-app
 
 ### 1. The deployer's OneDrive folder (one-stop download)
 
-**One command per dataset, run from the repo root** — it downloads from the
-shared folder, verifies the SHA-256, extracts into place, and deletes the
-archive (so peak disk is one archive, not all of them). No browser, no `tar`
-flags, identical on macOS and Linux:
+Everything here lives in **[the shared OneDrive folder](https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck)**,
+which the command below pulls from.
+
+**One command per dataset, run from the repo root** — it downloads, verifies
+the SHA-256, extracts into place, and deletes the archive (so peak disk is one
+archive, not all of them). No browser, no `tar` flags, identical on macOS and
+Linux:
 
 | Dataset — exposome variable(s) it feeds | Command |
 | --- | --- |
@@ -73,39 +76,8 @@ scripts/fetch_distribution.sh --small    # all of the above except the 38 GB NHD
 > not — run the bluespace variable on a machine with real storage, or pick a
 > larger machine type when creating the codespace.
 
-Two alternatives if the command doesn't suit:
-
-- **Already downloaded the archives, or the server has no internet?** Grab them
-  from **[the shared OneDrive folder](https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck)**
-  and extract by hand from the repo root — one identical command per archive
-  (`mv` the FARA `.Rda` into `pipeline-data/FARA/C4/` instead):
-
-  ```bash
-  tar --exclude='._*' --exclude='.DS_Store' -xzf <archive>.tar.gz -C pipeline-data/
-  ```
-
-  Every archive carries its full path from the data root, which is why the
-  command never changes. The `--exclude` flags drop macOS metadata files the
-  archives were packed with: macOS `tar` reabsorbs the `._x` sidecars silently,
-  but GNU `tar` on Linux would write one junk `._file` beside every real file
-  (~15k of them for the NHD cache). Nothing reads them either way — every
-  dataset resolves an exact filename — so extracting without the flags is safe,
-  just untidy. GNU tar additionally prints `Ignoring unknown extended header
-  keyword 'LIBARCHIVE.xattr...'`; that warning is harmless.
-
-- **Prefer a GUI?** Upload a downloaded archive on the app's **Data Setup**
-  page — the server checks the same SHA-256 and extracts it for you.
-
-Each archive also carries a `MANIFEST.txt` inside, and the folder's
-`SHA256SUMS.txt` holds the published checksums (the script, the upload panel
-and `shasum -a 256 -c` all check the same digests).
-
-Everything in this group is either US-federal public domain (Census
-TIGER/Line under CC0, USGS NHDPlus, USDA FARA, NPS sound model — free to
-use and redistribute, credit the agencies; boundary/roads archives are
-repackaged TIGER/Line data) or a project-derived artifact, so
-redistribution is unencumbered. Each card in the in-app Data Setup page
-also keeps the original-source instructions as a fallback.
+Rather not use a terminal? The app's **Data Setup** page also takes archive
+uploads, and shows the same per-dataset command.
 
 ### 2. Original sources only (license terms require it)
 
