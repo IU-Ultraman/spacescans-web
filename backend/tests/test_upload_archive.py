@@ -141,6 +141,43 @@ def test_real_manifest_lists_the_eight_distribution_artifacts():
         assert spec["kind"] in ("tar", "bare"), name
         if spec["kind"] == "bare":
             assert spec.get("dest"), name
+        else:
+            # Measured, so the free-space precheck is exact rather than a
+            # compression-ratio guess that could refuse a large archive.
+            assert spec["extracted_bytes"] > 0, name
+
+
+def test_no_artificial_size_ceiling_on_the_largest_archive():
+    """A 38 GB archive must be acceptable wherever it fits — the only size
+    rule is 'exactly the manifest's byte count'."""
+    import app.routers.data_setup as ds
+    nhd = json.loads(ds._MANIFEST_PATH.read_text())["artifacts"][
+        "nhd_features_cache_v1.tar.gz"]
+    assert nhd["bytes"] > 30 * 1000**3
+    from app.config import settings
+    # The legacy 100 MB request cap must not apply to this route.
+    assert settings.MAX_UPLOAD_SIZE_MB * 1024**2 < nhd["bytes"]
+
+
+def test_insufficient_storage_uses_measured_extracted_size(monkeypatch):
+    client, headers, root = _get_client()
+    import app.routers.data_setup as ds
+    body = _tar_bytes({"Noise/C3/a.tif": b"x" * 1024})
+    # Decimal GB throughout — that is what the message reports and what disk
+    # tooling (df, the OneDrive listing) shows.
+    spec = {"sha256": hashlib.sha256(body).hexdigest(), "bytes": len(body),
+            "kind": "tar", "extracted_bytes": 40 * 1000**3}
+    monkeypatch.setattr(ds, "_manifest", lambda: {"noise_v1.tar.gz": spec})
+
+    class _Usage:
+        free = 5 * 1000**3
+
+    monkeypatch.setattr(ds.shutil, "disk_usage", lambda _p: _Usage())
+    r = _post(client, headers, "noise_v1.tar.gz", body)
+    assert r.status_code == 507
+    msg = r.json()["detail"]["message"]
+    assert "40.0 GB extracted" in msg and "5.0 GB available" in msg
+    assert not (root / "Noise").exists()
 
 
 # --------------------------------------------------------------------------
@@ -302,6 +339,25 @@ def test_rejects_hardlink_member(monkeypatch):
 # --------------------------------------------------------------------------
 # Malformed bodies
 # --------------------------------------------------------------------------
+
+
+def test_sweeps_orphaned_staging_files(monkeypatch):
+    """A hard stop (container restart, OOM kill) mid-upload leaves a staging
+    file no `finally` can clean, and it can be tens of GB. The next upload
+    must reclaim it — safe because uploads are serialized, so any *.part
+    present while the lock is held is abandoned."""
+    client, headers, root = _get_client()
+    uploads = root / ".uploads"
+    uploads.mkdir()
+    orphan = uploads / "nhd_features_cache_v1.tar.gz.deadbeef.part"
+    orphan.write_bytes(b"x" * 4096)
+
+    body = _tar_bytes({"Noise/C3/a.tif": b"x"})
+    _admit(monkeypatch, "noise_v1.tar.gz", body)
+    r = _post(client, headers, "noise_v1.tar.gz", body)
+    assert r.status_code == 200, r.text
+    assert not orphan.exists()
+    assert not list(uploads.iterdir())
 
 
 def test_truncated_archive_is_a_400_not_a_500(monkeypatch):

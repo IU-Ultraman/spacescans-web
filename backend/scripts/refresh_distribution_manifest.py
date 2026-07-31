@@ -16,6 +16,7 @@ the files themselves and cross-checked against SHA256SUMS.txt when present.
 import hashlib
 import json
 import sys
+import tarfile
 from pathlib import Path
 
 _OUT = Path(__file__).resolve().parent.parent / "app" / "data" / "distribution_manifest.json"
@@ -38,6 +39,22 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: f.read(8 * 1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def extracted_bytes(path: Path) -> int:
+    """Total size of the archive's regular members.
+
+    Recorded so the endpoint's free-space precheck is exact (upload copy +
+    extracted contents) instead of a compression-ratio guess — a guess that
+    would falsely refuse the 38 GB NHD archive on a machine that can in fact
+    hold it. Costs one decompression pass here, never at request time.
+    """
+    total = 0
+    with tarfile.open(path, "r:gz") as tar:
+        for m in tar:
+            if m.isreg():
+                total += m.size
+    return total
 
 
 def main(argv: list[str]) -> int:
@@ -76,8 +93,12 @@ def main(argv: list[str]) -> int:
                 "kind": "bare" if name in _BARE_DEST else "tar"}
         if name in _BARE_DEST:
             spec["dest"] = _BARE_DEST[name]
+        else:
+            spec["extracted_bytes"] = extracted_bytes(path)
         artifacts[name] = spec
-        print(f"  {name:45s} {spec['bytes']:>14,}  {digest[:16]}…")
+        extra = (f" -> {spec['extracted_bytes']:>14,} extracted"
+                 if "extracted_bytes" in spec else "")
+        print(f"  {name:45s} {spec['bytes']:>14,}  {digest[:16]}…{extra}")
 
     with open(_OUT, "w") as f:
         json.dump({"_comment": _COMMENT, "artifacts": artifacts}, f, indent=2)

@@ -177,8 +177,12 @@ async def upload_archive(
                     "message": f"data root not mounted: {root}"},
         )
 
-    # The upload copy plus the extracted contents both land on this volume.
-    need = int(expected_bytes * 2.5) if spec["kind"] == "tar" else expected_bytes
+    # Peak usage = the upload copy + the extracted contents, both on this
+    # volume. There is no artificial size ceiling: the 38 GB NHD archive is
+    # fine anywhere it fits. `extracted_bytes` comes from the manifest (a
+    # measured value, not a compression-ratio guess, which would falsely
+    # refuse large archives on machines that can hold them).
+    need = expected_bytes + int(spec.get("extracted_bytes") or 0)
     free = shutil.disk_usage(root).free
     if free < need + 1024**3:
         raise HTTPException(
@@ -186,8 +190,11 @@ async def upload_archive(
             detail={
                 "error": "insufficient_storage",
                 "message": (
-                    f"need ~{need / 1e9:.1f} GB free on the data volume, have "
-                    f"{free / 1e9:.1f} GB"
+                    f"{filename} needs ~{need / 1e9:.1f} GB free on the data "
+                    f"volume ({expected_bytes / 1e9:.1f} GB upload + "
+                    f"{int(spec.get('extracted_bytes') or 0) / 1e9:.1f} GB "
+                    f"extracted, plus 1 GB headroom) — only "
+                    f"{free / 1e9:.1f} GB available"
                 ),
             },
         )
@@ -202,6 +209,19 @@ async def upload_archive(
     async with _upload_lock:
         uploads = root / ".uploads"
         uploads.mkdir(exist_ok=True)
+        # Sweep orphaned staging files. A client disconnect unwinds through
+        # the `finally` below, but a hard stop (container restart, OOM kill)
+        # cannot — and an orphan here can be tens of GB. Uploads are
+        # serialized by _upload_lock in this single-worker process, so while
+        # we hold it any *.part present is by definition abandoned.
+        for stale in uploads.glob("*.part"):
+            try:
+                size = stale.stat().st_size
+                stale.unlink()
+                _log.warning("upload-archive: removed orphaned staging file "
+                             "%s (%d bytes)", stale.name, size)
+            except OSError:  # pragma: no cover - racing removal is fine
+                pass
         fd, tmp_name = tempfile.mkstemp(dir=uploads, prefix=f"{filename}.",
                                         suffix=".part")
         os.close(fd)

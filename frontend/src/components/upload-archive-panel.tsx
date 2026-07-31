@@ -91,9 +91,10 @@ export function UploadArchivePanel() {
           extracts it into{" "}
           <code className="rounded bg-muted px-1 py-0.5">pipeline-data/</code>{" "}
           for you, no terminal needed. Only the distributed artifacts are
-          accepted (a corrupt or unexpected file is rejected untouched). For the
-          36 GB NHD archive, the terminal command is more reliable than a browser
-          upload.
+          accepted (a corrupt or unexpected file is rejected untouched); there is
+          no size limit beyond your own free disk space, though for the 38 GB NHD
+          archive the terminal command survives interruptions better than a
+          browser upload.
         </p>
       </div>
       <input

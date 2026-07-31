@@ -4,12 +4,14 @@
     "bg_boundaries_v1.tar.gz": {
       "sha256": "387283ce83e8a6b3296cd0eb1e1641bb2ecf15dee74a988fa0f1ef6117ba6b17",
       "bytes": 1336811339,
-      "kind": "tar"
+      "kind": "tar",
+      "extracted_bytes": 2262929328
     },
     "county_boundaries_v1.tar.gz": {
       "sha256": "657c6983048acc0a819cfb81045feb8174aaba50dcde7ff573162a065f4578eb",
       "bytes": 74463271,
-      "kind": "tar"
+      "kind": "tar",
+      "extracted_bytes": 121981994
     },
     "fara_nationwide_2010_2019_interpolated.Rda": {
       "sha256": "4d03fc173de6a67bc7885c42173f033f0f6b6d13d487a263874abdba43f4517e",
@@ -20,27 +22,32 @@
     "nhd_features_cache_v1.tar.gz": {
       "sha256": "0ac982b266dbf2a0e28c0bda9e37fd0fe1a6e0c60050eec84e5d350c0604efad",
       "bytes": 38471084940,
-      "kind": "tar"
+      "kind": "tar",
+      "extracted_bytes": 50348006463
     },
     "noise_v1.tar.gz": {
       "sha256": "e93e63aa81ca069d00b28ff8b9894f5c3b4563e9de7417e4c2d9f6c73afc31f9",
       "bytes": 1191982269,
-      "kind": "tar"
+      "kind": "tar",
+      "extracted_bytes": 1250834583
     },
     "tiger_roads_filtered_cache_v1.tar.gz": {
       "sha256": "d4e6955ffc3fe76ea0a6b09bfc1702785443e237556223d6edcfb99ebaf485db",
       "bytes": 1845960820,
-      "kind": "tar"
+      "kind": "tar",
+      "extracted_bytes": 2977949574
     },
     "tract_boundaries_v1.tar.gz": {
       "sha256": "1eb11e0abb10885bf3437e63bff8a130a0565d763e8876dc3b048a902e752952",
       "bytes": 355586942,
-      "kind": "tar"
+      "kind": "tar",
+      "extracted_bytes": 610124327
     },
     "zcta5_boundaries_v1.tar.gz": {
       "sha256": "98784e0c1dfb6ad9a75786080216bcf6e853d51d9670401e1432e75faa391530",
       "bytes": 524188995,
-      "kind": "tar"
+      "kind": "tar",
+      "extracted_bytes": 840164984
     }
   }
 }
