@@ -6,6 +6,12 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 LOG=".devcontainer/compose-up.log"
 
+# .env must exist before ANY build (NEXT_PUBLIC_API_URL is baked into the
+# frontend image). post-create runs this too, but going through here covers
+# the resume path of a codespace that never ran the new post-create (e.g.
+# created before these hooks existed, then git-pulled). Idempotent.
+bash .devcontainer/setup-env.sh
+
 exec 9>/tmp/compose-up.lock
 flock -n 9 || { echo "compose-up already running — tail -f $LOG"; exit 0; }
 
