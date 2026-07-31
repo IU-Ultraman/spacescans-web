@@ -78,20 +78,44 @@ export function SelfServeCard({ d }: { d: SelfServeDataset }) {
         </ul>
       </div>
 
-      <div className="space-y-1">
-        <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-          <FolderInput className="size-3.5" /> Place in
-        </p>
-        <ul className="space-y-0.5">
-          {d.placeDir.map((p) => (
-            <li key={p}>
-              <code className="break-all rounded bg-muted px-1 py-0.5 text-xs text-foreground">
-                {p}
-              </code>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {d.extract ? (
+        <div className="space-y-1">
+          <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            <FolderInput className="size-3.5" /> Extract (from the repo root)
+            — or upload the archive at the top of this page
+          </p>
+          <code className="block w-fit max-w-full break-all rounded bg-muted px-2 py-1 text-xs text-foreground">
+            {d.extract}
+          </code>
+          <p className="text-[11px] text-muted-foreground">
+            The archive carries its own paths — this one command creates:
+          </p>
+          <ul className="space-y-0.5">
+            {d.placeDir.map((p) => (
+              <li key={p}>
+                <code className="break-all rounded bg-muted px-1 py-0.5 text-[11px] text-muted-foreground">
+                  pipeline-data/{p}
+                </code>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            <FolderInput className="size-3.5" /> Place in
+          </p>
+          <ul className="space-y-0.5">
+            {d.placeDir.map((p) => (
+              <li key={p}>
+                <code className="break-all rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  {p}
+                </code>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <ul className="space-y-1 border-t pt-3">
         {d.notes.map((n, i) => (

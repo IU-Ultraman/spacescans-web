@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { DataSourcesGuide } from "@/components/data-sources-guide";
+import { UploadArchivePanel } from "@/components/upload-archive-panel";
 import { SELF_SERVE_DATASETS, PRESET_DATASETS } from "@/lib/data-sources";
 
 export default function DataSetupPage({
@@ -46,8 +47,7 @@ export default function DataSetupPage({
             </h1>
             <p className="max-w-3xl text-sm text-muted-foreground">
               The pipeline links your cohort against these server-side exposure
-              datasets. They are <span className="font-medium">not</span>{" "}
-              uploaded here — a deployer places them under{" "}
+              datasets, which live under{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
                 SPACESCANS_DATA_DIR
               </code>{" "}
@@ -55,12 +55,15 @@ export default function DataSetupPage({
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
                 pipeline-data/
               </code>
-              ). Most are US federal public-domain data you can fetch directly;
-              a few are preprocessed and supplied by the deployer.
+              ). Download the archives from the deployer&apos;s OneDrive folder,
+              then either upload them right here or extract them in a terminal —
+              both land the files where the pipeline reads them.
             </p>
           </>
         )}
       </header>
+
+      <UploadArchivePanel />
 
       <DataSourcesGuide only={only} />
 

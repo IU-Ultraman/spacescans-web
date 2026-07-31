@@ -30,6 +30,11 @@ export interface SelfServeDataset {
   files: DatasetFile[];
   placeDir: string[];
   notes: string[];
+  /** One-line shell command for deployer-distributed archives. The archive
+   * carries data-root-relative paths, so this single command (run from the
+   * repo root) lands everything where the pipeline reads it — placeDir then
+   * just documents what the extraction creates. */
+  extract?: string;
 }
 
 export interface PresetDataset {
