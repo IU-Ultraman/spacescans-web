@@ -50,25 +50,29 @@ Only the datasets for the variables you actually run are required. The in-app
 Everything here lives in **[the shared OneDrive folder](https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck)**,
 which the command below pulls from.
 
-**One command per dataset, run from the repo root** — it downloads, verifies
-the SHA-256, extracts into place, and deletes the archive (so peak disk is one
-archive, not all of them). No browser, no `tar` flags, identical on macOS and
-Linux:
+**One command per exposome variable, run from the repo root** — it downloads,
+verifies the SHA-256, extracts into place, and deletes the archive (so peak
+disk is one archive, not all of them). No browser, no `tar` flags, identical on
+macOS and Linux. Some variables need two artifacts (values plus the boundary
+geometry they are linked through); pass both to one invocation:
 
-| Dataset — exposome variable(s) it feeds | Command |
+| Exposome variable | Command |
 | --- | --- |
-| Prefiltered TIGER roads (1.7 GB) — **Road Proximity** | `scripts/fetch_distribution.sh tiger_roads_filtered_cache_v1.tar.gz` |
-| Pretiled NHD water (38 GB) — **Bluespace** | `scripts/fetch_distribution.sh nhd_features_cache_v1.tar.gz` |
-| FARA interpolated panel (0.45 GB) — **Food Access** | `scripts/fetch_distribution.sh fara_nationwide_2010_2019_interpolated.Rda` |
-| Block-group boundaries (1.3 GB) — **Walkability + NDI** (both vintages) | `scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz` |
-| Tract boundaries (0.36 GB) — **Food Access** | `scripts/fetch_distribution.sh tract_boundaries_v1.tar.gz` |
-| County boundaries (0.07 GB) — **Road Proximity + Community Organization Density** | `scripts/fetch_distribution.sh county_boundaries_v1.tar.gz` |
-| ZCTA5 boundaries (0.52 GB) — **Community Organization Density** | `scripts/fetch_distribution.sh zcta5_boundaries_v1.tar.gz` |
-| NPS noise rasters (1.2 GB) — **Noise** | `scripts/fetch_distribution.sh noise_v1.tar.gz` |
+| **Road Proximity** (2.0 GB) | `scripts/fetch_distribution.sh tiger_roads_filtered_cache_v1.tar.gz county_boundaries_v1.tar.gz` |
+| **Bluespace** (38 GB) | `scripts/fetch_distribution.sh nhd_features_cache_v1.tar.gz` |
+| **Food Access (FARA)** (0.8 GB) | `scripts/fetch_distribution.sh fara_nationwide_2010_2019_interpolated.Rda tract_boundaries_v1.tar.gz` |
+| **Walkability** (1.3 GB) | `scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz` |
+| **NDI** (1.3 GB) | `scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz` |
+| **Community Organization Density** (0.6 GB) | `scripts/fetch_distribution.sh zcta5_boundaries_v1.tar.gz county_boundaries_v1.tar.gz` |
+| **Noise** (1.2 GB) | `scripts/fetch_distribution.sh noise_v1.tar.gz` |
+| **Nighttime Lights (VNL)**, **UV (TEMIS)** | not redistributable — see group 2 below |
+
+Walkability, NDI and Community Organization Density also need a preprocessed
+`.Rda`/`.rds` panel, but those ship inside the repo — nothing to fetch.
 
 ```bash
-scripts/fetch_distribution.sh --list     # sizes, download and extracted
-scripts/fetch_distribution.sh --small    # all of the above except the 38 GB NHD cache
+scripts/fetch_distribution.sh --list     # every artifact, download and extracted size
+scripts/fetch_distribution.sh --small    # everything except the 38 GB NHD cache
 ```
 
 > **Codespaces disk:** a default codespace has ~32 GB. `--small` fits

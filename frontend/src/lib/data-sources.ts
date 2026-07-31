@@ -92,3 +92,26 @@ export function datasetsForVariable(variableKey: string): VariableDatasetLink[] 
   }
   return links;
 }
+
+/** The single command that fetches everything a variable needs, or null when
+ * nothing is deployer-distributed (VNL and TEMIS must come from their original
+ * sources). Several variables need two artifacts — exposure values plus the
+ * boundary geometry they are linked through — and the script takes them in one
+ * invocation, so a per-dataset command would under-provision the variable. */
+export function fetchCommandForVariable(variableKey: string): string | null {
+  const artifacts: string[] = [];
+  for (const d of SELF_SERVE_DATASETS) {
+    if (d.variableKeys.includes(variableKey) && d.fetch) {
+      artifacts.push(d.files[0].name);
+    }
+  }
+  for (const d of PRESET_DATASETS) {
+    if (d.variableKeys.includes(variableKey) && d.fetchCmd) {
+      artifacts.push(d.artifact);
+    }
+  }
+  const unique = Array.from(new Set(artifacts));
+  return unique.length
+    ? `scripts/fetch_distribution.sh ${unique.join(" ")}`
+    : null;
+}

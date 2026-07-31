@@ -9,7 +9,10 @@ import {
   SPATIAL_METHOD_INFO,
   linkedAsLabel,
 } from "@/lib/variable-grouping";
-import { datasetsForVariable } from "@/lib/data-sources";
+import {
+  datasetsForVariable,
+  fetchCommandForVariable,
+} from "@/lib/data-sources";
 import { CatalogDetail } from "@/components/catalog-detail";
 import { DatasetDetail } from "@/components/data-sources-guide";
 import {
@@ -65,6 +68,7 @@ export function OntologyNodeDetail({
   const dsSupplied = dataSetupLinks.filter((l) => l.kind === "preset");
   const dsHasGeometry = dataSetupLinks.some((l) => l.role.includes("geometry"));
   const dsHasValues = dataSetupLinks.some((l) => l.role === "Exposure values");
+  const fetchCmd = focusedVarKey ? fetchCommandForVariable(focusedVarKey) : null;
 
   return (
     <>
@@ -173,6 +177,16 @@ export function OntologyNodeDetail({
                   <span className="font-medium">values</span> dataset carries the
                   yearly exposure. The pipeline joins them by geoid.
                 </p>
+              )}
+              {fetchCmd && (
+                <div>
+                  <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                    Fetch everything this variable needs
+                  </p>
+                  <code className="block w-fit max-w-full break-all rounded bg-muted px-1.5 py-1 text-[11px] text-foreground">
+                    {fetchCmd}
+                  </code>
+                </div>
               )}
               {dsDownload.length > 0 && (
                 <div>
