@@ -26,9 +26,10 @@
       "notes": [
         "Prefer the original source? tl_2010_us_county10.zip (the single NATIONAL file) from https://www2.census.gov/geo/tiger/TIGER2010/COUNTY/2010/ — unzip into County/C3/tl_2010_us_county10/.",
         "No reprojection needed — the pipeline buffers/reprojects internally.",
-        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh county_boundaries_v1.tar.gz downloads, checksum-verifies and extracts it in one step."
+        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh county_boundaries_v1.tar.gz downloads, checksum-verifies and extracts it in one step.",
+        "The two --exclude flags drop macOS metadata files the archive was packed with — harmless, but GNU tar (Linux) would otherwise write one junk ._file per real file."
       ],
-      "extract": "tar -xzf county_boundaries_v1.tar.gz -C pipeline-data/"
+      "extract": "tar --exclude='._*' --exclude='.DS_Store' -xzf county_boundaries_v1.tar.gz -C pipeline-data/"
     },
     {
       "key": "tract-boundaries",
@@ -54,9 +55,10 @@
       ],
       "notes": [
         "Prefer the original source? Grab the 51 STATEWIDE tl_2010_{ss}_tract10.zip (2-digit FIPS) from https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/ and unzip each into TRACT/C3/.",
-        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh tract_boundaries_v1.tar.gz downloads, checksum-verifies and extracts it in one step."
+        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh tract_boundaries_v1.tar.gz downloads, checksum-verifies and extracts it in one step.",
+        "The two --exclude flags drop macOS metadata files the archive was packed with — harmless, but GNU tar (Linux) would otherwise write one junk ._file per real file."
       ],
-      "extract": "tar -xzf tract_boundaries_v1.tar.gz -C pipeline-data/"
+      "extract": "tar --exclude='._*' --exclude='.DS_Store' -xzf tract_boundaries_v1.tar.gz -C pipeline-data/"
     },
     {
       "key": "zcta5-boundaries",
@@ -82,9 +84,10 @@
       ],
       "notes": [
         "Prefer the original source? tl_2010_us_zcta510.zip from https://www2.census.gov/geo/tiger/TIGER2010/ZCTA5/2010/ — unzip into ZCTA5/C3/tl_2010_us_zcta510/.",
-        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh zcta5_boundaries_v1.tar.gz downloads, checksum-verifies and extracts it in one step."
+        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh zcta5_boundaries_v1.tar.gz downloads, checksum-verifies and extracts it in one step.",
+        "The two --exclude flags drop macOS metadata files the archive was packed with — harmless, but GNU tar (Linux) would otherwise write one junk ._file per real file."
       ],
-      "extract": "tar -xzf zcta5_boundaries_v1.tar.gz -C pipeline-data/"
+      "extract": "tar --exclude='._*' --exclude='.DS_Store' -xzf zcta5_boundaries_v1.tar.gz -C pipeline-data/"
     },
     {
       "key": "tiger-roads",
@@ -111,9 +114,10 @@
       "notes": [
         "That's it — no raw Census downloads and no first-run filtering; runs read the parquet cache directly.",
         "Advanced fallback: raw per-county zips are still supported at TIGER/C4/tiger{year}_roads/ (the pre-flight accepts either form, per year).",
-        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh tiger_roads_filtered_cache_v1.tar.gz downloads, checksum-verifies and extracts it in one step."
+        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh tiger_roads_filtered_cache_v1.tar.gz downloads, checksum-verifies and extracts it in one step.",
+        "The two --exclude flags drop macOS metadata files the archive was packed with — harmless, but GNU tar (Linux) would otherwise write one junk ._file per real file."
       ],
-      "extract": "tar -xzf tiger_roads_filtered_cache_v1.tar.gz -C pipeline-data/"
+      "extract": "tar --exclude='._*' --exclude='.DS_Store' -xzf tiger_roads_filtered_cache_v1.tar.gz -C pipeline-data/"
     },
     {
       "key": "bg-boundaries-2010",
@@ -141,9 +145,10 @@
       "notes": [
         "One download covers this card AND the 2020-vintage card below.",
         "Prefer the original source? Grab the 51 statewide tl_2010_{ss}_bg10.zip from https://www2.census.gov/geo/tiger/TIGER2010/BG/2010/ (2-digit state FIPS, not the 5-digit per-county files) and unzip each into BG/C3/tiger2010_bg10_states/.",
-        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz downloads, checksum-verifies and extracts it in one step."
+        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz downloads, checksum-verifies and extracts it in one step.",
+        "The two --exclude flags drop macOS metadata files the archive was packed with — harmless, but GNU tar (Linux) would otherwise write one junk ._file per real file."
       ],
-      "extract": "tar -xzf bg_boundaries_v1.tar.gz -C pipeline-data/"
+      "extract": "tar --exclude='._*' --exclude='.DS_Store' -xzf bg_boundaries_v1.tar.gz -C pipeline-data/"
     },
     {
       "key": "bg-boundaries-2020",
@@ -171,9 +176,10 @@
         "Prefer the original source? Grab the 51 statewide tl_2024_{ss}_bg.zip from https://www2.census.gov/geo/tiger/TIGER2024/BG/ and unzip each into BG/C3/tiger2024_bg_states/.",
         "Join column is GEOID (some products expose GEOID20 — if so, edit join_col in bg_us_2020_demo.yaml).",
         "Only NDI needs the 2020 vintage — its ACS 2020-2024 periods use 2020-Census BG boundaries; walkability does not.",
-        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz downloads, checksum-verifies and extracts it in one step."
+        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh bg_boundaries_v1.tar.gz downloads, checksum-verifies and extracts it in one step.",
+        "The two --exclude flags drop macOS metadata files the archive was packed with — harmless, but GNU tar (Linux) would otherwise write one junk ._file per real file."
       ],
-      "extract": "tar -xzf bg_boundaries_v1.tar.gz -C pipeline-data/"
+      "extract": "tar --exclude='._*' --exclude='.DS_Store' -xzf bg_boundaries_v1.tar.gz -C pipeline-data/"
     },
     {
       "key": "noise",
@@ -203,9 +209,10 @@
         "Keep the exact filenames — the reader hard-codes all three.",
         "Download only the CONUS_ files; skip the AK_/HI_ variants (different projections).",
         "Provenance: project metadata labels this 'US DOT BTS', but the actual files are the NPS soundscape dataset.",
-        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh noise_v1.tar.gz downloads, checksum-verifies and extracts it in one step."
+        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh noise_v1.tar.gz downloads, checksum-verifies and extracts it in one step.",
+        "The two --exclude flags drop macOS metadata files the archive was packed with — harmless, but GNU tar (Linux) would otherwise write one junk ._file per real file."
       ],
-      "extract": "tar -xzf noise_v1.tar.gz -C pipeline-data/"
+      "extract": "tar --exclude='._*' --exclude='.DS_Store' -xzf noise_v1.tar.gz -C pipeline-data/"
     },
     {
       "key": "nhdplus",
@@ -232,9 +239,10 @@
       "notes": [
         "That's it — no 61 GB NHDPlus GDB download and no first-run tiling.",
         "Advanced fallback: the raw GDB is still supported at NHD/C4/NHDPlus_H_National_Release_2_GDB.gdb (either form satisfies the pre-flight; a tile-cache miss without the GDB fails with a clear error rather than a wrong value).",
-        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh nhd_features_cache_v1.tar.gz downloads, checksum-verifies and extracts it in one step."
+        "No local copy to upload (Codespaces, remote VM)? scripts/fetch_distribution.sh nhd_features_cache_v1.tar.gz downloads, checksum-verifies and extracts it in one step.",
+        "The two --exclude flags drop macOS metadata files the archive was packed with — harmless, but GNU tar (Linux) would otherwise write one junk ._file per real file."
       ],
-      "extract": "tar -xzf nhd_features_cache_v1.tar.gz -C pipeline-data/"
+      "extract": "tar --exclude='._*' --exclude='.DS_Store' -xzf nhd_features_cache_v1.tar.gz -C pipeline-data/"
     },
     {
       "key": "vnl",

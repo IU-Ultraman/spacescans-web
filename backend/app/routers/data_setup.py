@@ -81,6 +81,24 @@ def _validate_member(m: tarfile.TarInfo, root: Path) -> None:
         raise _bad(f"archive entry escapes the data root: {m.name!r}")
 
 
+def _is_macos_metadata(name: str) -> bool:
+    """macOS packaging junk: AppleDouble sidecars, `.DS_Store`, `__MACOSX/`.
+
+    The archives were packed on macOS from files carrying extended attributes
+    (a com.apple.quarantine flag on anything downloaded via a browser), so BSD
+    tar wrote one `._x` member per `x`. BSD tar reabsorbs those on extraction;
+    GNU tar and Python's tarfile write them out as ordinary files — ~15k junk
+    files for the NHD cache alone. Skip them: nothing in the pipeline reads
+    them (every consumer resolves exact filenames).
+    """
+    parts = Path(name).parts
+    return (
+        parts[0] == "__MACOSX"
+        or parts[-1].startswith("._")
+        or parts[-1] == ".DS_Store"
+    )
+
+
 def _extract_tar(archive: Path, root: Path) -> tuple[int, set[str]]:
     """Validate then write each member. Files land via `.part` + os.replace so
     a reader (e.g. a running pipeline step) never sees a partial file."""
@@ -88,6 +106,11 @@ def _extract_tar(archive: Path, root: Path) -> tuple[int, set[str]]:
     tops: set[str] = set()
     with tarfile.open(archive, "r:gz") as tar:
         for m in tar:
+            # Skipping precedes validation on purpose: skipped members are
+            # never written, and `__MACOSX/` would otherwise trip the
+            # top-level dataset-dir check and reject the whole archive.
+            if _is_macos_metadata(m.name):
+                continue
             _validate_member(m, root)
             tops.add(Path(m.name).parts[0])
             target = root / m.name

@@ -79,17 +79,24 @@ you). Run each command below from the repo root, exactly as written:
 
 | Archive — exposome variable(s) it feeds | Extract with |
 | --- | --- |
-| `tiger_roads_filtered_cache_v1.tar.gz` (1.7 GB) — **Road Proximity** | `tar -xzf tiger_roads_filtered_cache_v1.tar.gz -C pipeline-data/` |
-| `nhd_features_cache_v1.tar.gz` (36 GB) — **Bluespace** | `tar -xzf nhd_features_cache_v1.tar.gz -C pipeline-data/` |
+| `tiger_roads_filtered_cache_v1.tar.gz` (1.7 GB) — **Road Proximity** | `tar --exclude='._*' --exclude='.DS_Store' -xzf tiger_roads_filtered_cache_v1.tar.gz -C pipeline-data/` |
+| `nhd_features_cache_v1.tar.gz` (36 GB) — **Bluespace** | `tar --exclude='._*' --exclude='.DS_Store' -xzf nhd_features_cache_v1.tar.gz -C pipeline-data/` |
 | `fara_nationwide_2010_2019_interpolated.Rda` (427 MB) — **Food Access (FARA)** | `mv fara_nationwide_2010_2019_interpolated.Rda pipeline-data/FARA/C4/` |
-| `bg_boundaries_v1.tar.gz` (1.25 GB) — **Walkability + NDI** (2010 & 2020 vintages in one archive) | `tar -xzf bg_boundaries_v1.tar.gz -C pipeline-data/` |
-| `tract_boundaries_v1.tar.gz` (0.33 GB) — **Food Access (FARA)** | `tar -xzf tract_boundaries_v1.tar.gz -C pipeline-data/` |
-| `county_boundaries_v1.tar.gz` (70 MB) — **Road Proximity + Community Organization Density** | `tar -xzf county_boundaries_v1.tar.gz -C pipeline-data/` |
-| `zcta5_boundaries_v1.tar.gz` (0.49 GB) — **Community Organization Density** | `tar -xzf zcta5_boundaries_v1.tar.gz -C pipeline-data/` |
-| `noise_v1.tar.gz` (1.11 GB) — **Noise** | `tar -xzf noise_v1.tar.gz -C pipeline-data/` |
+| `bg_boundaries_v1.tar.gz` (1.25 GB) — **Walkability + NDI** (2010 & 2020 vintages in one archive) | `tar --exclude='._*' --exclude='.DS_Store' -xzf bg_boundaries_v1.tar.gz -C pipeline-data/` |
+| `tract_boundaries_v1.tar.gz` (0.33 GB) — **Food Access (FARA)** | `tar --exclude='._*' --exclude='.DS_Store' -xzf tract_boundaries_v1.tar.gz -C pipeline-data/` |
+| `county_boundaries_v1.tar.gz` (70 MB) — **Road Proximity + Community Organization Density** | `tar --exclude='._*' --exclude='.DS_Store' -xzf county_boundaries_v1.tar.gz -C pipeline-data/` |
+| `zcta5_boundaries_v1.tar.gz` (0.49 GB) — **Community Organization Density** | `tar --exclude='._*' --exclude='.DS_Store' -xzf zcta5_boundaries_v1.tar.gz -C pipeline-data/` |
+| `noise_v1.tar.gz` (1.11 GB) — **Noise** | `tar --exclude='._*' --exclude='.DS_Store' -xzf noise_v1.tar.gz -C pipeline-data/` |
 
 Every archive carries its full path from the data root, so the `tar`
-command is identical for all of them.
+command is identical for all of them. The `--exclude` flags drop macOS
+metadata files the archives were packed with: macOS `tar` reabsorbs the `._x`
+sidecars silently, but GNU `tar` on Linux would write one junk `._file` beside
+every real file (~15k of them for the NHD cache). Nothing reads them either way —
+every dataset is resolved by exact filename — so an extraction done without
+the flag is safe, just untidy. GNU tar also prints
+`Ignoring unknown extended header keyword 'LIBARCHIVE.xattr...'` for these
+archives; that warning is harmless.
 
 Everything in this group is either US-federal public domain (Census
 TIGER/Line under CC0, USGS NHDPlus, USDA FARA, NPS sound model — free to

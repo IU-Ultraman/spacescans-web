@@ -341,6 +341,32 @@ def test_rejects_hardlink_member(monkeypatch):
 # --------------------------------------------------------------------------
 
 
+def test_skips_macos_metadata_members(monkeypatch):
+    """The archives were packed on macOS from files with extended attributes,
+    so they carry a `._x` sidecar per `x` (plus stray .DS_Store files). BSD
+    tar reabsorbs the sidecars; Python's tarfile (and GNU tar) would write
+    them as junk — ~15k files for the NHD cache. They must be skipped and
+    excluded from the reported count."""
+    client, headers, root = _get_client()
+    body = _tar_bytes({
+        "County/C3/tl_2010_us_county10/tl_2010_us_county10.shp": b"real",
+        "County/C3/tl_2010_us_county10/._tl_2010_us_county10.shp": b"applejunk",
+        "County/C3/._tl_2010_us_county10": b"applejunk",
+        "County/C3/.DS_Store": b"applejunk",
+        "__MACOSX/County/C3/junk": b"applejunk",
+    })
+    _admit(monkeypatch, "county_boundaries_v1.tar.gz", body)
+    r = _post(client, headers, "county_boundaries_v1.tar.gz", body)
+    assert r.status_code == 200, r.text
+    assert r.json()["extracted_files"] == 1
+    assert r.json()["top_dirs"] == ["County"]
+    assert (root / "County/C3/tl_2010_us_county10/tl_2010_us_county10.shp"
+            ).read_bytes() == b"real"
+    assert not list(root.rglob("._*"))
+    assert not (root / "County/C3/.DS_Store").exists()
+    assert not (root / "__MACOSX").exists()
+
+
 def test_sweeps_orphaned_staging_files(monkeypatch):
     """A hard stop (container restart, OOM kill) mid-upload leaves a staging
     file no `finally` can clean, and it can be tens of GB. The next upload

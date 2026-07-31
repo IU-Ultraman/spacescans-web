@@ -119,7 +119,12 @@ print(h.hexdigest())
     mv "$ARCHIVE" "$DATA_DIR/$DEST/$NAME"
     echo "    placed in $DATA_DIR/$DEST/"
   else
-    tar -xzf "$ARCHIVE" -C "$DATA_DIR/" || { echo "    extract failed"; exit 1; }
+    # --exclude drops the macOS packaging junk the archives carry. BSD tar
+    # reabsorbs the `._x` sidecars silently; GNU tar would write ~15k of them
+    # for the NHD cache. The flags precede -xzf so BSD tar does not read them
+    # as member names.
+    tar --exclude='._*' --exclude='.DS_Store' -xzf "$ARCHIVE" -C "$DATA_DIR/" \
+      || { echo "    extract failed"; exit 1; }
     rm -f "$ARCHIVE"
     echo "    extracted into $DATA_DIR/"
   fi
