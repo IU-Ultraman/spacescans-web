@@ -10,7 +10,10 @@
 # Usage, from the repo root:
 #   scripts/fetch_distribution.sh tract_boundaries_v1.tar.gz [more...]
 #   scripts/fetch_distribution.sh --list
-#   scripts/fetch_distribution.sh --small      # everything except the 38 GB NHD cache
+#   scripts/fetch_distribution.sh --small      # everything except Bluespace — i.e. the
+#                                              # other seven variables' data, 8.5 GB on disk
+#                                              # (Bluespace's NHD cache alone needs ~89 GB
+#                                              # free while unpacking)
 #
 # Note on size: a default Codespace has ~32 GB of disk. The NHD cache needs
 # ~89 GB (38.5 download + 50.3 extracted) and simply will not fit — run the
@@ -24,7 +27,19 @@ SOURCES="frontend/src/lib/data-sources.json"
 DATA_DIR="${SPACESCANS_DATA_HOST:-pipeline-data}"
 WORK="$DATA_DIR/.downloads"
 
-command -v python3 >/dev/null || { echo "python3 is required"; exit 1; }
+usage() {
+  # Print the header comment block, stopping at the first line of code — a
+  # fixed line range would truncate (or overrun) it on the next edit. Kept
+  # dependency-free so `--help` still works where python3/curl are missing.
+  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+}
+
+case "${1:-}" in ""|-h|--help) usage; exit 0 ;; esac
+
+for dep in python3 curl tar; do
+  command -v "$dep" >/dev/null || {
+    echo "$dep is required but not installed"; exit 1; }
+done
 [ -f "$MANIFEST" ] || { echo "run me from the repo root (missing $MANIFEST)"; exit 1; }
 
 py() { python3 -c "$@"; }
@@ -34,16 +49,18 @@ list_artifacts() {
 import json
 m = json.load(open('$MANIFEST'))['artifacts']
 for n, s in m.items():
-    extra = f\", {s['extracted_bytes']/1e9:.1f} GB extracted\" if 'extracted_bytes' in s else ''
-    print(f\"{n:45s} {s['bytes']/1e9:6.2f} GB download{extra}\")
+    disk = s.get('extracted_bytes') or s['bytes']
+    print(f\"{n:45s} {disk/1e9:6.2f} GB on disk\")
 "
 }
 
 case "${1:-}" in
-  ""|-h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   --list) list_artifacts; exit 0 ;;
   --small)
-    # No mapfile/readarray here: macOS ships bash 3.2, where they don't exist.
+    # Everything except Bluespace, whose NHD cache is the one artifact that
+    # cannot fit a default 32 GB codespace (~89 GB peak while unpacking).
+    # Matched by name substring so a version bump (v2, ...) still lands here.
+    # No mapfile/readarray: macOS ships bash 3.2, where they don't exist.
     NAMES=()
     while IFS= read -r line; do
       NAMES+=("$line")

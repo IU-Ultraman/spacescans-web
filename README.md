@@ -37,7 +37,8 @@ verifies the checksum and extracts it into `pipeline-data/`:
 ```bash
 scripts/fetch_distribution.sh --list                       # what's available
 scripts/fetch_distribution.sh tract_boundaries_v1.tar.gz   # one dataset
-scripts/fetch_distribution.sh --small                      # all but the 38 GB NHD cache
+scripts/fetch_distribution.sh --small                      # everything except Bluespace
+                                                           # (7 variables, 8.5 GB on disk)
 ```
 
 Add only what the variables you plan to run need — the in-app **Data Setup**

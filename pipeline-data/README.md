@@ -77,7 +77,8 @@ Walkability, NDI and Community Organization Density also need a preprocessed
 
 ```bash
 scripts/fetch_distribution.sh --list     # every artifact with its size
-scripts/fetch_distribution.sh --small    # all seven above in one go (8.5 GB)
+scripts/fetch_distribution.sh --small    # everything EXCEPT Bluespace: the other
+                                         # seven variables in one go, 8.5 GB on disk
 ```
 
 > **Codespaces disk:** a default codespace has ~32 GB, so `--small` fits
