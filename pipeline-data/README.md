@@ -15,6 +15,14 @@ structure matters — this is not a flat dump.
 > Already have the data elsewhere? Don't copy it — set
 > `SPACESCANS_DATA_HOST=/abs/path/to/that/root` in `.env` and Docker mounts
 > it instead of this folder.
+>
+> **Permission denied reading a dataset?** The app reads this tree from inside
+> a container running as its own uid, so every file needs world-read (files
+> arriving with mode `0700`/`0770` — common when they were copied from a
+> personal folder — fail on Linux and in Codespaces, though not on macOS,
+> where the bind mount remaps ownership). Fix with
+> `chmod -R a+rX pipeline-data/`. The fetch script and the upload panel both
+> do this for you.
 
 ---
 

@@ -145,6 +145,8 @@ print(h.hexdigest())
   if [ "$KIND" = "bare" ]; then
     mkdir -p "$DATA_DIR/$DEST"
     mv "$ARCHIVE" "$DATA_DIR/$DEST/$NAME"
+    # Readable by the container uid that runs the pipeline (see below).
+    chmod a+r "$DATA_DIR/$DEST/$NAME" 2>/dev/null || true
     echo "    placed in $DATA_DIR/$DEST/"
   else
     # --exclude drops the macOS packaging junk the archives carry. BSD tar
@@ -154,6 +156,12 @@ print(h.hexdigest())
     tar --exclude='._*' --exclude='.DS_Store' -xzf "$ARCHIVE" -C "$DATA_DIR/" \
       || { echo "    extract failed"; exit 1; }
     rm -f "$ARCHIVE"
+    # Some members were archived mode 0700/0770 (they came from a macOS
+    # download folder). tar preserves that, and the app reads this tree from
+    # inside a container running as a DIFFERENT uid — which then falls in the
+    # "other" class and gets Permission denied. Harmless on macOS, where the
+    # bind mount remaps ownership; fatal on Linux and in Codespaces.
+    chmod -R a+rX "$DATA_DIR/" 2>/dev/null || true
     echo "    extracted into $DATA_DIR/"
   fi
 done
