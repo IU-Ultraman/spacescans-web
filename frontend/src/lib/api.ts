@@ -27,6 +27,39 @@ function handleUnauthorized(): void {
   }
 }
 
+/** Download an authenticated endpoint to a file.
+ *
+ * A plain `<a href>` / `window.open()` is a browser navigation, which cannot
+ * carry the `Authorization` header (the JWT lives in localStorage, not a
+ * cookie) — the API answered those with 401 {"detail":"Not authenticated"}.
+ * So fetch with the header, then hand the blob to a synthetic anchor. */
+async function downloadFile(path: string, filename: string): Promise<void> {
+  const res = await fetch(`${API_BASE}${path}`, { headers: getAuthHeaders() });
+
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new ApiError(401, "Unauthorized");
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: "Download failed" }));
+    const raw = body.detail ?? body.error ?? "Download failed";
+    throw new ApiError(
+      res.status,
+      typeof raw === "string" ? raw : raw?.message || JSON.stringify(raw),
+    );
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -346,7 +379,14 @@ export const api = {
       `/api/tasks/${id}/logs${since ? `?since=${since}` : ""}`,
     ),
 
-  downloadResults: (id: string) => `${API_BASE}/api/tasks/${id}/results`,
+  /** Download the merged result.csv, or a named intermediate under output/.
+   * Performs the download (authenticated fetch + blob) — it does NOT return a
+   * URL, since a bare URL can't carry the auth header. */
+  downloadResults: (id: string, file?: string) =>
+    downloadFile(
+      `/api/tasks/${id}/results${file ? `?file=${encodeURIComponent(file)}` : ""}`,
+      file ?? "result.csv",
+    ),
 
   getResultsHistogram: (id: string, bins = 20) =>
     request<HistogramResponse>(`/api/tasks/${id}/results/histogram?bins=${bins}`),

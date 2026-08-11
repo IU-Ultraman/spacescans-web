@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, type Task, type TaskStatus, type ResultsPreview } from "@/lib/api";
+import {
+  api,
+  ApiError,
+  type Task,
+  type TaskStatus,
+  type ResultsPreview,
+} from "@/lib/api";
 import { INPUT_COLUMNS } from "@/lib/result-columns";
 import { useColumnMeta } from "@/lib/use-column-meta";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
@@ -30,8 +36,6 @@ import {
   BarChart3,
   Info,
 } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface IntermediateFile {
   file: string;
@@ -81,6 +85,7 @@ export default function TaskResultsPage() {
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null);
   const [preview, setPreview] = useState<ResultsPreview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -146,8 +151,17 @@ export default function TaskResultsPage() {
   // INPUT_COLUMNS imported from @/lib/result-columns (shared with backend
   // task_manager.INPUT_COLS via convention).
 
-  function handleDownload() {
-    window.open(api.downloadResults(id), "_blank");
+  async function handleDownload(file?: string) {
+    setDownloadError(null);
+    try {
+      await api.downloadResults(id, file);
+    } catch (err) {
+      setDownloadError(
+        err instanceof ApiError
+          ? err.detail
+          : "Download failed. Please try again.",
+      );
+    }
   }
 
   if (loading) {
@@ -479,10 +493,14 @@ export default function TaskResultsPage() {
           study window gets one row per residence; exposure values reflect
           that specific residence.
         </p>
-        <Button onClick={handleDownload} className="mt-4 gap-2">
+        <Button onClick={() => handleDownload()} className="mt-4 gap-2">
           <Download className="size-4" />
           Download result.csv
         </Button>
+
+        {downloadError && (
+          <p className="mt-2 text-sm text-destructive">{downloadError}</p>
+        )}
 
         {intermediates.length > 0 && (
           <details className="mt-4 text-sm">
@@ -492,13 +510,13 @@ export default function TaskResultsPage() {
             <ul className="mt-2 list-disc space-y-1 pl-4">
               {intermediates.map(({ file, label }) => (
                 <li key={file}>
-                  <a
+                  <button
+                    type="button"
                     className="underline hover:text-foreground"
-                    href={`${API_BASE}/api/tasks/${id}/results?file=${encodeURIComponent(file)}`}
-                    download={file}
+                    onClick={() => handleDownload(file)}
                   >
                     {label}
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>
