@@ -35,10 +35,33 @@ def test_ambiguous_dates_resolve_month_first():
     assert out["endDate"].iloc[0] == pd.Timestamp("2017-05-06")
 
 
-def test_day_first_dates_parse_when_month_first_is_impossible():
-    """19/8/2017 has no valid month-first reading, so day-first wins."""
-    out = parse_date_columns(_df(["19/8/2017"], ["20/9/2017"]))
-    assert out["startDate"].iloc[0] == pd.Timestamp("2017-08-19")
+@pytest.mark.parametrize("value", [
+    "8/19/17",       # two-digit year — which century?
+    "8-19-2017",
+    "2017/08/19",
+    "19-Aug-2017",
+    "Aug 19, 2017",
+    "19/8/2017",     # day-first: no longer reinterpreted, just rejected
+    "2017-08-19 00:00:00",
+])
+def test_only_two_formats_are_accepted(value):
+    """Everything outside ISO and US month-first is refused at the door.
+
+    Each of these is one re-export away from a supported form, while every
+    extra candidate is another way for a file to parse as a date nobody
+    meant — 8/19/17 has to guess a century, and 19/8/2017 used to be read as
+    19 August purely because no month has 19.
+    """
+    with pytest.raises(ValueError, match="Unrecognized date format"):
+        parse_date_columns(_df([value], [value]))
+
+
+def test_error_names_both_accepted_forms():
+    with pytest.raises(ValueError) as e:
+        parse_date_columns(_df(["19-Aug-2017"], ["20-Aug-2017"]))
+    msg = str(e.value)
+    assert "2017-08-19" in msg and "8/19/2017" in msg
+    assert "%" not in msg  # user-facing examples, not strftime codes
 
 
 def test_one_format_is_shared_across_columns():
