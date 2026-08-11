@@ -6,7 +6,7 @@ import * as topojson from "topojson-client";
 import { api, type ResultsPreview, type StateGeoBucket } from "@/lib/api";
 import { isInputColumn } from "@/lib/result-columns";
 import { useColumnMeta } from "@/lib/use-column-meta";
-import { Map as MapIcon } from "lucide-react";
+import { Map as MapIcon, Info } from "lucide-react";
 
 // Raw lng/lat states topojson. We let react-simple-maps' geoAlbersUsa
 // projection do the composite US layout (incl. AK/HI insets) + auto-fit,
@@ -114,6 +114,39 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
   }, [data]);
 
   if (numericExposureCols.length === 0) return null;
+
+  // The API groups by state_fips, which is an optional cohort column that is
+  // passed through rather than filled in. Without it the endpoint returns an
+  // empty set and the map renders blank — say so instead of showing a grey US.
+  // Default to true while the preview is still loading, so the map isn't
+  // replaced by this message on every refresh.
+  const hasStateFips = preview ? preview.columns.includes("state_fips") : true;
+  if (!hasStateFips) {
+    return (
+      <div className="rounded-lg border bg-card p-6 shadow-sm">
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <MapIcon className="size-4" />
+          Geographic Distribution
+        </div>
+        <div className="mt-3 flex items-start gap-2.5 rounded-lg border bg-muted/40 p-4">
+          <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">
+              This cohort has no <code className="font-mono">state_fips</code>{" "}
+              column
+            </p>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              The map groups exposures by state, so it needs that column in the
+              CSV you uploaded. It is optional for the linkage itself (which
+              works from longitude/latitude) and is not filled in for you — add
+              a <code className="font-mono">state_fips</code> column to your
+              cohort and run the task again to see this map.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   function colorFor(fips: string): string {
     if (!data) return "hsl(220 14% 92%)";

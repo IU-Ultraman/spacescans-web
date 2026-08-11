@@ -261,8 +261,11 @@ export function UploadStep({
             <p className="text-xs text-muted-foreground">
               Your CSV must include these 5 columns (header names are
               case-sensitive). Geographic identifiers (state_fips, county_fips,
-              tract_geoid, bg_geoid) are optional — they are computed downstream
-              if absent.
+              tract_geoid, bg_geoid) are optional: the linkage works from
+              longitude/latitude alone. They are passed through to your results
+              unchanged, not filled in — include{" "}
+              <code className="font-mono">state_fips</code> if you want the
+              Geographic Distribution map on the results page.
             </p>
 
             <div className="overflow-x-auto rounded-md border bg-background">
