@@ -73,7 +73,11 @@ def plan(config: dict) -> list[PipelineStep]:
     return steps
 
 
-# FIPS columns must remain string to preserve leading zeros (e.g. "06" for CA).
+# Optional cohort FIPS/GEOID columns. Nothing links on them — every variable
+# derives its own spatial unit from longitude/latitude, so these are carried
+# through to the output untouched, purely so a user can group results by a
+# geography they already have. Read as string to preserve leading zeros
+# ("06" for CA) on that round trip.
 _FIPS_STR_COLS = ("state_fips", "county_fips", "tract_geoid", "bg_geoid")
 
 
@@ -81,7 +85,8 @@ def csv_to_parquet(src: Path, dst: Path) -> None:
     """Convert uploaded CSV to parquet with explicit dtype handling.
 
     - FIPS columns (state_fips, county_fips, tract_geoid, bg_geoid) are read as
-      string to preserve leading zeros that the pipeline's GEOID joins need.
+      string so their leading zeros survive the round trip to the output. They
+      are passthrough only — see _FIPS_STR_COLS.
     - startDate / endDate are parsed to datetime64 so downstream code does not
       need to coerce them again.
     - Adds a deterministic ``episode_id = range(len(df))`` column so the
