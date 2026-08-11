@@ -313,15 +313,9 @@ export function UploadStep({
                 Optional: <code className="font-mono">state_fips</code>
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                2-digit Census state FIPS. Used only to draw the by-state map on
-                the results page — every exposure value is computed from the
-                coordinates, so nothing is lost by leaving it out.
-              </p>
-              <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground/80">
-                It is a <strong>string</strong>, not a number: leading zeros
-                (e.g. <code className="font-mono">&quot;06&quot;</code> for
-                California) must survive your spreadsheet — set the column type
-                to text, or edit the file in a text editor.
+                2-digit Census state FIPS — only draws the results map. Keep it
+                a string: <code className="font-mono">&quot;06&quot;</code>, not{" "}
+                <code className="font-mono">6</code>.
               </p>
             </div>
           </div>
