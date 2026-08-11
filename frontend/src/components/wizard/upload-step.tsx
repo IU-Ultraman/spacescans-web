@@ -299,8 +299,7 @@ export function UploadStep({
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 <code className="font-mono">2017-08-19</code> (ISO, preferred)
-                or <code className="font-mono">8/19/2017</code>. Nothing else —
-                re-export from your source with one of these.
+                or <code className="font-mono">8/19/2017</code>.
               </p>
               <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground/80">
                 Use <strong>one format throughout the file</strong> — startDate
@@ -312,7 +311,7 @@ export function UploadStep({
 
             <details className="group">
               <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
-                Optional GEOID columns (4) — if you have pre-computed them
+                Optional GEOID columns (4)
               </summary>
               <div className="mt-2 overflow-x-auto rounded-md border bg-background">
                 <table className="w-full text-xs">
