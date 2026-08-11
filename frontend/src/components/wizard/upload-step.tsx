@@ -261,8 +261,7 @@ export function UploadStep({
             </div>
             <p className="text-xs text-muted-foreground">
               Your CSV must include these 5 columns (header names are
-              case-sensitive) — that is enough for every exposure, which is
-              linked from longitude/latitude alone. Add{" "}
+              case-sensitive). Add{" "}
               <code className="font-mono">state_fips</code> only if you want the
               Geographic Distribution map on the results page. Any other columns
               you include are passed through to your results unchanged.
