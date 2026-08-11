@@ -26,6 +26,7 @@ import pandas as pd
 import yaml
 
 import app.config
+from app import cohort_dates
 
 _log = logging.getLogger(__name__)
 
@@ -99,10 +100,10 @@ def csv_to_parquet(src: Path, dst: Path) -> None:
     fips_dtypes = {c: str for c in _FIPS_STR_COLS if c in header}
 
     df = pd.read_csv(src, dtype=fips_dtypes)
-    # Parse dates explicitly with errors="raise" so malformed values fail loudly
-    # instead of being silently coerced to NaT.
-    df["startDate"] = pd.to_datetime(df["startDate"], format="%Y-%m-%d", errors="raise")
-    df["endDate"] = pd.to_datetime(df["endDate"], format="%Y-%m-%d", errors="raise")
+    # One shared format across startDate/endDate, resolved from the data:
+    # ISO plus the common spreadsheet exports ("8/19/2017"). Unrecognized or
+    # inconsistent formats still fail loudly. See app.cohort_dates.
+    cohort_dates.parse_date_columns(df)
     if "episode_id" in df.columns:
         _log.warning(
             "input.csv carried an episode_id column; overwriting with "

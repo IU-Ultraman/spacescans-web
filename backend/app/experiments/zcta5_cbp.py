@@ -23,6 +23,7 @@ import pandas as pd
 import yaml
 
 import app.config
+from app import cohort_dates
 from app.experiments import _merge
 from app.experiments.bg_ndi_wi import (
     PipelineStep,
@@ -99,8 +100,8 @@ def csv_to_parquet(src: Path, dst: Path) -> None:
     header = pd.read_csv(src, nrows=0).columns.tolist()
     fips_dtypes = {c: str for c in _FIPS_STR_COLS if c in header}
     df = pd.read_csv(src, dtype=fips_dtypes)
-    df["startDate"] = pd.to_datetime(df["startDate"], format="%Y-%m-%d", errors="raise")
-    df["endDate"] = pd.to_datetime(df["endDate"], format="%Y-%m-%d", errors="raise")
+    # Shared date resolver — see bg_ndi_wi.csv_to_parquet / app.cohort_dates.
+    cohort_dates.parse_date_columns(df)
     if "episode_id" in df.columns:
         _log.warning(
             "input.csv carried an episode_id column; overwriting with "

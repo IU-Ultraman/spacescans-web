@@ -102,12 +102,18 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
     if unknown:
         raise KeyError(", ".join(unknown))
 
+    # Read dates as text and parse them through the shared resolver, so the
+    # pre-flight accepts exactly what csv_to_parquet will accept at run time.
+    # (pandas' parse_dates= inference was looser than the runner's strict ISO,
+    # which let "8/19/2017" pass upload and then blow up mid-run.)
     df = pd.read_csv(
         input_csv,
-        parse_dates=["startDate", "endDate"],
         dtype={"state_fips": "string", "county_fips": "string",
                "tract_geoid": "string", "bg_geoid": "string"},
     )
+    from app import cohort_dates  # noqa: PLC0415 — keeps pandas lazy
+
+    cohort_dates.parse_date_columns(df)
     n_total = len(df)
 
     if n_total == 0:
@@ -391,12 +397,35 @@ def save_upload(task_id: str, file_content: bytes, filename: str) -> dict:
     if missing:
         input_path.unlink()
         raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
-    dates = [r.get("startDate", "") for r in rows] + [r.get("endDate", "") for r in rows]
-    dates = [d for d in dates if d]
+    # Validate + range the dates through the shared resolver. Two fixes here:
+    # an unparseable format now fails at upload with a precise message instead
+    # of crashing the runner later, and min/max come from real dates — the old
+    # string min()/max() sorted lexicographically, so "12/1/2016" ranked after
+    # "8/19/2017".
+    import pandas as pd  # noqa: PLC0415
+    from app import cohort_dates  # noqa: PLC0415
+
+    date_strings = [r.get("startDate", "") for r in rows] + [
+        r.get("endDate", "") for r in rows
+    ]
+    date_range: dict[str, str | None] = {"min": None, "max": None}
+    if any(d for d in date_strings):
+        try:
+            parsed = cohort_dates.parse_date_columns(
+                pd.DataFrame({"startDate": date_strings}), ("startDate",)
+            )["startDate"].dropna()
+        except ValueError as e:
+            input_path.unlink()
+            raise ValueError(str(e))
+        if not parsed.empty:
+            date_range = {
+                "min": parsed.min().strftime("%Y-%m-%d"),
+                "max": parsed.max().strftime("%Y-%m-%d"),
+            }
     summary = {
         "row_count": len(rows),
         "columns": columns,
-        "date_range": {"min": min(dates) if dates else None, "max": max(dates) if dates else None},
+        "date_range": date_range,
         "filename": filename,
     }
     # Update meta
