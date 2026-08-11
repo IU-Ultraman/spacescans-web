@@ -214,7 +214,9 @@ def test_fan_in_left_joins_two_partials_no_row_duplication(tmp_path):
     df = pd.read_csv(out)
     assert out == task_dir / "output" / "result.csv"
     assert len(df) == 5
-    assert {"pid", "episode_id", "ndi", "r_total"}.issubset(df.columns)
+    assert {"pid", "ndi", "r_total"}.issubset(df.columns)
+    # episode_id is the internal join key, not part of the deliverable.
+    assert "episode_id" not in df.columns
 
 
 def test_fan_in_suffix_handling_on_column_collision(tmp_path):
@@ -312,7 +314,15 @@ def test_fan_in_preserves_episode_pairs_with_partial_data(tmp_path):
     nan_rows = df[df["value"].isna()]
     assert nan_rows.shape[0] == 3, f"expected 3 NaN rows, got {nan_rows.shape[0]}"
 
+    # episode_id is dropped from the deliverable, but fan_in is input-anchored
+    # and left-joins preserve left order, so the row position IS the episode
+    # id — recover it to assert the same composite-key invariant.
+    assert "episode_id" not in df.columns
+    df = df.reset_index(drop=True)
+    df["episode_id"] = df.index
+
     # (3) NaN rows are exactly (A,1), (C,5), (E,9).
+    nan_rows = df[df["value"].isna()]
     nan_pairs = set(
         zip(nan_rows["pid"].tolist(), nan_rows["episode_id"].astype(int).tolist())
     )
@@ -322,7 +332,6 @@ def test_fan_in_preserves_episode_pairs_with_partial_data(tmp_path):
 
     # (4) Sorted by (pid, episode_id) matches input ordering — confirms
     # the left-join preserves composite-key row order.
-    df["episode_id"] = df["episode_id"].astype(int)
     sorted_pairs = list(
         zip(
             df.sort_values(["pid", "episode_id"])["pid"].tolist(),
@@ -383,7 +392,7 @@ def test_fan_in_missing_pipeline_row_fills_na(tmp_path):
     assert len(df) == 5, f"expected 5 rows, got {len(df)}"
 
     # Invariant 2: rows for dropped pids carry NaN in the value column.
-    df["episode_id"] = df["episode_id"].astype(int)
+    assert "episode_id" not in df.columns  # join key, not a deliverable column
     by_pid = {row["pid"]: row for _, row in df.iterrows()}
     assert pd.isna(by_pid["P2"]["ndi"]), "P2 should have NaN ndi"
     assert pd.isna(by_pid["P4"]["ndi"]), "P4 should have NaN ndi"

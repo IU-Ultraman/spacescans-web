@@ -102,6 +102,12 @@ def fan_in(task_dir: Path, experiment_keys: list[str]) -> Path:
             suffixes=("", f"_{exp_key}_dup"),
         )
 
+    # episode_id is the join key, not a result: it is just the input row index,
+    # and every row already carries the input columns (pid + dates + coords)
+    # that identify the episode. Drop it from the deliverable — the per-runner
+    # result_<key>.csv partials keep it, since the joins above need it.
+    df = df.drop(columns=["episode_id"])
+
     out_path = task_dir / "output" / "result.csv"
     df.to_csv(out_path, index=False)
     return out_path
