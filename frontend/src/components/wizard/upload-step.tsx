@@ -48,6 +48,30 @@ export interface DataSummary {
   date_range?: { min: string; max: string };
 }
 
+/** Pick a default task name that isn't taken yet.
+ *
+ * Task names are unique per user (the API answers 409 "A task named 'X'
+ * already exists", trimmed + case-insensitive), so any auto-filled default has
+ * to dodge the existing ones — otherwise running the demo a second time, or
+ * re-uploading the same file, dead-ends on an error the user didn't cause.
+ * Falls back to the bare name if the lookup fails; the backend still guards. */
+async function suggestFreeName(base: string): Promise<string> {
+  const clean = base.trim() || "Cohort";
+  let taken: Set<string>;
+  try {
+    const tasks = await api.listTasks();
+    taken = new Set(tasks.map((t) => t.task_name.trim().toLowerCase()));
+  } catch {
+    return clean;
+  }
+  if (!taken.has(clean.toLowerCase())) return clean;
+  for (let i = 2; i <= 99; i++) {
+    const candidate = `${clean} ${i}`;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+  return `${clean} ${Date.now()}`;
+}
+
 interface UploadStepProps {
   onComplete: (taskId: string, dataSummary: DataSummary) => void;
   /** Optional — present once the wizard has a step before this one. */
@@ -92,6 +116,15 @@ export function UploadStep({
     }
 
     setFile(f);
+
+    // Prefill the (required) task name from the filename so picking a file
+    // never dead-ends on a greyed-out upload button. The functional update
+    // never clobbers a name the user typed — including one typed while the
+    // suggestion was still resolving.
+    void (async () => {
+      const suggestion = await suggestFreeName(f.name.replace(/\.csv$/i, ""));
+      setTaskName((prev) => (prev.trim() ? prev : suggestion));
+    })();
   }, []);
 
   const handleDrop = useCallback(
@@ -144,7 +177,10 @@ export function UploadStep({
       if (!res.ok) throw new Error("demo fetch failed");
       const text = await res.text();
       const demoFile = new File([text], "demo_cohort.csv", { type: "text/csv" });
-      const name = taskName.trim() || "Demo cohort";
+      // "Demo cohort" collides on the second demo run (names are unique per
+      // user), so fall back to the first free variant and show it in the field.
+      const name = taskName.trim() || (await suggestFreeName("Demo cohort"));
+      if (!taskName.trim()) setTaskName(name);
       const id = taskId ?? (await api.createTask(name)).id;
       const result = await api.uploadFile(id, demoFile, setProgress);
       setFile(demoFile);
@@ -193,14 +229,24 @@ export function UploadStep({
 
         {/* Task name */}
         <div className="space-y-2">
-          <Label htmlFor="task-name">Task Name</Label>
+          <Label htmlFor="task-name">
+            Task Name <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="task-name"
             placeholder="e.g., Florida Health Study 2024"
             value={taskName}
             onChange={(e) => setTaskName(e.target.value)}
             disabled={!!dataSummary}
+            required
+            aria-required="true"
           />
+          {!dataSummary && (
+            <p className="text-xs text-muted-foreground">
+              You can name your task before uploading the file; otherwise, the
+              task will be automatically named after the uploaded file.
+            </p>
+          )}
         </div>
 
         {/* CSV format spec */}
@@ -373,17 +419,29 @@ export function UploadStep({
           </div>
         )}
 
-        {/* Upload button (before summary) */}
+        {/* Upload button (before summary). The button is disabled until a task
+            name exists — say so, otherwise a picked file plus a greyed-out
+            button reads as "the upload is broken". */}
         {file && !dataSummary && !uploading && (
-          <Button
-            onClick={handleUpload}
-            disabled={!taskName.trim()}
-            className="w-full"
-            size="lg"
-          >
-            <Upload className="size-4" />
-            Upload & Validate
-          </Button>
+          <div className="space-y-2">
+            <Button
+              onClick={handleUpload}
+              disabled={!taskName.trim()}
+              className="w-full"
+              size="lg"
+            >
+              <Upload className="size-4" />
+              Upload &amp; Validate
+            </Button>
+            {!taskName.trim() && (
+              <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                <AlertCircle className="size-3.5 shrink-0 text-destructive" />
+                Your file is ready — enter a{" "}
+                <span className="font-medium text-foreground">Task Name</span>{" "}
+                above to upload.
+              </p>
+            )}
+          </div>
         )}
 
         {/* Loading */}
