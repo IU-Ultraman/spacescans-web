@@ -28,8 +28,8 @@ import {
 
 const REQUIRED_COLUMNS: { name: string; type: string; desc: string }[] = [
   { name: "pid", type: "string", desc: "Patient identifier — unique per row" },
-  { name: "startDate", type: "YYYY-MM-DD", desc: "Episode start (ISO date)" },
-  { name: "endDate", type: "YYYY-MM-DD", desc: "Episode end (ISO date)" },
+  { name: "startDate", type: "YYYY-MM-DD", desc: "Episode start — other date formats accepted, see below" },
+  { name: "endDate", type: "YYYY-MM-DD", desc: "Episode end — other date formats accepted, see below" },
   { name: "longitude", type: "float", desc: "WGS84 (EPSG:4326), e.g. -82.35" },
   { name: "latitude", type: "float", desc: "WGS84 (EPSG:4326), e.g. 29.65" },
 ];
@@ -288,6 +288,29 @@ export function UploadStep({
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            <div className="rounded-md border bg-background px-3 py-2.5">
+              <p className="text-xs font-medium text-foreground">
+                Accepted date formats
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                <code className="font-mono">2017-08-19</code> (ISO, preferred) —
+                also <code className="font-mono">8/19/2017</code>,{" "}
+                <code className="font-mono">8/19/17</code>,{" "}
+                <code className="font-mono">8-19-2017</code>,{" "}
+                <code className="font-mono">2017/08/19</code>,{" "}
+                <code className="font-mono">19-Aug-2017</code> and{" "}
+                <code className="font-mono">Aug 19, 2017</code>.
+              </p>
+              <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground/80">
+                Use <strong>one format throughout the file</strong> — startDate
+                and endDate must match. Slash dates are read{" "}
+                <strong>month first</strong>, so{" "}
+                <code className="font-mono">3/4/2017</code> is 4 March;{" "}
+                <code className="font-mono">19/8/2017</code> is understood as
+                day-first only because no month has 19.
+              </p>
             </div>
 
             <details className="group">
