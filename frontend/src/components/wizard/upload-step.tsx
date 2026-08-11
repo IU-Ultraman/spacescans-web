@@ -34,12 +34,13 @@ const REQUIRED_COLUMNS: { name: string; type: string; desc: string }[] = [
   { name: "latitude", type: "float", desc: "WGS84 (EPSG:4326), e.g. 29.65" },
 ];
 
-const OPTIONAL_COLUMNS: { name: string; type: string; desc: string }[] = [
-  { name: "state_fips", type: "string (2)", desc: "Census state FIPS, e.g. '06' — leading zeros required" },
-  { name: "county_fips", type: "string (5)", desc: "state+county FIPS, e.g. '06037'" },
-  { name: "tract_geoid", type: "string (11)", desc: "state+county+tract GEOID" },
-  { name: "bg_geoid", type: "string (12)", desc: "state+county+tract+block-group GEOID" },
-];
+// Only state_fips is worth asking for: it is the sole input to the results
+// map. No exposure calculation reads any cohort geography — every variable
+// derives its own spatial unit (block group, tract, ZCTA5, county) from the
+// coordinates, verified by re-running a cohort with deliberately wrong GEOIDs
+// and getting bit-identical values. county_fips/tract_geoid/bg_geoid still
+// pass through to the output untouched if supplied; they just aren't worth
+// asking a user to produce.
 
 export interface DataSummary {
   filename: string;
@@ -260,12 +261,11 @@ export function UploadStep({
             </div>
             <p className="text-xs text-muted-foreground">
               Your CSV must include these 5 columns (header names are
-              case-sensitive). Geographic identifiers (state_fips, county_fips,
-              tract_geoid, bg_geoid) are optional: the linkage works from
-              longitude/latitude alone. They are passed through to your results
-              unchanged, not filled in — include{" "}
-              <code className="font-mono">state_fips</code> if you want the
-              Geographic Distribution map on the results page.
+              case-sensitive) — that is enough for every exposure, which is
+              linked from longitude/latitude alone. Add{" "}
+              <code className="font-mono">state_fips</code> only if you want the
+              Geographic Distribution map on the results page. Any other columns
+              you include are passed through to your results unchanged.
             </p>
 
             <div className="overflow-x-auto rounded-md border bg-background">
@@ -309,42 +309,22 @@ export function UploadStep({
               </p>
             </div>
 
-            <details className="group">
-              <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
-                Optional GEOID columns (4)
-              </summary>
-              <div className="mt-2 overflow-x-auto rounded-md border bg-background">
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/50">
-                    <tr className="border-b">
-                      <th className="px-3 py-2 text-left font-medium">Column</th>
-                      <th className="px-3 py-2 text-left font-medium">Type</th>
-                      <th className="px-3 py-2 text-left font-medium">Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {OPTIONAL_COLUMNS.map((c) => (
-                      <tr key={c.name} className="border-b last:border-b-0">
-                        <td className="px-3 py-2 font-mono font-medium text-foreground">
-                          {c.name}
-                        </td>
-                        <td className="px-3 py-2 font-mono text-muted-foreground">
-                          {c.type}
-                        </td>
-                        <td className="px-3 py-2 text-muted-foreground">{c.desc}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground/80">
-                FIPS columns are <strong>strings</strong>, not integers. Leading
-                zeros (e.g. <code className="font-mono">&quot;06&quot;</code> for
-                California) must be preserved — open the file in a text editor or
-                set the type to text in your spreadsheet tool to avoid losing
-                them.
+            <div className="rounded-md border bg-background px-3 py-2.5">
+              <p className="text-xs font-medium text-foreground">
+                Optional: <code className="font-mono">state_fips</code>
               </p>
-            </details>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                2-digit Census state FIPS. Used only to draw the by-state map on
+                the results page — every exposure value is computed from the
+                coordinates, so nothing is lost by leaving it out.
+              </p>
+              <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground/80">
+                It is a <strong>string</strong>, not a number: leading zeros
+                (e.g. <code className="font-mono">&quot;06&quot;</code> for
+                California) must survive your spreadsheet — set the column type
+                to text, or edit the file in a text editor.
+              </p>
+            </div>
           </div>
         )}
 
