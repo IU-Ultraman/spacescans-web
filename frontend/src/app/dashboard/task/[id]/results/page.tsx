@@ -493,10 +493,26 @@ export default function TaskResultsPage() {
           study window gets one row per residence; exposure values reflect
           that specific residence.
         </p>
-        <Button onClick={() => handleDownload()} className="mt-4 gap-2">
-          <Download className="size-4" />
-          Download result.csv
-        </Button>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Button onClick={() => handleDownload()} className="gap-2">
+            <Download className="size-4" />
+            Download result.csv
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleDownload("feature_dictionary.csv")}
+            className="gap-2"
+          >
+            <Download className="size-4" />
+            Download feature_dictionary.csv
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          The dictionary gives a short and a detailed description for every
+          exposure column in this run — join on{" "}
+          <code className="rounded bg-muted px-1 py-0.5">feature_name</code> to
+          label tables and figures with something readable.
+        </p>
 
         {downloadError && (
           <p className="mt-2 text-sm text-destructive">{downloadError}</p>

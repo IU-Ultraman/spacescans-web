@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from app import variable_registry
+from app import feature_dictionary, variable_registry
 
 
 def _emit_log_warning(task_dir: Path, **fields) -> None:
@@ -110,4 +110,9 @@ def fan_in(task_dir: Path, experiment_keys: list[str]) -> Path:
 
     out_path = task_dir / "output" / "result.csv"
     df.to_csv(out_path, index=False)
+    # Companion dictionary describing this run's exposure columns, archived
+    # next to the results it documents (see app/feature_dictionary.py).
+    feature_dictionary.write_csv(
+        list(df.columns), task_dir / "output" / "feature_dictionary.csv"
+    )
     return out_path
