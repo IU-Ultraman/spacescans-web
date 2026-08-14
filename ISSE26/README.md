@@ -16,12 +16,24 @@ Rscript 3_ISEE26_workshop_attendee_prediction.R
 ## Before you start
 
 Link your cohort in the SPACESCANS web app (port 3000) and let it finish.
-Nothing needs downloading: script 1 finds the most recent run under
-`/home/rstudio/spacescans-runs/tasks/`, which is the app's output mounted
-read-only into this container.
+Nothing needs downloading: the app's output is mounted read-only into this
+container, one directory per run, named for its task id —
+
+```text
+/home/rstudio/spacescans-runs/tasks/task-877c06ae-383b-48ff-94ae-bd79e46e2cb7/output/result.csv
+```
+
+and script 1 picks the most recent one, printing which:
+
+```text
+Using the most recent linkage run: /home/rstudio/spacescans-runs/tasks/task-877c06ae-.../output/result.csv
+```
 
 To analyse an earlier run instead, set `spacescans_result_csv` near the top of
-script 1 to that run's `output/result.csv`.
+script 1 to that run's `result.csv`. The task id is the last part of the URL
+when you open the task in the app; `ls -lt
+/home/rstudio/spacescans-runs/tasks/*/output/result.csv` lists them newest
+first.
 
 ## What each script does
 
