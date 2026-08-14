@@ -56,12 +56,3 @@ exposures significant in both go into one multi-exposure model. Writes
 cross-validated AUROC, compared on the held-out 30% by AUROC, AUPRC, Brier
 score and calibration, with SHAP contributions for the top exposures. Writes
 `3_Prediction/`: tables, figures, both models, and per-patient predictions.
-
-## Settings
-
-Each script has a `USER SETTINGS` block at the top — paths, the outcome and
-covariates, QC thresholds, seeds, and model grids. Everything else below it is
-the analysis itself.
-
-Result tables carry `exposure_label` beside each variable name; the longer
-description for every variable is in `1_DataEngineering/feature_labels.csv`.
