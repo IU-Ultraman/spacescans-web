@@ -4,8 +4,7 @@ Three R scripts that take a SPACESCANS linkage and carry it through to an
 exposome-wide association study and a prediction model. Run them in order;
 each reads what the previous one wrote.
 
-Open **RStudio on port 8787** (started by `docker compose --profile workshop
-up`), then in its Terminal:
+Open **RStudio on port 8787**, then in its Terminal:
 
 ```bash
 cd ~/ISEE26Workshop/forAttendee
