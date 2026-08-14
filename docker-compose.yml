@@ -57,5 +57,31 @@ services:
     depends_on:
       - backend
 
+  # ISEE 2026 workshop only — opt in with `docker compose --profile workshop up`.
+  # Left out of the default stack so anyone running just the app does not pull
+  # a 2 GB R image they will never open.
+  rstudio:
+    profiles: ["workshop"]
+    build:
+      context: ./rstudio
+    image: spacescans-web-rstudio
+    restart: unless-stopped
+    environment:
+      # No login screen. Safe because 8787 is never made public: in Codespaces
+      # it stays a private forwarded port, so GitHub's own auth gates it, and
+      # locally it is bound to this machine. Do NOT publicise this port —
+      # an unauthenticated RStudio is arbitrary code execution.
+      DISABLE_AUTH: "true"
+    volumes:
+      # The workshop scripts and their demo cohort, editable in place.
+      - ./ISSE26:/home/rstudio/ISEE26Workshop
+      # Read-only view of the app's task outputs, so R can read a run's
+      # result.csv directly. In Codespaces the browser's Download button
+      # saves to the attendee's laptop, not into the codespace — this mount
+      # is what keeps the data where R can reach it.
+      - backend-data:/home/rstudio/spacescans-runs:ro
+    ports:
+      - "8787:8787"
+
 volumes:
   backend-data:
