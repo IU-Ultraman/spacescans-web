@@ -1,15 +1,17 @@
 # 1_ISEE26_workshop_attendee_data_engineering.R
 # Purpose:
-#   Import the attendee-ready simulated dataset, read the SPACESCANS-linked
-#   exposome parquet files, merge all linked measures by PATID, and save one
-#   analysis-ready RDS for the workshop ExWAS and prediction exercises.
+#   Import the attendee-ready simulated dataset, read the linked dataset that
+#   the SPACESCANS web app produces (output/result.csv), merge all linked
+#   measures by PATID, and save one analysis-ready RDS for the workshop ExWAS
+#   and prediction exercises.
 
 rm(list = ls())
 
 # -----------------------------------------------------------------------------
 # Package check
 # -----------------------------------------------------------------------------
-required_packages <- c("arrow", "dplyr", "purrr")
+# arrow is no longer needed: the linked data arrives as one CSV.
+required_packages <- c("dplyr", "purrr")
 missing_packages <- required_packages[
   !vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)
 ]
@@ -25,7 +27,6 @@ if (length(missing_packages) > 0) {
 }
 
 suppressPackageStartupMessages({
-  library(arrow)
   library(dplyr)
   library(purrr)
 })
@@ -48,8 +49,11 @@ attendee_input_file <- file.path(
   "ISEE26_workshop_attendee_linkage_input_100000.rds"
 )
 
-# Directory containing the SPACESCANS-linked parquet outputs.
-linked_exposome_dir <- file.path(project_dir, "parquet")
+# The linked dataset downloaded from the SPACESCANS web app: one wide CSV,
+# one row per cohort row, cohort columns first and then one column per
+# exposure measure. Replaces the per-source parquet directory this script
+# used to read.
+spacescans_result_csv <- file.path(data_dir, "result.csv")
 
 # Output directory and primary output file for this script.
 output_dir <- file.path(attendee_dir, "1_DataEngineering")
@@ -65,50 +69,54 @@ merged_csv_file <- file.path(
   "ISEE26_workshop_merged_exposome.csv"
 )
 
-# ZBP is used first for social-capital measures and CBP is used when ZBP is
-# missing, matching the internal data-engineering workflow.
-zbp_relative_path <- "1_county_zcta5_zbp_cbp/zbp_demo100k.parquet"
-cbp_relative_path <- "1_county_zcta5_zbp_cbp/cbp_demo100k.parquet"
-
-# Other linked files. Add, remove, or edit rows when the Codespaces directory
-# layout changes. prefix is added after names are converted to snake_case.
-linked_file_specs <- data.frame(
-  source = c(
-    "noise_270m",
-    "tiger_road_proximity",
-    "block_group_ndi",
-    "block_group_walkability",
-    "nhd_blue_space_proximity",
-    "visible_nighttime_light",
-    "temis_uv",
-    "tract_fara_food_access"
+# Which columns of result.csv belong to which exposome source.
+#
+# The per-source parquet files carried this grouping in their file names; a
+# single flat CSV does not, so it is declared here. Column names are exactly
+# as SPACESCANS writes them (see the run's feature_dictionary.csv, or
+# backend/app/data/variable_metadata.json in the app repo); `prefix` and the
+# `source` labels are unchanged from the parquet era, so the merged variable
+# names and every downstream lookup keyed on source still match.
+#
+# Bluespace, night-time lights and TEMIS UV are absent on purpose: their
+# inputs are 50 GB, account-gated, and 29 GB-plus-not-redistributable
+# respectively, none of which fits a Codespace. Add a row back if you run one
+# of them on hardware that can hold it.
+spacescans_specs <- list(
+  list(
+    source = "zbp_primary_cbp_fallback",
+    prefix = "soc_",
+    columns = c(
+      "r_religious", "r_civic", "r_business", "r_political", "r_professional",
+      "r_labor", "r_bowling", "r_recreational", "r_golf", "r_sports"
+    )
   ),
-  relative_path = c(
-    "2_noise/noise_270m_demo100k.parquet",
-    "3_tiger/roadProximity_demo100k.parquet",
-    "4_bg_ndi_wi/ndi_demo100k.parquet",
-    "4_bg_ndi_wi/wi_demo100k.parquet",
-    "5_nhd/nhd_demo100k.parquet",
-    "6_vnl/vnl_demo100k.parquet",
-    "7_temis/temis_270m_demo100k.parquet",
-    "8_tract_fara/fara_demo100k.parquet"
+  list(
+    source = "noise_270m",
+    prefix = NA,
+    columns = c("l50dba_exi", "l50dba_imp", "l50dba_nat")
   ),
-  prefix = c(
-    NA,
-    "road_",
-    NA,
-    NA,
-    "nhd_",
-    "vnl_",
-    "temis_",
-    "fara_"
+  list(
+    source = "tiger_road_proximity",
+    prefix = "road_",
+    columns = c("dist_pri", "dist_sec", "dist_prisec")
   ),
-  stringsAsFactors = FALSE
+  list(
+    source = "block_group_ndi",
+    prefix = NA,
+    columns = c("ndi")
+  ),
+  list(
+    source = "block_group_walkability",
+    prefix = NA,
+    columns = c("NatWalkInd")
+  ),
+  list(
+    source = "tract_fara_food_access",
+    prefix = "fara_",
+    columns = c("LILATracts_1And10", "LATracts1", "HUNVFlag", "LowIncomeTracts")
+  )
 )
-
-# Usually FALSE: retain only the coalesced social-capital measures.
-keep_zbp_cbp_components <- FALSE
-keep_zbp_cbp_source_flags <- FALSE
 
 # Warn when a linked source contains records for fewer than this proportion of
 # attendee PATIDs. Missing exposure values can still occur within linked rows.
@@ -224,20 +232,83 @@ read_attendee_data <- function(file) {
   dat
 }
 
-read_linked_parquet <- function(relative_path, prefix = NULL, source_name) {
-  file <- file.path(linked_exposome_dir, relative_path)
-
+read_spacescans_result <- function(file) {
   if (!file.exists(file)) {
-    stop("Missing linked parquet file for ", source_name, ": ", file)
+    stop(
+      "SPACESCANS result file not found: ", file, "\n",
+      "  Run the linkage in the web app, then copy output/result.csv here ",
+      "(inside the workshop container it is also readable under ",
+      "/home/rstudio/spacescans-runs/tasks/<task-id>/output/)."
+    )
   }
 
-  dat <- arrow::read_parquet(file) |>
-    as.data.frame() |>
-    standardize_id() |>
-    clean_exposure_names(prefix = prefix)
+  # Identifier and FIPS columns must stay character: read.csv would turn "01"
+  # into 1 and an 11-digit tract GEOID into 2.7e10. colClasses errors on a
+  # name that is not present, so the header decides which ones to declare.
+  header <- names(read.csv(file, nrows = 0, check.names = FALSE))
+  as_character <- intersect(
+    c("pid", "PATID", "state_fips", "county_fips", "tract_geoid", "bg_geoid"),
+    header
+  )
+  col_classes <- setNames(rep("character", length(as_character)), as_character)
 
-  validate_unique_ids(dat, source_name)
+  dat <- read.csv(
+    file,
+    stringsAsFactors = FALSE,
+    check.names = FALSE,
+    colClasses = col_classes
+  ) |>
+    standardize_id()
+
+  validate_unique_ids(dat, "spacescans_result")
   dat
+}
+
+# Split the wide result into the per-source tables the rest of this script
+# expects, applying each source's prefix exactly as the parquet reader did —
+# so merged variable names are unchanged from the parquet era.
+#
+# A source whose columns are entirely absent is skipped with a message rather
+# than an error: a run covers only the exposomes that were selected in the app,
+# and a workshop that drops one should not have to edit this file.
+split_result_by_source <- function(result_dat, specs) {
+  tables <- list()
+
+  for (spec in specs) {
+    present <- intersect(spec$columns, names(result_dat))
+    missing <- setdiff(spec$columns, names(result_dat))
+
+    if (length(present) == 0) {
+      message(
+        "  - ", spec$source, ": not present in result.csv, skipping ",
+        "(expected columns: ", paste(spec$columns, collapse = ", "), ")"
+      )
+      next
+    }
+    if (length(missing) > 0) {
+      warning(
+        spec$source, " is missing ", length(missing), " expected column(s): ",
+        paste(missing, collapse = ", "),
+        call. = FALSE
+      )
+    }
+
+    tbl <- result_dat[, c("PATID", present), drop = FALSE] |>
+      clean_exposure_names(prefix = spec$prefix)
+    validate_unique_ids(tbl, spec$source)
+
+    message("  - ", spec$source, ": ", length(present), " measure(s)")
+    tables[[spec$source]] <- tbl
+  }
+
+  if (length(tables) == 0) {
+    stop(
+      "None of the expected exposome columns were found in ", basename(spacescans_result_csv),
+      ". Was the linkage run with any exposures selected?"
+    )
+  }
+
+  tables
 }
 
 make_manifest <- function(dat, source, relative_path) {
@@ -249,76 +320,10 @@ make_manifest <- function(dat, source, relative_path) {
   )
 }
 
-make_social_capital_table <- function() {
-  zbp <- read_linked_parquet(
-    relative_path = zbp_relative_path,
-    prefix = NULL,
-    source_name = "zbp_social_capital"
-  )
-  cbp <- read_linked_parquet(
-    relative_path = cbp_relative_path,
-    prefix = NULL,
-    source_name = "cbp_social_capital"
-  )
-
-  zbp_vars <- setdiff(names(zbp), "PATID")
-  cbp_vars <- setdiff(names(cbp), "PATID")
-  social_vars <- union(zbp_vars, cbp_vars)
-
-  zbp_renamed <- zbp
-  cbp_renamed <- cbp
-  names(zbp_renamed)[match(zbp_vars, names(zbp_renamed))] <- paste0(zbp_vars, "_zbp")
-  names(cbp_renamed)[match(cbp_vars, names(cbp_renamed))] <- paste0(cbp_vars, "_cbp")
-
-  both <- full_join(zbp_renamed, cbp_renamed, by = "PATID")
-  out <- both["PATID"]
-
-  for (v in social_vars) {
-    zbp_v <- paste0(v, "_zbp")
-    cbp_v <- paste0(v, "_cbp")
-
-    if (zbp_v %in% names(both) && cbp_v %in% names(both)) {
-      out[[paste0("soc_", v)]] <- dplyr::coalesce(
-        both[[zbp_v]],
-        both[[cbp_v]]
-      )
-    } else if (zbp_v %in% names(both)) {
-      out[[paste0("soc_", v)]] <- both[[zbp_v]]
-    } else {
-      out[[paste0("soc_", v)]] <- both[[cbp_v]]
-    }
-  }
-
-  if (isTRUE(keep_zbp_cbp_source_flags)) {
-    zbp_cols <- intersect(paste0(social_vars, "_zbp"), names(both))
-    cbp_cols <- intersect(paste0(social_vars, "_cbp"), names(both))
-
-    out$soc_zbp_nonmissing_n <- if (length(zbp_cols) > 0) {
-      rowSums(!is.na(both[zbp_cols]))
-    } else {
-      0L
-    }
-    out$soc_cbp_nonmissing_n <- if (length(cbp_cols) > 0) {
-      rowSums(!is.na(both[cbp_cols]))
-    } else {
-      0L
-    }
-    out$soc_source_rule <- case_when(
-      out$soc_zbp_nonmissing_n > 0 ~ "zbp_primary",
-      out$soc_cbp_nonmissing_n > 0 ~ "cbp_fallback",
-      TRUE ~ NA_character_
-    )
-  }
-
-  if (isTRUE(keep_zbp_cbp_components)) {
-    raw_components <- both[setdiff(names(both), "PATID")]
-    names(raw_components) <- paste0("soc_raw_", names(raw_components))
-    out <- bind_cols(out, raw_components)
-  }
-
-  validate_unique_ids(out, "coalesced_social_capital")
-  out
-}
+# The ZBP-primary / CBP-fallback coalescing that used to live here now happens
+# inside the SPACESCANS pipeline, which emits one already-resolved set of
+# community-organization measures. The source label is kept as
+# "zbp_primary_cbp_fallback" so downstream category lookups still match.
 
 linkage_coverage_one <- function(linked_dat, source_name, attendee_ids) {
   n_attendee <- length(attendee_ids)
@@ -388,28 +393,15 @@ attendee_ids <- attendee_dat$PATID
 # 2) Read all linked exposome files
 # =============================================================================
 
-if (!dir.exists(linked_exposome_dir)) {
-  stop("linked_exposome_dir does not exist: ", linked_exposome_dir)
-}
-
-message("Reading and coalescing ZBP/CBP social-capital files...")
-social <- make_social_capital_table()
-
-message("Reading remaining linked exposome parquet files...")
-other_tables <- lapply(seq_len(nrow(linked_file_specs)), function(i) {
-  spec <- linked_file_specs[i, ]
-  read_linked_parquet(
-    relative_path = spec$relative_path,
-    prefix = spec$prefix,
-    source_name = spec$source
-  )
-})
-names(other_tables) <- linked_file_specs$source
-
-exposure_tables <- c(
-  list(zbp_primary_cbp_fallback = social),
-  other_tables
+message("Reading the SPACESCANS linked dataset: ", spacescans_result_csv)
+spacescans_result <- read_spacescans_result(spacescans_result_csv)
+message(
+  "  ", nrow(spacescans_result), " rows, ",
+  ncol(spacescans_result), " columns"
 )
+
+message("Splitting it into exposome sources...")
+exposure_tables <- split_result_by_source(spacescans_result, spacescans_specs)
 
 # Stop before joining if two sources would create the same exposure name.
 exposure_name_registry <- unlist(
@@ -424,7 +416,7 @@ if (length(duplicated_exposure_names) > 0) {
   stop(
     "Exposure names overlap across linked sources: ",
     paste(duplicated_exposure_names, collapse = ", "),
-    ". Edit linked_file_specs prefixes before merging."
+    ". Edit the prefixes in spacescans_specs before merging."
   )
 }
 
@@ -440,21 +432,18 @@ if (length(attendee_overlap) > 0) {
 # 3) Build manifests and linkage-coverage diagnostics
 # =============================================================================
 
-social_manifest <- make_manifest(
-  social,
-  source = "zbp_primary_cbp_fallback",
-  relative_path = paste(zbp_relative_path, cbp_relative_path, sep = " | ")
-)
-
-other_manifests <- lapply(seq_along(other_tables), function(i) {
+# Same two required columns (variable, source) as before, so scripts 2 and 3
+# consume this unchanged; relative_path now names the one file everything
+# came from.
+manifests <- lapply(names(exposure_tables), function(source_name) {
   make_manifest(
-    other_tables[[i]],
-    source = linked_file_specs$source[i],
-    relative_path = linked_file_specs$relative_path[i]
+    exposure_tables[[source_name]],
+    source = source_name,
+    relative_path = basename(spacescans_result_csv)
   )
 })
 
-exposure_manifest <- bind_rows(c(list(social_manifest), other_manifests)) |>
+exposure_manifest <- bind_rows(manifests) |>
   distinct(variable, .keep_all = TRUE) |>
   arrange(source, variable)
 
