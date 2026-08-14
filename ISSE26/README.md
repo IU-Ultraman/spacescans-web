@@ -20,10 +20,13 @@ Nothing needs downloading: the app's output is mounted read-only into this
 container, one directory per run, named for its task id —
 
 ```text
-/home/rstudio/spacescans-runs/tasks/task-877c06ae-383b-48ff-94ae-bd79e46e2cb7/output/result.csv
+/home/rstudio/spacescans-runs/tasks/task-877c06ae-383b-48ff-94ae-bd79e46e2cb7/output/
+    result.csv                 the linked cohort
+    feature_dictionary.csv     a description of every exposure column in it
 ```
 
-and script 1 **automatically** picks the most recent one.
+and script 1 **automatically** picks the most recent one, reading both files
+from it.
 
 ## What each script does
 
