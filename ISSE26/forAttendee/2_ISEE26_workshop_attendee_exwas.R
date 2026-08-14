@@ -69,6 +69,15 @@ exposure_manifest_csv <- file.path(
   "exposure_variable_manifest.csv"
 )
 
+# Human-readable names for the exposures, written by script 1 from the
+# SPACESCANS feature dictionary. Optional: without it the result tables carry
+# the variable name in exposure_label too, so downstream code can read that one
+# column either way.
+feature_label_csv <- file.path(
+  data_engineering_dir,
+  "feature_labels.csv"
+)
+
 output_dir <- file.path(attendee_dir, "2_ExWAS")
 tables_dir <- file.path(output_dir, "tables")
 figures_dir <- file.path(output_dir, "figures")
@@ -136,6 +145,34 @@ to_numeric_safely <- function(x) {
   if (is.logical(x)) return(as.numeric(x))
   if (is.factor(x)) x <- as.character(x)
   suppressWarnings(as.numeric(x))
+}
+
+# Human-readable name beside every variable name, applied when a table is
+# written rather than threaded through the analysis objects. Stage-1 results
+# come out of run_stage1_models() as bare model statistics, and training_wide
+# suffixes every non-`exposure` column, so a label carried upstream would be
+# dropped from some tables and renamed in others. Attaching it here covers
+# each table with an `exposure` column, including ones added later.
+# Populated in section 1 once the manifest is read.
+exposure_label_lookup <- character(0)
+
+with_exposure_label <- function(dat) {
+  if (!is.data.frame(dat) ||
+      !"exposure" %in% names(dat) ||
+      "exposure_label" %in% names(dat)) {
+    return(dat)
+  }
+  hit <- exposure_label_lookup[as.character(dat$exposure)]
+  dat$exposure_label <- unname(if_else(is.na(hit), dat$exposure, hit))
+  # Keep the label next to the name it explains.
+  dat[, append(names(dat)[names(dat) != "exposure_label"],
+               "exposure_label",
+               after = match("exposure", names(dat))), drop = FALSE]
+}
+
+write_table <- function(dat, filename) {
+  write.csv(with_exposure_label(dat), file.path(tables_dir, filename),
+            row.names = FALSE)
 }
 
 safe_quantile <- function(x, probability) {
@@ -1025,6 +1062,44 @@ if (length(missing_manifest_cols) > 0) {
 
 manifest <- manifest |>
   distinct(variable, .keep_all = TRUE)
+
+# Human-readable name per exposure, carried alongside the variable name rather
+# than replacing it: `exposure` stays the join key every other script and any
+# downstream code matches on, while `exposure_label` is what belongs in a
+# printed table. Attaching it to the manifest is enough — the single
+# left_join(manifest, ...) inside make_exposure_summary carries it into every
+# result table this script writes. Falls back to the variable name, so the
+# column is always populated and downstream code can read it unconditionally.
+if (file.exists(feature_label_csv)) {
+  supplied_labels <- read.csv(
+    feature_label_csv,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  if (all(c("varname", "label") %in% names(supplied_labels))) {
+    supplied_labels <- supplied_labels |>
+      filter(!is.na(varname), varname != "", !is.na(label), label != "") |>
+      distinct(varname, .keep_all = TRUE)
+    exposure_label_lookup <- setNames(
+      supplied_labels$label, supplied_labels$varname
+    )
+    message(
+      "Loaded ", sum(manifest$variable %in% names(exposure_label_lookup)),
+      " of ", nrow(manifest), " exposure labels from ", feature_label_csv
+    )
+  } else {
+    warning(
+      "Feature label file lacks varname/label columns; using variable names.",
+      call. = FALSE
+    )
+  }
+} else {
+  message(
+    "No feature label file at ", feature_label_csv,
+    "; tables will show variable names."
+  )
+}
+
 exposure_vars_manifest <- manifest$variable
 
 required_analysis_vars <- unique(c(
@@ -1609,75 +1684,61 @@ analysis_flow <- data.frame(
 )
 
 # All requested workshop tables.
-write.csv(
+write_table(
   exposure_qc,
-  file.path(tables_dir, "01_exposure_unique_value_and_inclusion_qc.csv"),
-  row.names = FALSE
+  "01_exposure_unique_value_and_inclusion_qc.csv"
 )
-write.csv(
+write_table(
   filter(exposure_qc, !is.na(final_exclusion_reason)),
-  file.path(tables_dir, "02_excluded_exposures_and_reasons.csv"),
-  row.names = FALSE
+  "02_excluded_exposures_and_reasons.csv"
 )
-write.csv(
+write_table(
   scaling_parameters,
-  file.path(tables_dir, "03_exposure_scaling_parameters.csv"),
-  row.names = FALSE
+  "03_exposure_scaling_parameters.csv"
 )
-write.csv(
+write_table(
   high_correlation_pairs,
-  file.path(tables_dir, "04_high_correlation_pairs.csv"),
-  row.names = FALSE
+  "04_high_correlation_pairs.csv"
 )
-write.csv(
+write_table(
   correlation_decisions,
-  file.path(tables_dir, "05_correlation_retained_excluded_decisions.csv"),
-  row.names = FALSE
+  "05_correlation_retained_excluded_decisions.csv"
 )
-write.csv(
+write_table(
   exposure_summary,
-  file.path(tables_dir, "06_exposure_summary_statistics_original_scale.csv"),
-  row.names = FALSE
+  "06_exposure_summary_statistics_original_scale.csv"
 )
-write.csv(
+write_table(
   stage1_training,
-  file.path(tables_dir, "07_stage1_training_results.csv"),
-  row.names = FALSE
+  "07_stage1_training_results.csv"
 )
-write.csv(
+write_table(
   stage1_testing,
-  file.path(tables_dir, "08_stage1_testing_results.csv"),
-  row.names = FALSE
+  "08_stage1_testing_results.csv"
 )
-write.csv(
+write_table(
   stage1_results_with_summary,
-  file.path(tables_dir, "09_stage1_training_testing_results_with_summary.csv"),
-  row.names = FALSE
+  "09_stage1_training_testing_results_with_summary.csv"
 )
-write.csv(
+write_table(
   stage1_selected_for_stage2,
-  file.path(tables_dir, "10_stage1_exposures_selected_for_stage2.csv"),
-  row.names = FALSE
+  "10_stage1_exposures_selected_for_stage2.csv"
 )
-write.csv(
+write_table(
   stage2_results_with_summary,
-  file.path(tables_dir, "11_stage2_multiexposure_results_with_summary.csv"),
-  row.names = FALSE
+  "11_stage2_multiexposure_results_with_summary.csv"
 )
-write.csv(
+write_table(
   split_summary,
-  file.path(tables_dir, "12_training_testing_split_summary.csv"),
-  row.names = FALSE
+  "12_training_testing_split_summary.csv"
 )
-write.csv(
+write_table(
   analysis_flow,
-  file.path(tables_dir, "13_exwas_analysis_flow_counts.csv"),
-  row.names = FALSE
+  "13_exwas_analysis_flow_counts.csv"
 )
-write.csv(
+write_table(
   volcano_results_outside_focused_range,
-  file.path(tables_dir, "14_volcano_results_outside_focused_or_range.csv"),
-  row.names = FALSE
+  "14_volcano_results_outside_focused_or_range.csv"
 )
 
 # Preserve core analysis objects for later workshop exercises and troubleshooting.
