@@ -52,7 +52,10 @@ suppressPackageStartupMessages({
 
 # Current internal workshop directory.
 # For GitHub Codespaces, change project_dir to the repository workspace path.
-project_dir <- "/mnt/md0/Research Project/SPACESCANS/data/ISEE26Workshop"
+# Workshop directory — where docker-compose mounts the repository's
+# ISSE26/ folder in the SPACESCANS RStudio container. Original authoring
+# path: "/mnt/md0/Research Project/SPACESCANS/data/ISEE26Workshop"
+project_dir <- "/home/rstudio/ISEE26Workshop"
 
 attendee_dir <- file.path(project_dir, "forAttendee")
 data_engineering_dir <- file.path(attendee_dir, "1_DataEngineering")

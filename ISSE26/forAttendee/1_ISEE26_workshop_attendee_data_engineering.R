@@ -34,16 +34,17 @@ suppressPackageStartupMessages({
 # USER SETTINGS: edit paths and options here
 # =============================================================================
 
-# Current internal workshop directory.
-# For GitHub Codespaces, change only project_dir (and, if needed, the individual
-# file settings below), for example:
-# project_dir <- "/workspaces/<repository-name>/ISEE26Workshop"
-project_dir <- "/mnt/md0/Research Project/SPACESCANS/data/ISEE26Workshop"
+# Workshop directory. In the SPACESCANS container this is where
+# docker-compose mounts the repository's ISSE26/ folder; the original
+# authoring path is kept for reference.
+#   internal: "/mnt/md0/Research Project/SPACESCANS/data/ISEE26Workshop"
+project_dir <- "/home/rstudio/ISEE26Workshop"
 
-# Attendee input created at the end of simulation Step 4.
+# Scripts live in forAttendee/; the simulated cohort ships beside it.
 attendee_dir <- file.path(project_dir, "forAttendee")
+data_dir <- file.path(project_dir, "demoDataWithCovariates")
 attendee_input_file <- file.path(
-  attendee_dir,
+  data_dir,
   "ISEE26_workshop_attendee_linkage_input_100000.rds"
 )
 

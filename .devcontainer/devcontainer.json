@@ -6,10 +6,21 @@
     "memory": "16gb",
     "storage": "32gb"
   },
-  "forwardPorts": [3000, 8000],
+  "forwardPorts": [3000, 8000, 8787],
   "portsAttributes": {
     "3000": { "label": "frontend (open this)" },
-    "8000": { "label": "backend API" }
+    "8000": { "label": "backend API" },
+    // Workshop RStudio. Never make this port public: the container runs with
+    // DISABLE_AUTH, so GitHub's own auth on a private forwarded port is the
+    // only thing standing between the URL and a root R console.
+    "8787": { "label": "RStudio (workshop) — keep private" }
+  },
+  // A codespace of this repo is the workshop environment, so it brings up
+  // RStudio alongside the app. docker compose reads this variable, so the
+  // lifecycle scripts stay profile-agnostic. Someone running the app locally
+  // gets the default two-service stack unless they ask for the profile.
+  "containerEnv": {
+    "COMPOSE_PROFILES": "workshop"
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "postStartCommand": "bash .devcontainer/post-start.sh",
