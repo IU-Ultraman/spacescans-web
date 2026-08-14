@@ -55,6 +55,11 @@ attendee_input_file <- file.path(
 # used to read.
 spacescans_result_csv <- file.path(data_dir, "result.csv")
 
+# Companion file the app writes beside result.csv, describing each exposure
+# column. Optional: without it the later scripts fall back to raw variable
+# names in their tables and figures.
+spacescans_dictionary_csv <- file.path(data_dir, "feature_dictionary.csv")
+
 # Output directory and primary output file for this script.
 output_dir <- file.path(attendee_dir, "1_DataEngineering")
 merged_rds_file <- file.path(
@@ -549,9 +554,64 @@ manifest_csv <- file.path(output_dir, "exposure_variable_manifest.csv")
 coverage_csv <- file.path(output_dir, "linkage_coverage_by_source.csv")
 missingness_csv <- file.path(output_dir, "exposure_missingness.csv")
 qc_csv <- file.path(output_dir, "data_engineering_qc.csv")
+labels_csv <- file.path(output_dir, "feature_labels.csv")
+
+# Translate the app's dictionary into labels keyed by the names this script
+# produced. The dictionary is keyed on raw SPACESCANS columns (dist_pri),
+# while the merged data uses the cleaned, prefixed forms (road_dist_pri), so
+# a direct join would match nothing. Doing the translation here — the one
+# place that owns the renaming — keeps scripts 2 and 3 free of it.
+write_feature_labels <- function(dictionary_csv, specs, out_csv) {
+  if (!file.exists(dictionary_csv)) {
+    message(
+      "No feature dictionary at ", dictionary_csv,
+      " — later scripts will label figures with raw variable names."
+    )
+    return(invisible(NULL))
+  }
+
+  dict <- read.csv(dictionary_csv, stringsAsFactors = FALSE, check.names = FALSE)
+  if (!all(c("feature_name", "short_description") %in% names(dict))) {
+    warning(
+      "Feature dictionary lacks feature_name/short_description; skipping labels.",
+      call. = FALSE
+    )
+    return(invisible(NULL))
+  }
+
+  rows <- lapply(specs, function(spec) {
+    keep <- dict[dict$feature_name %in% spec$columns, , drop = FALSE]
+    if (nrow(keep) == 0) return(NULL)
+    varname <- vapply(keep$feature_name, clean_name_one, character(1))
+    if (!is.null(spec$prefix) && !is.na(spec$prefix) && nzchar(spec$prefix)) {
+      varname <- paste0(spec$prefix, varname)
+    }
+    data.frame(
+      varname = unname(varname),
+      label = keep$short_description,
+      description = if ("detailed_description" %in% names(keep)) {
+        keep$detailed_description
+      } else {
+        keep$short_description
+      },
+      stringsAsFactors = FALSE
+    )
+  })
+
+  labels <- bind_rows(rows)
+  if (nrow(labels) == 0) {
+    warning("Feature dictionary matched none of the linked columns.", call. = FALSE)
+    return(invisible(NULL))
+  }
+
+  write.csv(labels, out_csv, row.names = FALSE)
+  message("Saved feature labels: ", out_csv, " (", nrow(labels), " variables)")
+  invisible(labels)
+}
 
 saveRDS(analytic, merged_rds_file)
 write.csv(exposure_manifest, manifest_csv, row.names = FALSE)
+write_feature_labels(spacescans_dictionary_csv, spacescans_specs, labels_csv)
 write.csv(linkage_coverage, coverage_csv, row.names = FALSE)
 write.csv(exposure_missingness, missingness_csv, row.names = FALSE)
 write.csv(data_engineering_qc, qc_csv, row.names = FALSE)

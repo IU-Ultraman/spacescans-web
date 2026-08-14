@@ -89,11 +89,13 @@ exposure_manifest_csv <- file.path(
   "exposure_variable_manifest.csv"
 )
 
-# Optional label file placeholder. When this file exists, it must contain:
-#   varname, label
-# Until it is supplied, variable names are used as labels automatically.
+# Feature labels, written by script 1 from the SPACESCANS feature dictionary
+# that ships beside result.csv. Columns: varname, label, description — keyed
+# by the merged variable names used here, so tables and figures read
+# "Distance to primary road" rather than road_dist_pri. Absent (no dictionary
+# in the run) means variable names are used as labels automatically.
 feature_label_csv <- file.path(
-  attendee_dir,
+  data_engineering_dir,
   "feature_labels.csv"
 )
 
