@@ -1,10 +1,12 @@
 # backend/app/task_manager.py
 """File-based task management. Each task is a directory with meta.json."""
 import json
+import logging
 import uuid
 import shutil
 import csv
 import fcntl
+import io
 import os
 import signal
 import subprocess
@@ -13,6 +15,8 @@ import threading
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 import app.config
+
+_log = logging.getLogger(__name__)
 
 
 # Columns produced by the cohort upload or by geocoding — never an "exposure".
@@ -392,11 +396,30 @@ def save_upload(task_id: str, file_content: bytes, filename: str) -> dict:
     reader = csv.DictReader(text.splitlines())
     rows = list(reader)
     columns = reader.fieldnames or []
+
+    # PATID is the identifier in EHR extracts and in the ISEE workshop cohort,
+    # and both the merge step and the workshop's R scripts already accept it.
+    # Only this check insisted on `pid`, so a cohort that ran fine everywhere
+    # else was rejected at the door. Rename it here, once, and let the rest of
+    # the pipeline keep seeing exactly one spelling.
+    renamed_id_from = None
+    if "pid" not in columns:
+        alias = next((c for c in columns if c.lower() == "patid"), None)
+        if alias is not None:
+            renamed_id_from = alias
+            columns = ["pid" if c == alias else c for c in columns]
+            for row in rows:
+                row["pid"] = row.pop(alias)
+
     required = {"pid", "startDate", "endDate", "longitude", "latitude"}
     missing = required - set(columns)
     if missing:
         input_path.unlink()
-        raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
+        raise ValueError(
+            f"Missing required columns: {', '.join(sorted(missing))}"
+            + (" (the patient id may be named pid or PATID)"
+               if "pid" in missing else "")
+        )
     # Validate + range the dates through the shared resolver. Two fixes here:
     # an unparseable format now fails at upload with a precise message instead
     # of crashing the runner later, and min/max come from real dates — the old
@@ -422,6 +445,17 @@ def save_upload(task_id: str, file_content: bytes, filename: str) -> dict:
                 "min": parsed.min().strftime("%Y-%m-%d"),
                 "max": parsed.max().strftime("%Y-%m-%d"),
             }
+    if renamed_id_from is not None:
+        # Persist the rename: the runner and the merge step read input.csv from
+        # disk, so a rename that lived only in memory would leave them looking
+        # for a column that is still spelled PATID in the file.
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=columns, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+        input_path.write_text(buf.getvalue())
+        _log.info("upload: renamed identifier column %r -> 'pid'", renamed_id_from)
+
     summary = {
         "row_count": len(rows),
         "columns": columns,

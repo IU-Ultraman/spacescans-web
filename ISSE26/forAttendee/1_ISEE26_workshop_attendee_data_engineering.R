@@ -49,11 +49,18 @@ attendee_input_file <- file.path(
   "ISEE26_workshop_attendee_linkage_input_100000.rds"
 )
 
-# The linked dataset downloaded from the SPACESCANS web app: one wide CSV,
-# one row per cohort row, cohort columns first and then one column per
-# exposure measure. Replaces the per-source parquet directory this script
-# used to read.
-spacescans_result_csv <- file.path(data_dir, "result.csv")
+# The linked dataset the SPACESCANS web app produces: one wide CSV, one row
+# per cohort row, cohort columns first and then one column per exposure
+# measure. Replaces the per-source parquet directory this script used to read.
+#
+# Left NULL, the script picks the most recent run visible under
+# spacescans_runs_dir — the app's task output, mounted read-only into this
+# container. That saves copying result.csv anywhere: in a Codespace the
+# browser's Download button saves to your own laptop, not into the codespace,
+# so a copy step would mean a round trip. Set an explicit path to pin a
+# particular run, or to read a file you placed beside the demo cohort.
+spacescans_result_csv <- NULL
+spacescans_runs_dir <- "/home/rstudio/spacescans-runs/tasks"
 
 # Companion file the app writes beside result.csv, describing each exposure
 # column. Optional: without it the later scripts fall back to raw variable
@@ -237,6 +244,20 @@ read_attendee_data <- function(file) {
   dat
 }
 
+find_latest_result <- function(runs_dir) {
+  candidates <- Sys.glob(file.path(runs_dir, "*", "output", "result.csv"))
+  if (length(candidates) == 0) {
+    stop(
+      "No linked dataset found under ", runs_dir, ".\n",
+      "  Run a linkage in the SPACESCANS web app first, or set ",
+      "spacescans_result_csv to a result.csv you already have."
+    )
+  }
+  newest <- candidates[which.max(file.mtime(candidates))]
+  message("Using the most recent linkage run: ", newest)
+  newest
+}
+
 read_spacescans_result <- function(file) {
   if (!file.exists(file)) {
     stop(
@@ -397,6 +418,17 @@ attendee_ids <- attendee_dat$PATID
 # =============================================================================
 # 2) Read all linked exposome files
 # =============================================================================
+
+if (is.null(spacescans_result_csv)) {
+  spacescans_result_csv <- find_latest_result(spacescans_runs_dir)
+}
+# The dictionary is the app's companion file, so look for it beside whichever
+# result.csv we ended up with before falling back to the demo-data copy.
+sibling_dictionary <- file.path(dirname(spacescans_result_csv),
+                                "feature_dictionary.csv")
+if (file.exists(sibling_dictionary)) {
+  spacescans_dictionary_csv <- sibling_dictionary
+}
 
 message("Reading the SPACESCANS linked dataset: ", spacescans_result_csv)
 spacescans_result <- read_spacescans_result(spacescans_result_csv)

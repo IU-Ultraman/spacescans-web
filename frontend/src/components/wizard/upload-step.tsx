@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 const REQUIRED_COLUMNS: { name: string; type: string; desc: string }[] = [
-  { name: "pid", type: "string", desc: "Patient identifier — unique per row" },
+  { name: "pid", type: "string", desc: "Patient identifier — or PATID; unique per row" },
   { name: "startDate", type: "YYYY-MM-DD", desc: "Episode start — or M/D/YYYY, see below" },
   { name: "endDate", type: "YYYY-MM-DD", desc: "Episode end — or M/D/YYYY, see below" },
   { name: "longitude", type: "float", desc: "WGS84 (EPSG:4326), e.g. -82.35" },
@@ -261,7 +261,9 @@ export function UploadStep({
             </div>
             <p className="text-xs text-muted-foreground">
               Your CSV must include these 5 columns (header names are
-              case-sensitive). Add{" "}
+              case-sensitive, except that the identifier may be{" "}
+              <code className="font-mono">pid</code> or{" "}
+              <code className="font-mono">PATID</code>). Add{" "}
               <code className="font-mono">state_fips</code> only if you want the
               Geographic Distribution map on the results page. Any other columns
               you include are passed through to your results unchanged.

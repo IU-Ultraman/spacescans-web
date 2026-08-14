@@ -5,6 +5,9 @@ parse_dates inference accepted it) and then failed mid-run with
 `csv_to_parquet failed: ValueError('time data "8/19/2017" doesn't match
 format "%Y-%m-%d"')`. Upload and the runner now share one resolver.
 """
+import csv
+import json
+
 import pandas as pd
 import pytest
 
@@ -106,3 +109,71 @@ def test_csv_to_parquet_accepts_us_slash_dates(tmp_path):
     assert pd.api.types.is_datetime64_any_dtype(df["startDate"])
     assert df["startDate"].iloc[0] == pd.Timestamp("2017-08-19")
     assert df["endDate"].iloc[1] == pd.Timestamp("2017-06-21")
+
+
+# ---------------------------------------------------------------------------
+# Identifier column: pid or PATID
+# ---------------------------------------------------------------------------
+
+
+def _upload(tmp, csv_bytes):
+    """save_upload against a throwaway task dir; returns (summary, input.csv)."""
+    import importlib
+    import os
+    os.environ["DATA_DIR"] = str(tmp)
+    os.environ["DB_PATH"] = str(tmp / "t.db")
+    os.environ["TASKS_DIR"] = str(tmp / "tasks")
+    import app.config
+    importlib.reload(app.config)
+    import app.task_manager as tm
+    importlib.reload(tm)
+    task_dir = tmp / "tasks" / "task-x"
+    task_dir.mkdir(parents=True)
+    (task_dir / "meta.json").write_text(json.dumps({"id": "x"}))
+    return tm.save_upload("x", csv_bytes, "c.csv"), task_dir / "input.csv"
+
+
+def test_patid_is_accepted_as_the_identifier(tmp_path):
+    """EHR extracts and the ISEE workshop cohort call it PATID; the merge step
+    and the workshop R scripts both accept that spelling, and only this check
+    did not."""
+    body = (b"PATID,startDate,endDate,longitude,latitude\n"
+            b"P1,2017-08-19,2017-09-01,-86.15,39.77\n")
+    summary, input_csv = _upload(tmp_path, body)
+    assert summary["row_count"] == 1
+    assert "pid" in summary["columns"] and "PATID" not in summary["columns"]
+    # The rename must reach disk: the runner reads input.csv, not our summary.
+    assert input_csv.read_text().splitlines()[0].startswith("pid,")
+
+
+def test_patid_rename_preserves_other_columns_and_values(tmp_path):
+    body = (b"PATID,startDate,endDate,longitude,latitude,state_fips\n"
+            b"P1,8/19/2017,9/1/2017,-86.15,39.77,06\n")
+    summary, input_csv = _upload(tmp_path, body)
+    assert summary["columns"] == [
+        "pid", "startDate", "endDate", "longitude", "latitude", "state_fips"]
+    rows = list(csv.DictReader(input_csv.read_text().splitlines()))
+    assert rows[0]["pid"] == "P1"
+    assert rows[0]["state_fips"] == "06"    # leading zero survives the rewrite
+    # Dates are validated at upload but written back verbatim — the runner
+    # parses them with the shared resolver. Rewriting the file for the rename
+    # must not quietly reformat them.
+    assert rows[0]["startDate"] == "8/19/2017"
+    assert summary["date_range"]["min"] == "2017-08-19"  # range is parsed
+
+
+def test_pid_wins_when_both_spellings_are_present(tmp_path):
+    """A file carrying both keeps pid untouched rather than guessing."""
+    body = (b"pid,PATID,startDate,endDate,longitude,latitude\n"
+            b"A,B,2017-08-19,2017-09-01,-86.15,39.77\n")
+    summary, input_csv = _upload(tmp_path, body)
+    rows = list(csv.DictReader(input_csv.read_text().splitlines()))
+    assert rows[0]["pid"] == "A"
+    assert "PATID" in summary["columns"]
+
+
+def test_missing_identifier_error_names_both_spellings(tmp_path):
+    body = b"subject,startDate,endDate,longitude,latitude\nS1,2017-08-19,2017-09-01,-86.15,39.77\n"
+    with pytest.raises(ValueError) as e:
+        _upload(tmp_path, body)
+    assert "pid" in str(e.value) and "PATID" in str(e.value)
