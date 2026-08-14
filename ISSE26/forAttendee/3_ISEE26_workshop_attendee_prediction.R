@@ -1874,7 +1874,12 @@ ggsave(
   filename = file.path(figures_dir, "prediction_roc_pr_curves.pdf"),
   plot = performance_curve_plot,
   width = performance_figure_width,
-  height = performance_figure_height
+  height = performance_figure_height,
+  # cairo_pdf, not the default pdf device: the base device writes Type1
+  # fonts and cannot encode UTF-8, so an em dash in a feature label came
+  # out as "-" with an mbcsToSbcs warning. Units such as ug/m3 would fare
+  # worse. PNG already uses cairo by default.
+  device = cairo_pdf
 )
 ggsave(
   filename = file.path(figures_dir, "prediction_roc_auc_comparison.png"),
@@ -1887,7 +1892,12 @@ ggsave(
   filename = file.path(figures_dir, "prediction_roc_auc_comparison.pdf"),
   plot = roc_auc_comparison_plot,
   width = 8,
-  height = 7
+  height = 7,
+  # cairo_pdf, not the default pdf device: the base device writes Type1
+  # fonts and cannot encode UTF-8, so an em dash in a feature label came
+  # out as "-" with an mbcsToSbcs warning. Units such as ug/m3 would fare
+  # worse. PNG already uses cairo by default.
+  device = cairo_pdf
 )
 ggsave(
   filename = file.path(figures_dir, "prediction_calibration.png"),
@@ -1900,7 +1910,12 @@ ggsave(
   filename = file.path(figures_dir, "prediction_calibration.pdf"),
   plot = calibration_plot,
   width = 7,
-  height = 6
+  height = 6,
+  # cairo_pdf, not the default pdf device: the base device writes Type1
+  # fonts and cannot encode UTF-8, so an em dash in a feature label came
+  # out as "-" with an mbcsToSbcs warning. Units such as ug/m3 would fare
+  # worse. PNG already uses cairo by default.
+  device = cairo_pdf
 )
 ggsave(
   filename = file.path(figures_dir, "top10_exposure_shap_contributions.png"),
@@ -1913,7 +1928,12 @@ ggsave(
   filename = file.path(figures_dir, "top10_exposure_shap_contributions.pdf"),
   plot = importance_beeswarm_plot,
   width = importance_figure_width,
-  height = importance_figure_height
+  height = importance_figure_height,
+  # cairo_pdf, not the default pdf device: the base device writes Type1
+  # fonts and cannot encode UTF-8, so an em dash in a feature label came
+  # out as "-" with an mbcsToSbcs warning. Units such as ug/m3 would fare
+  # worse. PNG already uses cairo by default.
+  device = cairo_pdf
 )
 ggsave(
   filename = file.path(figures_dir, "top10_exposure_mean_absolute_importance.png"),
@@ -1926,7 +1946,12 @@ ggsave(
   filename = file.path(figures_dir, "top10_exposure_mean_absolute_importance.pdf"),
   plot = importance_bar_plot,
   width = importance_figure_width,
-  height = 7
+  height = 7,
+  # cairo_pdf, not the default pdf device: the base device writes Type1
+  # fonts and cannot encode UTF-8, so an em dash in a feature label came
+  # out as "-" with an mbcsToSbcs warning. Units such as ug/m3 would fare
+  # worse. PNG already uses cairo by default.
+  device = cairo_pdf
 )
 
 saveRDS(

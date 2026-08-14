@@ -1611,8 +1611,13 @@ if (!is.null(combined_volcano)) {
     filename = file.path(figures_dir, "stage1_volcano_training_testing_combined.pdf"),
     plot = combined_volcano,
     width = volcano_width,
-    height = volcano_height
-  )
+    height = volcano_height,
+  # cairo_pdf, not the default pdf device: the base device writes Type1
+  # fonts and cannot encode UTF-8, so an em dash in a feature label came
+  # out as "-" with an mbcsToSbcs warning. Units such as ug/m3 would fare
+  # worse. PNG already uses cairo by default.
+  device = cairo_pdf
+)
 }
 
 if (!is.null(training_volcano)) {
@@ -1627,8 +1632,13 @@ if (!is.null(training_volcano)) {
     filename = file.path(figures_dir, "stage1_volcano_training.pdf"),
     plot = training_volcano,
     width = volcano_width,
-    height = volcano_height
-  )
+    height = volcano_height,
+  # cairo_pdf, not the default pdf device: the base device writes Type1
+  # fonts and cannot encode UTF-8, so an em dash in a feature label came
+  # out as "-" with an mbcsToSbcs warning. Units such as ug/m3 would fare
+  # worse. PNG already uses cairo by default.
+  device = cairo_pdf
+)
 }
 
 if (!is.null(testing_volcano)) {
@@ -1643,8 +1653,13 @@ if (!is.null(testing_volcano)) {
     filename = file.path(figures_dir, "stage1_volcano_testing.pdf"),
     plot = testing_volcano,
     width = volcano_width,
-    height = volcano_height
-  )
+    height = volcano_height,
+  # cairo_pdf, not the default pdf device: the base device writes Type1
+  # fonts and cannot encode UTF-8, so an em dash in a feature label came
+  # out as "-" with an mbcsToSbcs warning. Units such as ug/m3 would fare
+  # worse. PNG already uses cairo by default.
+  device = cairo_pdf
+)
 }
 
 # =============================================================================
