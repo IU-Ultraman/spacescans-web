@@ -1,6 +1,4 @@
 # 2_ISEE26_workshop_attendee_exwas.R
-# Corrected workflow: one full-sample MICE completion is created before the
-# 50/50 split; MICE is not run separately in training and testing samples.
 # Purpose:
 #   Conduct a two-stage exposome-wide association study (ExWAS) for the
 #   simulated binary outcome:

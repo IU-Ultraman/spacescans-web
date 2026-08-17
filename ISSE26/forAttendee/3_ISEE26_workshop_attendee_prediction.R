@@ -15,9 +15,8 @@
 #   - Elastic net: five-fold cross-validation over an alpha grid; select the
 #     alpha and lambda.min combination with the highest cross-validated AUROC
 #   - CatBoost: only the shared 70% training sample is internally divided for
-#     tuning; tune the same 10-configuration grid used in the AlphaEarth
-#     project, use early stopping, select by validation AUROC, then refit on the
-#     complete shared 70% training sample
+#     tuning; tune a 10-configuration grid, use early stopping, select by 
+#     validation AUROC, then refit on the complete shared 70% training sample
 #   - Both final models are evaluated on the same held-out 30% testing sample
 #   - CatBoost native SHAP values and elastic-net centered additive log-odds
 #     contributions summarized for the top linked exposures
