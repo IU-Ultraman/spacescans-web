@@ -400,7 +400,7 @@ export function UploadStep({
               Try with a demo cohort (100 patients)
             </Button>
             <p className="text-center text-[11px] text-muted-foreground/70">
-              A 500-patient sample spread across the US — no file needed.
+              Real coordinates across 30 states — no file needed.
             </p>
           </div>
         )}
