@@ -46,7 +46,7 @@ attendee_dir <- file.path(project_dir, "forAttendee")
 data_dir <- file.path(project_dir, "demoDataWithCovariates")
 attendee_input_file <- file.path(
   data_dir,
-  "ISEE26_workshop_attendee_linkage_input_100000.rds"
+  "ISEE26_workshop_participants_covariates_10000.rds"
 )
 
 # The linked dataset the SPACESCANS web app produces: one wide CSV, one row
