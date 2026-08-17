@@ -1,29 +1,42 @@
 # ISEE 2026 workshop — analysis scripts
 
-Three R scripts that take a SPACESCANS linkage and carry it through to an
-exposome-wide association study and a prediction model. Run them in order;
-each reads what the previous one wrote.
-
-Open **RStudio on port 8787**, then in its Terminal:
+Two tracks, ending in the same ExWAS and prediction model. They differ only in
+where the linked exposures come from. Open **RStudio on port 8787**, then in its
+Terminal:
 
 ```bash
 cd ~/ISEE26Workshop/forAttendee
+```
+
+## Track A — link a cohort yourself (10,000 patients)
+
+```bash
 Rscript 1_ISEE26_workshop_attendee_data_engineering.R
 Rscript 2_ISEE26_workshop_attendee_exwas.R
 Rscript 3_ISEE26_workshop_attendee_prediction.R
 ```
 
-## Before you start
-
-Link your cohort in the SPACESCANS web app (port 3000) and let it finish.
-Nothing needs downloading: the app's output is mounted read-only into this
-container, one directory per run, named for its task id —
+First link the cohort in the SPACESCANS web app (port 3000) and let it finish —
+upload `demoDataWithCovariates/ISEE26_workshop_linkage_minimal_10000.csv`.
+Nothing needs downloading afterwards: the app's output is mounted read-only into
+this container, one directory per run, named for its task id —
 
 ```text
 /home/rstudio/spacescans-runs/tasks/task-877c06ae-383b-48ff-94ae-bd79e46e2cb7/
 ```
 
 and script 1 **automatically** picks the most recent one.
+
+## Track B — pre-linked dataset (100,000 patients)
+
+```bash
+Rscript 2_ISEE26_workshop_attendee_exwas_100k.R
+Rscript 3_ISEE26_workshop_attendee_prediction_100k.R
+```
+
+No app run and no script 1: the linkage was done ahead of time and ships in
+`prelinked_100k/1_DataEngineering/`, with 72 exposures across nine sources.
+Results are written beside it in `prelinked_100k/`.
 
 ## What each script does
 
