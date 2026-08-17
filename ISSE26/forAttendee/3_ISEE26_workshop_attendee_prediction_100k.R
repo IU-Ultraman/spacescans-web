@@ -185,7 +185,9 @@ importance_plot_roles <- "exposure"
 performance_figure_width <- 11
 performance_figure_height <- 6
 importance_figure_width <- 14
-importance_figure_height <- 8
+# Beeswarm only. Wrapped feature labels run three or four lines each, so ten
+# rows per panel need more vertical room than the single-line version did.
+importance_figure_height <- 11
 figure_dpi <- 300
 
 # =============================================================================
@@ -1647,6 +1649,21 @@ top_importance_exposures <- feature_importance |>
   arrange(model, mean_absolute_contribution) |>
   ungroup()
 
+# Feature labels reach 80+ characters once the SPACESCANS dictionary supplies
+# them ("Percentage of low income and low access population at 1/2 mile for
+# urban and 10 miles for rural"). Left on one line they consumed nearly the
+# whole figure width and squeezed the beeswarm panels down to a few pixels.
+# Wrap instead of truncating, so no label loses its qualifiers, and give
+# |mean| its own line rather than letting it extend the longest one.
+wrap_axis_label <- function(x, width = 34) {
+  vapply(
+    x,
+    function(one) paste(strwrap(one, width = width), collapse = "\n"),
+    character(1),
+    USE.NAMES = FALSE
+  )
+}
+
 shap_plot_rows <- list()
 shap_plot_i <- 1L
 
@@ -1674,8 +1691,8 @@ for (model_name in c("Elastic net", "CatBoost")) {
       variable = variable,
       display_label = display_label,
       feature_axis_label = paste0(
-        display_label,
-        "  |mean|=",
+        wrap_axis_label(display_label),
+        "\n|mean|=",
         sprintf("%.3f", mean_absolute_value)
       ),
       contribution = contribution,
@@ -1695,8 +1712,8 @@ shap_plot_data <- bind_rows(shap_plot_rows) |>
 feature_axis_levels <- top_importance_exposures |>
   mutate(
     feature_axis_label = paste0(
-      label,
-      "  |mean|=",
+      wrap_axis_label(label),
+      "\n|mean|=",
       sprintf("%.3f", mean_absolute_contribution)
     ),
     model_feature_key = paste(model, feature_axis_label, sep = "___")
@@ -1709,6 +1726,16 @@ shap_plot_data$model_feature_key <- factor(
   shap_plot_data$model_feature_key,
   levels = feature_axis_levels
 )
+
+# A single point out of 100,000 reached |contribution| = 2.87 while the 99th
+# percentile was 0.167, stretching the axis ~17x wider than the data needs and
+# flattening every beeswarm into a bar. Clip the view to the 99.9th percentile
+# and say how many points that hides, the same bargain the Stage 1 volcano
+# already makes with its focused odds-ratio window.
+shap_view_limit <- ceiling(
+  quantile(abs(shap_plot_data$contribution), 0.999, names = FALSE) * 20
+) / 20
+shap_points_outside_view <- sum(abs(shap_plot_data$contribution) > shap_view_limit)
 
 importance_beeswarm_plot <- ggplot(
   shap_plot_data,
@@ -1733,6 +1760,7 @@ importance_beeswarm_plot <- ggplot(
     high = "#FDE725",
     limits = c(0, 1)
   ) +
+  coord_cartesian(xlim = c(-shap_view_limit, shap_view_limit)) +
   labs(
     title = paste0(
       "Top ", top_n_importance_exposures,
@@ -1740,7 +1768,10 @@ importance_beeswarm_plot <- ggplot(
     ),
     subtitle = paste0(
       "Held-out test subset (n=", length(shap_rows),
-      "); CatBoost native SHAP and elastic-net centered additive contributions"
+      "); CatBoost native SHAP and elastic-net centered additive contributions\n",
+      "Contribution axis clipped to +/-", sprintf("%.2f", shap_view_limit),
+      "; ", shap_points_outside_view, " of ", nrow(shap_plot_data),
+      " points fall outside and are not drawn"
     ),
     x = "Contribution to predicted log odds",
     y = NULL,
