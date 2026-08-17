@@ -1,0 +1,73 @@
+varname,label,description
+ndi,Neighborhood Deprivation Index score,Neighborhood Deprivation Index — composite socioeconomic deprivation score (z-score).
+nat_walk_ind,National Walkability Index,Relative walkability from the EPA National Walkability Index (1-20).
+nhd_dist_area_m,Distance to area feature,Distance in meters to the nearest NHD area feature.
+nhd_dist_blue_m,Distance to nearest blue feature,"Distance in meters to the nearest combined blue feature (flowline, waterbody, area, or coast)."
+nhd_dist_coast_m,Distance to coastline,Distance in meters to the nearest coastline (99999 for inland addresses).
+nhd_dist_flow_m,Distance to flowline,Distance in meters to the nearest NHD flowline.
+nhd_dist_water_m,Distance to waterbody,Distance in meters to the nearest NHD waterbody.
+l50dba_exi,Noise — existing conditions,"Existing-conditions daytime road+aviation transportation-noise surface, L50 dBA."
+l50dba_imp,Noise — alternative scenario (imp),Alternative-scenario daytime L50 transportation-noise surface (dBA); exact scenario pending verification against the BTS source.
+l50dba_nat,Noise — alternative scenario (nat),Alternative-scenario daytime L50 transportation-noise surface (dBA); exact scenario pending verification against the BTS source.
+temis_uvddc_aw,Daily DNA-damage UV dose,Daily DNA-damage-weighted ultraviolet dose.
+temis_uvdec_aw,Daily erythemal UV dose,Daily erythemally-weighted ultraviolet dose.
+temis_uvdvc_aw,Daily vitamin-D UV dose,Daily vitamin-D-weighted ultraviolet dose.
+temis_uvief_aw,UV index at noon,Ultraviolet index at local solar noon.
+road_dist_pri,Distance to primary road,Distance in meters to the nearest TIGER/Line primary road (S1100).
+road_dist_prisec,Distance to primary/secondary road,Distance in meters to the nearest TIGER/Line primary or secondary road.
+road_dist_sec,Distance to secondary road,Distance in meters to the nearest TIGER/Line secondary road (S1200).
+fara_group_quarters_flag,"Group quarters, tract with high share (>=67%)","Group quarters, tract with high share (>=67%)"
+fara_hunvflag,"Flag for tract where >= 100 of households do not have a vehicle, and beyond 1/2 mile from supermarket","Flag for tract where >= 100 of households do not have a vehicle, and beyond 1/2 mile from supermarket"
+fara_la1and10,Flag for low access tract at 1 mile for urban areas and 10 miles for rural areas,Flag for low access tract at 1 mile for urban areas and 10 miles for rural areas
+fara_la1and20,Flag for low access tract at 1 mile for urban and 20 miles for rural,Flag for low access tract at 1 mile for urban and 20 miles for rural
+fara_lahalfand10,Flag for low access tract at 0.5 mile for urban and 10 miles for rural,Flag for low access tract at 0.5 mile for urban and 10 miles for rural
+fara_lahunv10share,Percentage of low access population with housing units without vehicle access at 10 mile,Percentage of low access population with housing units without vehicle access at 10 mile
+fara_lahunv1_10share,Percentage of low access population with housing units without vehicle access at 1 mile for urban and 10 miles for rural,Percentage of low access population with housing units without vehicle access at 1 mile for urban and 10 miles for rural
+fara_lahunv1share,Percentage of low access population with housing units without vehicle access at 1 mile,Percentage of low access population with housing units without vehicle access at 1 mile
+fara_lahunv20share,Percentage of low access population with housing units without vehicle access at 20 mile,Percentage of low access population with housing units without vehicle access at 20 mile
+fara_lahunvhalfshare,Percentage of low access population with housing units without vehicle access at 1/2 mile,Percentage of low access population with housing units without vehicle access at 1/2 mile
+fara_lakids10share,Percentage of low access population that are kids at 10 mile,Percentage of low access population that are kids at 10 mile
+fara_lakids1_10share,Percentage of children age 0-17 with low access at 1 mile for urban and 10 miles for rural,Percentage of children age 0-17 with low access at 1 mile for urban and 10 miles for rural
+fara_lakids1share,Percentage of low access population that are kids at 1 mile,Percentage of low access population that are kids at 1 mile
+fara_lakids20share,Percentage of low access population that are kids at 20 mile,Percentage of low access population that are kids at 20 mile
+fara_lakidshalfshare,Percentage of low access population that are kids at 1/2 mile,Percentage of low access population that are kids at 1/2 mile
+fara_lalowi05_10share,Percentage of low income and low access population at 1/2 mile for urban and 10 miles for rural,Percentage of low income and low access population at 1/2 mile for urban and 10 miles for rural
+fara_lalowi10share,Percentage of low access population that are low income at 10 mile,Percentage of low access population that are low income at 10 mile
+fara_lalowi1_10share,Percentage of low income and low access population at 1 mile for urban and 10 miles for rural,Percentage of low income and low access population at 1 mile for urban and 10 miles for rural
+fara_lalowi1_20share,Percentage of low income and low access population at 1 mile for urban and 20 miles for rural,Percentage of low income and low access population at 1 mile for urban and 20 miles for rural
+fara_lalowi1share,Percentage of low access population that are low income at 1 mile,Percentage of low access population that are low income at 1 mile
+fara_lalowi20share,Percentage of low access population that are low income at 20 mile,Percentage of low access population that are low income at 20 mile
+fara_lalowihalfshare,Percentage of low access population that are low income at 1/2 mile,Percentage of low access population that are low income at 1/2 mile
+fara_lapop05_10share,Percentage of low access population at 1/2 mile for urban and 10 miles for rural,Percentage of low access population at 1/2 mile for urban and 10 miles for rural
+fara_lapop10share,Percentage of low access population at 10 mile,Percentage of low access population at 10 mile
+fara_lapop1_10share,Percentage of low access population at 1 mile for urban and 10 miles for rural,Percentage of low access population at 1 mile for urban and 10 miles for rural
+fara_lapop1_20share,Percentage of low access population at 1 mile for urban and 20 miles for rural,Percentage of low access population at 1 mile for urban and 20 miles for rural
+fara_lapop1share,Percentage of low access population at 1 mile,Percentage of low access population at 1 mile
+fara_lapop20share,Percentage of low access population at 20 mile,Percentage of low access population at 20 mile
+fara_lapophalfshare,Percentage of low access population at 1/2 mile,Percentage of low access population at 1/2 mile
+fara_laseniors10share,Percentage of low access population that are seniors at 10 mile,Percentage of low access population that are seniors at 10 mile
+fara_laseniors1_10share,Percentage of seniors age 65+ with low access at 1 mile for urban and 10 miles for rural,Percentage of seniors age 65+ with low access at 1 mile for urban and 10 miles for rural
+fara_laseniors1share,Percentage of low access population that are seniors at 1 mile,Percentage of low access population that are seniors at 1 mile
+fara_laseniors20share,Percentage of low access population that are seniors at 20 mile,Percentage of low access population that are seniors at 20 mile
+fara_laseniorshalfshare,Percentage of low access population that are seniors at 1/2 mile,Percentage of low access population that are seniors at 1/2 mile
+fara_latracts1,Flag for low access tract at 1 mile,Flag for low access tract at 1 mile
+fara_latracts10,Flag for low access tract at 10 miles,Flag for low access tract at 10 miles
+fara_latracts20,Flag for low access tract at 20 miles,Flag for low access tract at 20 miles
+fara_latracts_half,Flag for low access tract at 0.5 mile,Flag for low access tract at 0.5 mile
+fara_latracts_vehicle_20,Flag for low access tract using vehicle access and at 20 miles  in rural areas,Flag for low access tract using vehicle access and at 20 miles  in rural areas
+fara_lilatracts_1_and10,Flag for low income low access tracts at 1 mile for urban and 10 miles for rural,Flag for low income low access tracts at 1 mile for urban and 10 miles for rural
+fara_lilatracts_1_and20,Flag for low income low access tracts at 1 mile for urban and 20 miles for rural,Flag for low income low access tracts at 1 mile for urban and 20 miles for rural
+fara_lilatracts_half_and10,Flag for low income low access tracts at 0.5 mile for urban and 10 miles for rural,Flag for low income low access tracts at 0.5 mile for urban and 10 miles for rural
+fara_low_income_tracts,Flag for low income tract,Flag for low income tract
+fara_pctgqtrs,Percent of tract population residing in group quarters,Percent of tract population residing in group quarters
+vnl_value_aw,Night-time radiance,Annual mean night-time light radiance (nanowatts/cm^2/sr) from the VIIRS Day/Night Band.
+soc_r_bowling,Bowling centers,"Number of establishments in bowling centers per 10,000 population."
+soc_r_business,Business associations,"Number of establishments in business associations per 10,000 population."
+soc_r_civic,Civic & social associations,"Number of establishments in civic and social associations per 10,000 population."
+soc_r_golf,Golf courses & country clubs,"Number of establishments in golf courses and country clubs per 10,000 population."
+soc_r_labor,Labor organizations,"Number of establishments in labor organizations per 10,000 population."
+soc_r_political,Political organizations,"Number of establishments in political organizations per 10,000 population."
+soc_r_professional,Professional organizations,"Number of establishments in professional organizations per 10,000 population."
+soc_r_recreational,Fitness & recreational sports centers,"Number of establishments in fitness and recreational sports centers per 10,000 population."
+soc_r_religious,Religious organizations,"Number of establishments in religious organizations per 10,000 population."
+soc_r_sports,Sports teams & clubs,"Number of establishments in sports teams and clubs per 10,000 population."

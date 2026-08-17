@@ -1,0 +1,7 @@
+"metric","value"
+"n_rows",1e+05
+"n_unique_PATID",1e+05
+"n_columns",87
+"n_linked_exposure_variables",72
+"n_binary_outcome_cases",20070
+"binary_outcome_prevalence",0.2007

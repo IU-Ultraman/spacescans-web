@@ -1,0 +1,10 @@
+"source","n_attendee_PATID","n_linked_PATID","n_attendee_with_linked_record","attendee_linkage_coverage_pct","n_linked_PATID_not_in_attendee"
+"zbp_primary_cbp_fallback",100000,100000,100000,100,0
+"noise_270m",100000,100000,100000,100,0
+"tiger_road_proximity",100000,100000,100000,100,0
+"block_group_ndi",100000,100000,100000,100,0
+"block_group_walkability",100000,100000,100000,100,0
+"nhd_blue_space_proximity",100000,100000,100000,100,0
+"visible_nighttime_light",100000,100000,100000,100,0
+"temis_uv",100000,100000,100000,100,0
+"tract_fara_food_access",100000,100000,100000,100,0
