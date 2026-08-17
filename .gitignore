@@ -27,3 +27,13 @@ docs/superpowers/
 .DS_Store
 **/.DS_Store
 .devcontainer/compose-up.log
+
+# ISEE 2026 workshop — script outputs. Every attendee regenerates these by
+# running the scripts; one prediction run alone writes ~220 MB, with single
+# .rds objects near GitHub's file-size limit. prelinked_100k/1_DataEngineering
+# is deliberately absent from this list: that one ships with the repo.
+ISSE26/forAttendee/1_DataEngineering/
+ISSE26/forAttendee/2_ExWAS/
+ISSE26/forAttendee/3_Prediction/
+ISSE26/prelinked_100k/2_ExWAS/
+ISSE26/prelinked_100k/3_Prediction/
