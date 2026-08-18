@@ -1,4 +1,4 @@
-# 2_ISEE26_workshop_attendee_exwas.R
+# 2_ISEE26_workshop_attendee_exwas_10k.R
 # Purpose:
 #   Conduct a two-stage exposome-wide association study (ExWAS) for the
 #   simulated binary outcome:

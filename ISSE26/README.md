@@ -11,9 +11,9 @@ cd ~/ISEE26Workshop/forAttendee
 ## Track A — link a cohort yourself (10,000 patients)
 
 ```bash
-Rscript 1_ISEE26_workshop_attendee_data_engineering.R
-Rscript 2_ISEE26_workshop_attendee_exwas.R
-Rscript 3_ISEE26_workshop_attendee_prediction.R
+Rscript 1_ISEE26_workshop_attendee_data_engineering_10k.R
+Rscript 2_ISEE26_workshop_attendee_exwas_10k.R
+Rscript 3_ISEE26_workshop_attendee_prediction_10k.R
 ```
 
 First link the cohort in the SPACESCANS web app (port 3000) and let it finish —

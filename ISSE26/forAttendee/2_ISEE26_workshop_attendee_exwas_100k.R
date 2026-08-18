@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# 100k variant. Identical analysis to 2_ISEE26_workshop_attendee_exwas.R; it
+# 100k variant. Identical analysis to 2_ISEE26_workshop_attendee_exwas_10k.R; it
 # reads the pre-linked 100,000-patient dataset that ships in
 # prelinked_100k/ instead of the linkage you ran in the app, and writes its
 # own outputs beside it.
@@ -9,7 +9,7 @@
 # the 10k linkage yourself, then repeat the analysis at full size here.
 # ---------------------------------------------------------------------------
 
-# 2_ISEE26_workshop_attendee_exwas.R
+# 2_ISEE26_workshop_attendee_exwas_10k.R
 # Purpose:
 #   Conduct a two-stage exposome-wide association study (ExWAS) for the
 #   simulated binary outcome:

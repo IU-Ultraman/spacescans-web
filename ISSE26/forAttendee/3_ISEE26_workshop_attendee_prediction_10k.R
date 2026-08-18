@@ -1,5 +1,5 @@
 # =============================================================================
-# 3_ISEE26_workshop_attendee_prediction.R
+# 3_ISEE26_workshop_attendee_prediction_10k.R
 # =============================================================================
 # Purpose:
 #   Develop and evaluate two binary-outcome prediction models using all

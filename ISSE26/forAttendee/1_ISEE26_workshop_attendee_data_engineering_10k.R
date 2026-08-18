@@ -1,4 +1,4 @@
-# 1_ISEE26_workshop_attendee_data_engineering.R
+# 1_ISEE26_workshop_attendee_data_engineering_10k.R
 # Purpose:
 #   Import the attendee-ready simulated dataset, read the linked dataset that
 #   the SPACESCANS web app produces (output/result.csv), merge all linked

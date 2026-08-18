@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# 100k variant. Identical analysis to 3_ISEE26_workshop_attendee_prediction.R; it
+# 100k variant. Identical analysis to 3_ISEE26_workshop_attendee_prediction_10k.R; it
 # reads the pre-linked 100,000-patient dataset that ships in
 # prelinked_100k/ instead of the linkage you ran in the app, and writes its
 # own outputs beside it.
@@ -10,7 +10,7 @@
 # ---------------------------------------------------------------------------
 
 # =============================================================================
-# 3_ISEE26_workshop_attendee_prediction.R
+# 3_ISEE26_workshop_attendee_prediction_10k.R
 # =============================================================================
 # Purpose:
 #   Develop and evaluate two binary-outcome prediction models using all
