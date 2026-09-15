@@ -108,7 +108,7 @@ def test_value_col_nodes_attached_under_variable_nodes(tmp_path):
 
     # All ~32 value_col nodes land in metadata + search, with a "Result column:"
     # provenance suffix.
-    assert len(VALUE_COL_NODES) == 32
+    assert len(VALUE_COL_NODES) == 58  # 32 original + 24 acag + 2 faqsd
     for n in VALUE_COL_NODES:
         assert n["id"] in meta, n["id"]
         assert n["id"] in search_ids, n["id"]

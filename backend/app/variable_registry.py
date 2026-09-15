@@ -260,6 +260,61 @@ def _assert_fara_data_present(payload: dict[str, Any]) -> None:
             )
 
 
+
+def _assert_acag_data_present(payload: dict[str, Any]) -> None:
+    """Pre-flight: ACAG NetCDFs and the template raster exist for each acag variable.
+
+    Skips while ACAG/C4/xNorthAmerica is unprovisioned (absent or
+    skeleton-only), like every other pre-flight — a checkout that has not
+    downloaded ACAG must still serve the catalog. Once anything is there,
+    two things must hold: the template raster ACAG/C3/acag_template.tif
+    (ships with the repo; missing means a broken checkout) and at least one
+    .nc under PM25/BiWeekly — acag_multi warns and skips species it cannot
+    find, so a half-provisioned tree would otherwise run to a near-empty
+    result.
+    """
+    from app.config import settings
+    root = settings.SPACESCANS_DATA_DIR / "ACAG"
+    template = root / "C3" / "acag_template.tif"
+    species_root = root / "C4" / "xNorthAmerica"
+    if _unprovisioned(species_root):
+        return
+    for key, m in payload["variables"].items():
+        if m.get("experiment") != "acag":
+            continue
+        if not template.exists():
+            raise MetadataSchemaError(
+                f"acag variable {key!r} missing template raster: {template} "
+                "(ships with the repo — regenerate with scripts/make_acag_template.py)"
+            )
+        if not any((species_root / "PM25" / "BiWeekly").glob("*.nc")):
+            raise MetadataSchemaError(
+                f"acag variable {key!r} missing data: no *.nc under "
+                f"{species_root / 'PM25' / 'BiWeekly'}"
+            )
+
+
+def _assert_faqsd_data_present(payload: dict[str, Any]) -> None:
+    """Pre-flight: EPA FAQSD daily tract files exist for each faqsd variable.
+
+    Skips while FAQSD/C4 is unprovisioned. Once populated, at least one
+    ozone and one PM2.5 yearly file must be present — the reader raises
+    FileNotFoundError mid-run otherwise, which is later and less clear
+    than refusing to list the variable.
+    """
+    from app.config import settings
+    root = settings.SPACESCANS_DATA_DIR / "FAQSD" / "C4"
+    if _unprovisioned(root):
+        return
+    for key, m in payload["variables"].items():
+        if m.get("experiment") != "faqsd":
+            continue
+        for pattern in ("*_ozone_daily_8hour_maximum.txt", "*_pm25_daily_average.txt"):
+            if not any(root.glob(pattern)):
+                raise MetadataSchemaError(
+                    f"faqsd variable {key!r} missing data: no {pattern} under {root}"
+                )
+
 def _assert_temis_data_present(payload: dict[str, Any]) -> None:
     """Pre-flight: UV data exists for each temis variable.
 
@@ -343,6 +398,8 @@ def load_variables(*, force: bool = False) -> dict[str, Any]:
         _assert_vnl_data_present(payload)
         _assert_temis_data_present(payload)
         _assert_fara_data_present(payload)
+        _assert_acag_data_present(payload)
+        _assert_faqsd_data_present(payload)
     except OSError as exc:
         raise MetadataSchemaError(
             f"exposure data pre-flight could not read the data root: {exc}"

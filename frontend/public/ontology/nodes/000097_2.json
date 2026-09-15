@@ -1,0 +1,14 @@
+[
+  {
+    "id": "SPACESCANS_VC_faqsd_o3",
+    "label": "Ozone, daily 8-hour maximum",
+    "definition": "Daily 8-hour maximum ozone (ppb) from EPA FAQSD, area-weighted over the residential buffer and averaged over the episode's days. (Result column: faqsd_o3.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_faqsd_pm25",
+    "label": "PM2.5, daily average (FAQSD)",
+    "definition": "Daily 24-hour average PM2.5 (ug/m3) from EPA FAQSD, area-weighted over the residential buffer and averaged over the episode's days. (Result column: faqsd_pm25.)",
+    "has_children": false
+  }
+]

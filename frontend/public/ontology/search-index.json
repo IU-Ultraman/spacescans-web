@@ -9478,5 +9478,135 @@
     "id": "SPACESCANS_VC_dist_prisec",
     "label": "Distance to primary/secondary road",
     "definition": "Distance in meters to the nearest TIGER/Line primary or secondary road. (Result column: dist_prisec.)"
+  },
+  {
+    "id": "SPACESCANS_VC_pm25",
+    "label": "PM2.5 mass",
+    "definition": "Biweekly mean concentration of total fine particulate matter (PM2.5) mass in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: pm25.)"
+  },
+  {
+    "id": "SPACESCANS_VC_bc",
+    "label": "Black carbon",
+    "definition": "Biweekly mean concentration of black carbon in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: bc.)"
+  },
+  {
+    "id": "SPACESCANS_VC_dust",
+    "label": "Mineral dust",
+    "definition": "Biweekly mean concentration of mineral dust in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: dust.)"
+  },
+  {
+    "id": "SPACESCANS_VC_nh4",
+    "label": "Ammonium",
+    "definition": "Biweekly mean concentration of ammonium in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: nh4.)"
+  },
+  {
+    "id": "SPACESCANS_VC_no3",
+    "label": "Nitrate",
+    "definition": "Biweekly mean concentration of nitrate in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: no3.)"
+  },
+  {
+    "id": "SPACESCANS_VC_om",
+    "label": "Organic mass",
+    "definition": "Biweekly mean concentration of organic mass in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: om.)"
+  },
+  {
+    "id": "SPACESCANS_VC_so4",
+    "label": "Sulfate",
+    "definition": "Biweekly mean concentration of sulfate in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: so4.)"
+  },
+  {
+    "id": "SPACESCANS_VC_ss",
+    "label": "Sea salt",
+    "definition": "Biweekly mean concentration of sea salt in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: ss.)"
+  },
+  {
+    "id": "SPACESCANS_VC_pm25_bm",
+    "label": "PM2.5 mass \u2014 biomass burning",
+    "definition": "Share of total fine particulate matter (PM2.5) mass in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: pm25_bm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_bc_bm",
+    "label": "Black carbon \u2014 biomass burning",
+    "definition": "Share of black carbon in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: bc_bm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_dust_bm",
+    "label": "Mineral dust \u2014 biomass burning",
+    "definition": "Share of mineral dust in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: dust_bm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_nh4_bm",
+    "label": "Ammonium \u2014 biomass burning",
+    "definition": "Share of ammonium in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: nh4_bm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_no3_bm",
+    "label": "Nitrate \u2014 biomass burning",
+    "definition": "Share of nitrate in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: no3_bm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_om_bm",
+    "label": "Organic mass \u2014 biomass burning",
+    "definition": "Share of organic mass in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: om_bm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_so4_bm",
+    "label": "Sulfate \u2014 biomass burning",
+    "definition": "Share of sulfate in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: so4_bm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_ss_bm",
+    "label": "Sea salt \u2014 biomass burning",
+    "definition": "Share of sea salt in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: ss_bm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_pm25_nbm",
+    "label": "PM2.5 mass \u2014 non-biomass",
+    "definition": "Non-biomass total fine particulate matter (PM2.5) mass in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: pm25_nbm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_bc_nbm",
+    "label": "Black carbon \u2014 non-biomass",
+    "definition": "Non-biomass black carbon in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: bc_nbm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_dust_nbm",
+    "label": "Mineral dust \u2014 non-biomass",
+    "definition": "Non-biomass mineral dust in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: dust_nbm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_nh4_nbm",
+    "label": "Ammonium \u2014 non-biomass",
+    "definition": "Non-biomass ammonium in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: nh4_nbm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_no3_nbm",
+    "label": "Nitrate \u2014 non-biomass",
+    "definition": "Non-biomass nitrate in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: no3_nbm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_om_nbm",
+    "label": "Organic mass \u2014 non-biomass",
+    "definition": "Non-biomass organic mass in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: om_nbm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_so4_nbm",
+    "label": "Sulfate \u2014 non-biomass",
+    "definition": "Non-biomass sulfate in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: so4_nbm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_ss_nbm",
+    "label": "Sea salt \u2014 non-biomass",
+    "definition": "Non-biomass sea salt in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: ss_nbm.)"
+  },
+  {
+    "id": "SPACESCANS_VC_faqsd_o3",
+    "label": "Ozone, daily 8-hour maximum",
+    "definition": "Daily 8-hour maximum ozone (ppb) from EPA FAQSD, area-weighted over the residential buffer and averaged over the episode's days. (Result column: faqsd_o3.)"
+  },
+  {
+    "id": "SPACESCANS_VC_faqsd_pm25",
+    "label": "PM2.5, daily average (FAQSD)",
+    "definition": "Daily 24-hour average PM2.5 (ug/m3) from EPA FAQSD, area-weighted over the residential buffer and averaged over the episode's days. (Result column: faqsd_pm25.)"
   }
 ]

@@ -56,6 +56,8 @@ _VNL = "000290"             # Light_at_Night
 _UV = "000288"              # Ultraviolet_Radiation
 _BLUE = "SPACESCANS_Bluespace"
 _ROAD = "SPACESCANS_Road_Proximity"
+_ACAG = "000102_2"          # Particulate_Matter_PM2.5 (acag) — its SPACEO children are the ACAG species
+_FAQSD = "000097_2"         # Ozone (faqsd)
 
 # (col, parent, label, definition-without-the-column-suffix)
 _VALUE_COLS = [
@@ -100,6 +102,34 @@ _VALUE_COLS = [
     ("dist_pri", _ROAD, "Distance to primary road", "Distance in meters to the nearest TIGER/Line primary road (S1100)."),
     ("dist_sec", _ROAD, "Distance to secondary road", "Distance in meters to the nearest TIGER/Line secondary road (S1200)."),
     ("dist_prisec", _ROAD, "Distance to primary/secondary road", "Distance in meters to the nearest TIGER/Line primary or secondary road."),
+    # acag — ACAG V5.NA.05 biweekly 0.01deg surfaces, ug/m3 (plain, FromBiomass share, non-biomass remainder)
+    ("pm25", _ACAG, "PM2.5 mass", "Biweekly mean concentration of total fine particulate matter (PM2.5) mass in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3)."),
+    ("bc", _ACAG, "Black carbon", "Biweekly mean concentration of black carbon in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3)."),
+    ("dust", _ACAG, "Mineral dust", "Biweekly mean concentration of mineral dust in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3)."),
+    ("nh4", _ACAG, "Ammonium", "Biweekly mean concentration of ammonium in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3)."),
+    ("no3", _ACAG, "Nitrate", "Biweekly mean concentration of nitrate in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3)."),
+    ("om", _ACAG, "Organic mass", "Biweekly mean concentration of organic mass in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3)."),
+    ("so4", _ACAG, "Sulfate", "Biweekly mean concentration of sulfate in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3)."),
+    ("ss", _ACAG, "Sea salt", "Biweekly mean concentration of sea salt in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3)."),
+    ("pm25_bm", _ACAG, "PM2.5 mass — biomass burning", "Share of total fine particulate matter (PM2.5) mass in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3)."),
+    ("bc_bm", _ACAG, "Black carbon — biomass burning", "Share of black carbon in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3)."),
+    ("dust_bm", _ACAG, "Mineral dust — biomass burning", "Share of mineral dust in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3)."),
+    ("nh4_bm", _ACAG, "Ammonium — biomass burning", "Share of ammonium in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3)."),
+    ("no3_bm", _ACAG, "Nitrate — biomass burning", "Share of nitrate in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3)."),
+    ("om_bm", _ACAG, "Organic mass — biomass burning", "Share of organic mass in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3)."),
+    ("so4_bm", _ACAG, "Sulfate — biomass burning", "Share of sulfate in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3)."),
+    ("ss_bm", _ACAG, "Sea salt — biomass burning", "Share of sea salt in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3)."),
+    ("pm25_nbm", _ACAG, "PM2.5 mass — non-biomass", "Non-biomass total fine particulate matter (PM2.5) mass in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3)."),
+    ("bc_nbm", _ACAG, "Black carbon — non-biomass", "Non-biomass black carbon in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3)."),
+    ("dust_nbm", _ACAG, "Mineral dust — non-biomass", "Non-biomass mineral dust in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3)."),
+    ("nh4_nbm", _ACAG, "Ammonium — non-biomass", "Non-biomass ammonium in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3)."),
+    ("no3_nbm", _ACAG, "Nitrate — non-biomass", "Non-biomass nitrate in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3)."),
+    ("om_nbm", _ACAG, "Organic mass — non-biomass", "Non-biomass organic mass in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3)."),
+    ("so4_nbm", _ACAG, "Sulfate — non-biomass", "Non-biomass sulfate in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3)."),
+    ("ss_nbm", _ACAG, "Sea salt — non-biomass", "Non-biomass sea salt in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3)."),
+    # faqsd — EPA Fused Air Quality Surface Using Downscaling, daily census-tract outputs
+    ("faqsd_o3", _FAQSD, "Ozone, daily 8-hour maximum", "Daily 8-hour maximum ozone (ppb) from EPA FAQSD, area-weighted over the residential buffer and averaged over the episode's days."),
+    ("faqsd_pm25", _FAQSD, "PM2.5, daily average (FAQSD)", "Daily 24-hour average PM2.5 (ug/m3) from EPA FAQSD, area-weighted over the residential buffer and averaged over the episode's days."),
 ]
 
 VALUE_COL_NODES = [
@@ -123,6 +153,7 @@ VALUE_COL_NODES = [
 #  - each of the 9 variable nodes appears under its domain file and now has
 #    value_col children.
 _HAS_CHILDREN_FLIPS = [
+    ("000097_2", "000096_2.json"),   # Ozone gains faqsd value cols (PM2.5 already flagged)
     ("000295", "000093_2.json"),
     ("000289", "000094_2.json"), ("000290", "000094_2.json"),
     ("000288", "000094_2.json"), ("SPACESCANS_Bluespace", "000094_2.json"),

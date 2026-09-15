@@ -223,13 +223,13 @@ def test_list_experiments_dedupes_in_file_order():
     vnl + temis + fara_tract runner modules now present in app.experiments,
     list_experiments() returns the file-order de-duped list of experiments
     referenced by variable_metadata.json. Sprint 11 appends fara_tract as
-    the eighth slot.
+    the eighth slot; acag and faqsd follow as ninth and tenth.
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
     assert exps == [
         "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
-        "noise", "vnl", "temis", "fara_tract",
+        "noise", "vnl", "temis", "fara_tract", "acag", "faqsd",
     ], exps
 
 
@@ -471,7 +471,7 @@ def test_preflights_skip_on_the_gitkeep_only_skeleton(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
 
     payload = vr.load_variables(force=True)  # must not raise
-    assert len(payload["variables"]) == 9
+    assert len(payload["variables"]) == 11  # 9 + acag + faqsd
 
 
 def test_preflights_skip_on_an_actual_fresh_clone_tree(tmp_path, monkeypatch):
@@ -515,7 +515,7 @@ def test_preflights_skip_on_an_actual_fresh_clone_tree(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "SPACESCANS_DATA_DIR", tmp_path)
 
     payload = vr.load_variables(force=True)  # must not raise
-    assert len(payload["variables"]) == 9
+    assert len(payload["variables"]) == 11  # 9 + acag + faqsd
 
 
 def test_preflight_reports_cleanly_when_a_dataset_path_is_a_file(
@@ -712,13 +712,13 @@ def test_list_experiments_after_nhd_bluespace_added():
 
     Sprint 5 baseline was [bg_ndi_wi, zcta5_cbp, tiger_proximity]; Sprint 7
     appended nhd_bluespace; Sprint 9 appended noise; Sprint 10 appended
-    vnl + temis; Sprint 11 appends fara_tract as the eighth slot.
+    vnl + temis; Sprint 11 appends fara_tract as the eighth slot; acag and faqsd follow as ninth and tenth.
     """
     from app import variable_registry as vr
     exps = vr.list_experiments()
     assert exps == [
         "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
-        "noise", "vnl", "temis", "fara_tract",
+        "noise", "vnl", "temis", "fara_tract", "acag", "faqsd",
     ], exps
 
 
@@ -902,7 +902,7 @@ def test_list_experiments_after_vnl_and_temis_added():
     exps = vr.list_experiments()
     assert exps == [
         "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
-        "noise", "vnl", "temis", "fara_tract",
+        "noise", "vnl", "temis", "fara_tract", "acag", "faqsd",
     ], exps
 
 
@@ -1127,7 +1127,7 @@ def test_list_experiments_after_fara_tract_added():
     exps = vr.list_experiments()
     assert exps == [
         "bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace",
-        "noise", "vnl", "temis", "fara_tract",
+        "noise", "vnl", "temis", "fara_tract", "acag", "faqsd",
     ], exps
 
 

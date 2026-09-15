@@ -6,9 +6,63 @@
     "has_children": false
   },
   {
+    "id": "SPACESCANS_VC_nh4",
+    "label": "Ammonium",
+    "definition": "Biweekly mean concentration of ammonium in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: nh4.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_nh4_bm",
+    "label": "Ammonium \u2014 biomass burning",
+    "definition": "Share of ammonium in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: nh4_bm.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_nh4_nbm",
+    "label": "Ammonium \u2014 non-biomass",
+    "definition": "Non-biomass ammonium in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: nh4_nbm.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_bc",
+    "label": "Black carbon",
+    "definition": "Biweekly mean concentration of black carbon in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: bc.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_bc_bm",
+    "label": "Black carbon \u2014 biomass burning",
+    "definition": "Share of black carbon in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: bc_bm.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_bc_nbm",
+    "label": "Black carbon \u2014 non-biomass",
+    "definition": "Non-biomass black carbon in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: bc_nbm.)",
+    "has_children": false
+  },
+  {
     "id": "000103_2",
     "label": "Black_Carbon",
     "definition": "Variable Short Name: BC\n\nData Source:  Atmospheric Composition Analysis Group (https://sites.wustl.edu/acag/datasets/))\n\nSpatial Scale: 0.01deg\n\nTemporal Scale: 1-month/2-week\n\nYears Available: 2000-2022\n\nModel: Geographically weighted regression (satellites, chemical transport models, and monitors)\n\nModel Specification/Citation: https://pubs.acs.org/doi/10.1021/acs.est.8b06392, https://pubs.acs.org/doi/10.1021/acsestair.4c00151",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_dust",
+    "label": "Mineral dust",
+    "definition": "Biweekly mean concentration of mineral dust in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: dust.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_dust_bm",
+    "label": "Mineral dust \u2014 biomass burning",
+    "definition": "Share of mineral dust in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: dust_bm.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_dust_nbm",
+    "label": "Mineral dust \u2014 non-biomass",
+    "definition": "Non-biomass mineral dust in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: dust_nbm.)",
     "has_children": false
   },
   {
@@ -24,9 +78,81 @@
     "has_children": false
   },
   {
+    "id": "SPACESCANS_VC_no3",
+    "label": "Nitrate",
+    "definition": "Biweekly mean concentration of nitrate in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: no3.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_no3_bm",
+    "label": "Nitrate \u2014 biomass burning",
+    "definition": "Share of nitrate in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: no3_bm.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_no3_nbm",
+    "label": "Nitrate \u2014 non-biomass",
+    "definition": "Non-biomass nitrate in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: no3_nbm.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_om",
+    "label": "Organic mass",
+    "definition": "Biweekly mean concentration of organic mass in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: om.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_om_bm",
+    "label": "Organic mass \u2014 biomass burning",
+    "definition": "Share of organic mass in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: om_bm.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_om_nbm",
+    "label": "Organic mass \u2014 non-biomass",
+    "definition": "Non-biomass organic mass in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: om_nbm.)",
+    "has_children": false
+  },
+  {
     "id": "000106_2",
     "label": "Organic_Mass",
     "definition": "Variable Short Name: OM\n\nData Source:  Atmospheric Composition Analysis Group (https://sites.wustl.edu/acag/datasets/))\n\nSpatial Scale: 0.01deg\n\nTemporal Scale: 1-month/2-week\n\nYears Available: 2000-2022\n\nModel: Geographically weighted regression (satellites, chemical transport models, and monitors)\n\nModel Specification/Citation: https://pubs.acs.org/doi/10.1021/acs.est.8b06392, https://pubs.acs.org/doi/10.1021/acsestair.4c00151",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_pm25",
+    "label": "PM2.5 mass",
+    "definition": "Biweekly mean concentration of total fine particulate matter (PM2.5) mass in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: pm25.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_pm25_bm",
+    "label": "PM2.5 mass \u2014 biomass burning",
+    "definition": "Share of total fine particulate matter (PM2.5) mass in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: pm25_bm.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_pm25_nbm",
+    "label": "PM2.5 mass \u2014 non-biomass",
+    "definition": "Non-biomass total fine particulate matter (PM2.5) mass in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: pm25_nbm.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_ss",
+    "label": "Sea salt",
+    "definition": "Biweekly mean concentration of sea salt in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: ss.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_ss_bm",
+    "label": "Sea salt \u2014 biomass burning",
+    "definition": "Share of sea salt in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: ss_bm.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_ss_nbm",
+    "label": "Sea salt \u2014 non-biomass",
+    "definition": "Non-biomass sea salt in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: ss_nbm.)",
     "has_children": false
   },
   {
@@ -39,6 +165,24 @@
     "id": "000107_2",
     "label": "Sulfate",
     "definition": "Variable Short Name: SO4\n\nData Source:  Atmospheric Composition Analysis Group (https://sites.wustl.edu/acag/datasets/))\n\nSpatial Scale: 0.01deg\n\nTemporal Scale: 1-month/2-week\n\nYears Available: 2000-2022\n\nModel: Geographically weighted regression (satellites, chemical transport models, and monitors)\n\nModel Specification/Citation: https://pubs.acs.org/doi/10.1021/acs.est.8b06392, https://pubs.acs.org/doi/10.1021/acsestair.4c00151",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_so4",
+    "label": "Sulfate",
+    "definition": "Biweekly mean concentration of sulfate in PM2.5 over the residential buffer (ACAG V5.NA.05, ug/m3). (Result column: so4.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_so4_bm",
+    "label": "Sulfate \u2014 biomass burning",
+    "definition": "Share of sulfate in PM2.5 attributed to biomass burning (ACAG FromBiomass surface, ug/m3). (Result column: so4_bm.)",
+    "has_children": false
+  },
+  {
+    "id": "SPACESCANS_VC_so4_nbm",
+    "label": "Sulfate \u2014 non-biomass",
+    "definition": "Non-biomass sulfate in PM2.5: the plain estimate minus its biomass-burning share (derived, ug/m3). (Result column: so4_nbm.)",
     "has_children": false
   }
 ]
