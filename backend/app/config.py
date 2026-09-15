@@ -50,7 +50,7 @@ if _cs_name and _cs_domain:
 # Dataset folders expected directly under SPACESCANS_DATA_DIR (only those for
 # the variables actually run are required — presence of ANY marks a real root).
 _DATASET_DIRS = (
-    "BG", "Community_Organization_Density", "County", "FARA", "NDI",
+    "ACAG", "BG", "Community_Organization_Density", "County", "FAQSD", "FARA", "NDI",
     "Noise", "TEMIS", "TRACT", "VNL", "Walkability", "ZCTA5",
     # TIGER roads and NHD water features are served from the distributed
     # prefiltered caches rather than raw dataset dirs; "cache" marks such a

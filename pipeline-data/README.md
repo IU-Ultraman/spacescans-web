@@ -43,6 +43,9 @@ pipeline-data/
 ├── Noise/C3/                               CONUS_*_L50dBA_*.tif  (OneDrive)
 ├── VNL/C3/                                 VNL_v21_npp_*.tif  (EOG — account required)
 ├── TEMIS/C3/                               temis_template.tif  (ships with the repo)
+├── ACAG/C3/                                acag_template.tif  (ships with the repo)
+├── ACAG/C4/xNorthAmerica/                  {PM25,BC,DUST,NH4,NO3,OM,SO4,SS}{,_bm}/BiWeekly/*.nc  (ACAG Box — see group 2)
+├── FAQSD/C4/                               {year}_ozone_daily_8hour_maximum.txt , {year}_pm25_daily_average.txt  (EPA — see group 2)
 └── TEMIS/C4/raw/                           uvddc/ uvdec/ ...  (KNMI TEMIS — see group 2)
 ```
 
@@ -103,6 +106,8 @@ uploads, and shows the same per-dataset command.
 | --- | --- | --- |
 | VNL nighttime lights — [EOG (Earth Observation Group)](https://eogdata.mines.edu/products/vnl/), **free account required** | `VNL_v21_npp_{year}_global_*.average_masked.dat.tif.gz`, one per year **2013–2019** (pick the *average_masked* variant, ~11 GB/year uncompressed). `gunzip` each after download; keep the original filenames — the reader parses the year from them | `pipeline-data/VNL/C3/` |
 | TEMIS UV — [KNMI UV archive](https://www.temis.nl/uvradiation/UVarchive.php) | daily `{var}YYYYMMDD.hdf` for the four variables `uvief`, `uvdec`, `uvdvc`, `uvddc`, years **2013–2019** (~10,000 files, ~29 GB). Scriptable from the mirror: `https://d1qb6yzwaaq4he.cloudfront.net/uvradiation/v2.0/{year}/{mm}/{var}YYYYMMDD.hdf` | `pipeline-data/TEMIS/C4/raw/{var}/{year}/` — one folder per variable, then per year (the committed `raw/uv*` dirs mark the spots) |
+| ACAG PM2.5 composition — [WashU ACAG](https://sites.wustl.edu/acag/datasets/surface-pm2-5/), public (CC BY 4.0) | V5.NA.05 biweekly NetCDF, years **2013–2019**: total PM2.5 plus BC, DUST, NH4, NO3, OM, SO4, SS, each in the plain *and* the `FromBiomass` variant (the linkage derives non-biomass = plain − biomass). Four Box shared folders; the folder API refuses anonymous calls and "download folder" is off, so enumerate each folder's pages and fetch files one by one — `pipeline-data/ACAG/README.md` has the folder IDs, the method, and per-directory sizes (~26 GB total) | `pipeline-data/ACAG/C4/xNorthAmerica/<SPECIES>/BiWeekly/` and `<SPECIES>_bm/BiWeekly/`. The 0.01° template raster `ACAG/C3/acag_template.tif` ships with the repo |
+| EPA FAQSD daily air quality — [EPA RSIG](https://www.epa.gov/hesc/rsig-related-downloadable-data-files#faqsd), public domain | `{year}_ozone_daily_8hour_maximum.txt.gz` and `{year}_pm25_daily_average.txt.gz`, years **2013–2019** (~470 MB each compressed, ~1.5 GB unpacked). Scriptable: `https://ofmpub.epa.gov/rsig/rsigserver?data/FAQSD/outputs/<file>`. `gunzip` and keep the names — the reader lists them by year. EPA changed the header style between years; the reader takes columns by position and parses both date formats, so leave the files as published | `pipeline-data/FAQSD/C4/` (needs the Tract boundaries from group 1 — same tract weights Food Access uses) |
 
 The first run auto-converts the TEMIS HDFs to compact parquet (one-time,
 ~2 min); every later run reads parquet in seconds — no manual step.
