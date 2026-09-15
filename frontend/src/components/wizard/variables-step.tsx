@@ -80,9 +80,11 @@ export function VariablesStep({
       <CardHeader>
         <CardTitle className="text-lg">Data Catalog</CardTitle>
         <CardDescription>
-          Browse the Spatial &amp; Contextual Exposome ontology. Expand a branch
-          to see its exposures and their exposomes; check an exposure to compute
-          it for your cohort. Click any node to read its definition.
+          Browse the Spatial &amp; Contextual Exposome ontology. The{" "}
+          {selectableIds.length} exposures you can compute are revealed on the
+          left — check one to compute it for your cohort. Expand any other
+          branch to see its exposures and their exposomes; click a node to read
+          its definition.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -94,6 +96,7 @@ export function VariablesStep({
                 rootId={EXPOSOME_ROOT}
                 selectable
                 selectableIds={selectableIds}
+                autoExpandTo={selectableIds}
                 selected={selectedNodeIds}
                 onSelectionChange={(ids) =>
                   setSelected(

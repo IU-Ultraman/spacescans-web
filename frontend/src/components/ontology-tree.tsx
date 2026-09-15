@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronRight, Loader2 } from "lucide-react";
@@ -30,6 +30,11 @@ interface OntologyTreeProps {
   /** When provided, only these node ids show a selection checkbox; all other
    *  nodes are browse-only (no checkbox). Requires `selectable`. */
   selectableIds?: string[];
+  /** Node ids to reveal once, after the roots load: every branch between a
+   *  root and one of these nodes is expanded. Without it a checkbox that sits
+   *  three levels down reads as an exposure we do not have. The nodes
+   *  themselves stay collapsed. */
+  autoExpandTo?: string[];
 }
 
 export function OntologyTree({
@@ -39,6 +44,7 @@ export function OntologyTree({
   onNodeClick,
   rootId,
   selectableIds,
+  autoExpandTo,
 }: OntologyTreeProps) {
   const [roots, setRoots] = useState<TreeNodeState[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +69,72 @@ export function OntologyTree({
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [rootId]);
+
+  // Reveal the auto-expand targets: read the generated child -> parents index,
+  // walk it up to collect every ancestor, fetch those nodes' children, and
+  // rebuild the tree with them open. One pass per target list, after the roots
+  // are in; a user's own collapsing is not undone.
+  const rootsLoaded = roots.length > 0;
+  const autoExpandKey = autoExpandTo?.length ? [...autoExpandTo].sort().join(",") : "";
+  const autoExpandDone = useRef("");
+
+  useEffect(() => {
+    if (!autoExpandKey || !rootsLoaded) return;
+    if (autoExpandDone.current === autoExpandKey) return;
+    autoExpandDone.current = autoExpandKey;
+
+    let cancelled = false;
+    (async () => {
+      let parents: Record<string, string[]>;
+      try {
+        parents = await fetch("/ontology/parents.json").then((r) => r.json());
+      } catch {
+        return; // no index -> the tree just stays collapsed
+      }
+
+      const ancestors = new Set<string>();
+      const queue = autoExpandKey.split(",").flatMap((id) => parents[id] ?? []);
+      while (queue.length > 0) {
+        const id = queue.shift()!;
+        if (ancestors.has(id)) continue;
+        ancestors.add(id);
+        queue.push(...(parents[id] ?? []));
+      }
+      if (ancestors.size === 0) return;
+
+      const loaded = new Map<string, OntologyNode[]>();
+      await Promise.all(
+        Array.from(ancestors).map(async (id) => {
+          try {
+            const res = await fetch(`/ontology/nodes/${id}.json`);
+            loaded.set(id, (await res.json()) as OntologyNode[]);
+          } catch {
+            // a branch that fails to load stays collapsed and clickable
+          }
+        })
+      );
+      if (cancelled || loaded.size === 0) return;
+
+      // `path` guards against the multi-parent edges in the ontology closing
+      // into a cycle and recursing forever.
+      const build = (node: OntologyNode, path: string[]): TreeNodeState => {
+        const children = path.includes(node.id) ? undefined : loaded.get(node.id);
+        return children
+          ? {
+              node,
+              children: children.map((c) => build(c, [...path, node.id])),
+              expanded: true,
+              loading: false,
+            }
+          : { node, children: null, expanded: false, loading: false };
+      };
+      setRoots((prev) => prev.map((item) => build(item.node, [])));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [autoExpandKey, rootsLoaded]);
 
   const updateNode = useCallback(
     (
