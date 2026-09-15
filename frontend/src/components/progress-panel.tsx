@@ -36,6 +36,8 @@ const STEP_SUFFIX_LABEL: Record<string, string> = {
   temis: "UV Exposure",
   vnl: "Night-time Lights",
   tract_fara: "Food Access",
+  acag: "PM2.5 Composition (ACAG)",
+  tract_faqsd: "Air Quality (EPA FAQSD)",
 };
 
 function prettify(s: string): string {

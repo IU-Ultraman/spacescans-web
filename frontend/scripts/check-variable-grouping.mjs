@@ -45,7 +45,7 @@ const byExp = groupByExperiment(['zcta5_cbp_food', 'bg_ndi', 'bg_wi'], catalog);
 assert.deepEqual(Object.keys(byExp), ['bg_ndi_wi', 'zcta5_cbp']);
 assert.deepEqual(byExp.bg_ndi_wi, ['bg_ndi', 'bg_wi']);
 
-assert.deepEqual([...BOUNDARY_ORDER], ['BG', 'Tract', 'ZCTA5', 'County']);
+assert.deepEqual([...BOUNDARY_ORDER], ['Point', 'BG', 'Tract', 'ZCTA5', 'County']);
 assert.equal(BOUNDARY_LABEL.BG, 'Block Group');
 
 // --- domain grouping ---

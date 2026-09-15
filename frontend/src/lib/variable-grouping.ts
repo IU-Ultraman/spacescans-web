@@ -133,6 +133,8 @@ export const VARIABLE_DOMAIN: Record<string, DomainKey> = {
   vnl: 'natural',
   temis: 'natural',
   nhd_bluespace: 'natural',
+  acag: 'natural',
+  faqsd: 'natural',
   ndi: 'social',
   cbp_zcta5: 'social',
 };

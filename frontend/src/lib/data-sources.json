@@ -302,6 +302,72 @@
         "The first run auto-converts the HDF archive to compact parquet (one-time, ~2 min); every later run reads parquet in seconds. No manual step needed.",
         "Data © KNMI/ESA (https://www.temis.nl/), used with credits; neither the raw HDFs nor the converted parquet are redistributed with this repo — each deployment downloads its own copy and converts locally."
       ]
+    },
+    {
+      "key": "acag",
+      "name": "ACAG PM2.5 composition — V5.NA.05 biweekly (2013–2019)",
+      "usedBy": "ACAG PM2.5 composition (grid)",
+      "variableKeys": [
+        "acag"
+      ],
+      "role": "Gridded values",
+      "sourceName": "Washington University — Atmospheric Composition Analysis Group (ACAG)",
+      "sourceUrl": "https://sites.wustl.edu/acag/datasets/surface-pm2-5/",
+      "license": "CC BY 4.0 (cite van Donkelaar et al.).",
+      "access": "public",
+      "size": "2,912 NetCDF files, ~26 GB for 2013–2019 (both variants)",
+      "files": [
+        {
+          "name": "V5NA05.HybridPM25[.FromBiomass].xNorthAmerica.YYYYDDD-YYYYDDD.nc",
+          "note": "total PM2.5, 26 biweekly files per year"
+        },
+        {
+          "name": "V5NA05.02.Hybrid<SP>-<SP>[.FromBiomass].xNorthAmerica.YYYYDDD-YYYYDDD.nc",
+          "note": "seven components: BC, DUST, NH4, NO3, OM, SO4, SS"
+        }
+      ],
+      "placeDir": [
+        "ACAG/C4/xNorthAmerica/<SPECIES>/BiWeekly/",
+        "ACAG/C4/xNorthAmerica/<SPECIES>_bm/BiWeekly/"
+      ],
+      "notes": [
+        "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto the 0.01° grid (grid_weights); the template raster ACAG/C3/acag_template.tif ships with the repo.",
+        "Both variants are required: the linkage derives each species' non-biomass share as plain minus FromBiomass.",
+        "Four Box shared folders on the ACAG site (plain total, plain components, FromBiomass total, FromBiomass components); the folder API rejects anonymous calls and 'download folder' is disabled, so files are fetched one by one. pipeline-data/ACAG/README.md documents the folder IDs and the enumerate-and-fetch approach.",
+        "Years 2000–2023 are available upstream; 2013–2019 matches the app's other gridded sources."
+      ]
+    },
+    {
+      "key": "faqsd",
+      "name": "EPA FAQSD — daily ozone and PM2.5 by census tract (2013–2019)",
+      "usedBy": "EPA FAQSD air quality (tract areal)",
+      "variableKeys": [
+        "faqsd"
+      ],
+      "role": "Exposure values",
+      "sourceName": "US EPA — Fused Air Quality Surface Using Downscaling (RSIG)",
+      "sourceUrl": "https://www.epa.gov/hesc/rsig-related-downloadable-data-files#faqsd",
+      "license": "US federal public domain.",
+      "access": "public",
+      "size": "14 text files, ~1.5 GB each uncompressed (~21 GB for 2013–2019)",
+      "files": [
+        {
+          "name": "{year}_ozone_daily_8hour_maximum.txt",
+          "note": "one per year; download the .txt.gz and gunzip"
+        },
+        {
+          "name": "{year}_pm25_daily_average.txt",
+          "note": "one per year; download the .txt.gz and gunzip"
+        }
+      ],
+      "placeDir": [
+        "FAQSD/C4/"
+      ],
+      "notes": [
+        "Needs the 2010 Census Tract boundaries (TRACT/C3) — the same tract weight table Food Access uses, and a cohort that has run either gets the other's rasterization from cache.",
+        "Scriptable: https://ofmpub.epa.gov/rsig/rsigserver?data/FAQSD/outputs/{year}_{pm25_daily_average|ozone_daily_8hour_maximum}.txt.gz",
+        "EPA switched header styles between years (FIPS/value vs Loc_Label1/Prediction, and two date formats); the reader takes columns by position and parses both date styles, so keep the files exactly as published."
+      ]
     }
   ],
   "preset": [
