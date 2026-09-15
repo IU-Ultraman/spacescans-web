@@ -46,9 +46,9 @@ RUN grep -vi "spacescans-pipeline" requirements.txt > /tmp/req.txt \
 #    mercantile from pip; rasterio + exactextract + pyhdf already satisfied by
 #    conda-forge above). Provides `import spacescans` and the `spacescans`
 #    CLI. Bump SPACESCANS_REF to pull a newer release.
-ARG SPACESCANS_REF=v0.2.3
+ARG SPACESCANS_REF=v0.2.6
 RUN python -m pip install --no-cache-dir \
-    "spacescans-pipeline[geo,rda,hdf4] @ git+https://github.com/IU-Ultraman/spacescans.git@${SPACESCANS_REF}"
+    "spacescans-pipeline[geo,rda,hdf4,nc] @ git+https://github.com/IU-Ultraman/spacescans.git@${SPACESCANS_REF}"
 
 # 4) Backend source.
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
