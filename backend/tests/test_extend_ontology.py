@@ -136,3 +136,45 @@ def test_value_col_nodes_attached_under_variable_nodes(tmp_path):
     for vid in ("SPACESCANS_Neighborhood_Deprivation_Index",
                 "SPACESCANS_Community_Organization_Density"):
         assert social[vid]["has_children"] is True, vid
+
+
+def test_parents_index_covers_every_child(tmp_path):
+    """The wizard opens branches by walking child -> parent, so the index has
+    to be written AFTER the injections (the value_col nodes are children too)
+    and has to carry the deep air-quality chain, which is what made the two
+    air exposures look absent while nine others showed."""
+    from scripts.extend_ontology import extend_ontology
+
+    _seed(tmp_path)
+    extend_ontology(tmp_path)
+
+    parents = json.loads((tmp_path / "parents.json").read_text())
+    # Plain hierarchy edges.
+    assert parents["000294"] == ["000292"]
+    assert parents["000292"] == ["000093_2"]
+    # Nodes injected by this run are in the index (not a stale pre-injection scan).
+    assert parents["SPACESCANS_Neighborhood_Deprivation_Index"] == ["000295"]
+    # Value-col children point at their variable node.
+    value_cols = json.loads((tmp_path / "nodes" / "000289.json").read_text())
+    assert value_cols, "Noise should have gained value_col children"
+    assert parents[value_cols[0]["id"]] == ["000289"]
+    # Every id that appears as someone's child is in the index, and no node is
+    # its own parent.
+    for f in (tmp_path / "nodes").glob("*.json"):
+        for child in json.loads(f.read_text()):
+            assert f.stem in parents[child["id"]], (child["id"], f.stem)
+            assert child["id"] != f.stem
+
+
+def test_parents_index_records_multiple_parents(tmp_path):
+    """A few ontology nodes hang under two parents; the wizard expands both."""
+    from scripts.extend_ontology import write_parents_index
+
+    (tmp_path / "nodes").mkdir(parents=True)
+    (tmp_path / "nodes" / "A.json").write_text(json.dumps(
+        [{"id": "shared", "label": "s", "definition": "", "has_children": False}]))
+    (tmp_path / "nodes" / "B.json").write_text(json.dumps(
+        [{"id": "shared", "label": "s", "definition": "", "has_children": False}]))
+
+    assert write_parents_index(tmp_path) == 1
+    assert json.loads((tmp_path / "parents.json").read_text())["shared"] == ["A", "B"]

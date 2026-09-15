@@ -224,8 +224,37 @@ def extend_ontology(ontology_dir) -> dict:
 
     _dump(base / "metadata.json", metadata)
     _dump(base / "search-index.json", search)
+    # Last: the reverse index has to see the children injected above.
+    parented = write_parents_index(base)
     return {"added": added, "total": len(all_nodes),
-            "new_nodes": len(NEW_NODES), "value_cols": len(VALUE_COL_NODES)}
+            "new_nodes": len(NEW_NODES), "value_cols": len(VALUE_COL_NODES),
+            "parented": parented}
+
+
+def write_parents_index(ontology_dir) -> int:
+    """Emit child id -> [parent ids] for the whole generated tree.
+
+    nodes/<id>.json lists a node's CHILDREN, so the reverse direction — the
+    only one a client needs to open a branch down onto a node it already knows
+    — costs 467 file reads to derive. The task wizard uses this index to
+    expand every branch that holds a computable exposure: without it the two
+    air-quality exposures sit three levels deep (Air_Pollutant >
+    Criteria_Air_Pollutant > Ozone / PM2.5) while the other nine sit one level
+    down, so at any given expansion the catalog reads as nine exposures.
+
+    A handful of nodes have more than one parent, so values are lists.
+    """
+    base = Path(ontology_dir)
+    parents: dict[str, list[str]] = {}
+    for f in sorted((base / "nodes").glob("*.json")):
+        for child in _load(f):
+            if child["id"] == f.stem:      # a node is not its own parent
+                continue
+            seen = parents.setdefault(child["id"], [])
+            if f.stem not in seen:
+                seen.append(f.stem)
+    _dump(base / "parents.json", parents)
+    return len(parents)
 
 
 def write_feature_dictionary(out_path: Path) -> int:
@@ -263,5 +292,6 @@ if __name__ == "__main__":
     print(f"extend_ontology: {result['added']} added / {result['total']} total "
           f"({result['new_nodes']} concept nodes + {result['value_cols']} value-col nodes) "
           f"-> {args.ontology_dir}")
+    print(f"parents index: {result['parented']} nodes -> {args.ontology_dir}/parents.json")
     n = write_feature_dictionary(Path(args.dictionary_out))
     print(f"feature dictionary: {n} columns -> {args.dictionary_out}")
