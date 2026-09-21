@@ -358,11 +358,32 @@ def _assert_temis_data_present(payload: dict[str, Any]) -> None:
         )
 
 
-def load_variables(*, force: bool = False) -> dict[str, Any]:
+def _task_overlay(task_dir: "Path | None") -> dict[str, Any]:
+    """Custom variable entries recorded by a task, or {} when there are none."""
+    if task_dir is None:
+        return {}
+    path = Path(task_dir) / "config.json"
+    if not path.is_file():
+        return {}
+    try:
+        config = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise MetadataSchemaError(f"{path} is not readable JSON: {exc}") from exc
+    # Lazy: custom_exposomes reaches back into this module for _unprovisioned.
+    from app.custom_exposomes import TASK_CUSTOM_KEY  # noqa: PLC0415
+    variables = config.get(TASK_CUSTOM_KEY) or {}
+    if not isinstance(variables, dict):
+        raise MetadataSchemaError(
+            f"{path}: {TASK_CUSTOM_KEY} does not hold a variables mapping"
+        )
+    return variables
+
+
+def load_variables(*, force: bool = False, task_dir: "Path | None" = None) -> dict[str, Any]:
     _assert_pipeline_version_compatible()
     mtime = _METADATA_PATH.stat().st_mtime
     if not force and _CACHE["mtime"] == mtime and _CACHE["payload"]:
-        return _CACHE["payload"]
+        return _with_overlay(_CACHE["payload"], task_dir)
 
     with _METADATA_PATH.open() as f:
         payload = json.load(f, object_pairs_hook=OrderedDict)
@@ -407,25 +428,53 @@ def load_variables(*, force: bool = False) -> dict[str, Any]:
 
     _CACHE["mtime"] = mtime
     _CACHE["payload"] = payload
-    return payload
+    return _with_overlay(payload, task_dir)
 
 
-def get_variable(key: str) -> dict[str, Any]:
-    payload = load_variables()
+def _with_overlay(payload: dict[str, Any], task_dir: "Path | None") -> dict[str, Any]:
+    """Shipped catalog plus the task's custom entries; the shipped one untouched.
+
+    Returns the cached object itself when there is no overlay, so callers that
+    pass no task_dir see byte-identical behaviour to before.
+    """
+    overlay = _task_overlay(task_dir)
+    if not overlay:
+        return payload
+    merged = OrderedDict(payload)
+    merged["variables"] = OrderedDict(payload["variables"])
+    merged["variables"].update(overlay)
+    return merged
+
+
+def get_variable(key: str, *, task_dir: "Path | None" = None) -> dict[str, Any]:
+    payload = load_variables(task_dir=task_dir)
     try:
         return payload["variables"][key]
     except KeyError:
         raise KeyError(key)
 
 
-def variables_by_experiment(keys: list[str]) -> "OrderedDict[str, list[str]]":
-    """Group variable keys by their experiment, preserving metadata file order."""
-    payload = load_variables()
+def variables_by_experiment(
+    keys: list[str], *, task_dir: "Path | None" = None
+) -> "OrderedDict[str, list[str]]":
+    """Group variable keys by their experiment, preserving metadata file order.
+
+    Raises on a key no catalog (shipped or task overlay) knows. This used to
+    silently drop it: the loop walks the catalog and keeps what appears in
+    `keys`, so a selection naming an unknown variable ran with fewer variables
+    than the user picked, reported as success.
+    """
+    payload = load_variables(task_dir=task_dir)
     out: OrderedDict[str, list[str]] = OrderedDict()
     for var_key, m in payload["variables"].items():
         if var_key not in keys:
             continue
         out.setdefault(m["experiment"], []).append(var_key)
+    unknown = [k for k in keys if k not in payload["variables"]]
+    if unknown:
+        raise KeyError(
+            f"selection names variable(s) no catalog knows: {sorted(unknown)}"
+        )
     return out
 
 

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from app.auth import get_current_user
-from app import task_manager
+from app import custom_exposomes, task_manager
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -103,7 +103,26 @@ async def upload_file(task_id: str, file: UploadFile = File(...), user: dict = D
 @router.put("/{task_id}/config")
 def save_config(task_id: str, config: ConfigRequest, user: dict = Depends(get_current_user)):
     _verify_ownership(task_id, user)
-    task_manager.save_config(task_id, config.model_dump(exclude_none=True))
+    payload = config.model_dump(exclude_none=True)
+    # Resolve any custom exposome in the selection against THIS caller's own
+    # library and snapshot the manifests into the config. This is the ownership
+    # check for the feature — the runner subprocess has no user — and it freezes
+    # what the task computes against a later delete or re-upload. Anything the
+    # client sent under this key is discarded.
+    payload.pop(custom_exposomes.TASK_CUSTOM_KEY, None)
+    custom_keys = [k for k in payload.get("variables", [])
+                   if custom_exposomes.is_custom_key(k)]
+    if custom_keys:
+        try:
+            payload[custom_exposomes.TASK_CUSTOM_KEY] = (
+                custom_exposomes.resolve_selection(user["id"], custom_keys)
+            )
+        except KeyError as exc:
+            raise HTTPException(
+                status_code=404,
+                detail=f"custom exposome not found in your library: {exc.args[0]}",
+            ) from exc
+    task_manager.save_config(task_id, payload)
     return {"status": "saved"}
 
 @router.post("/{task_id}/start")

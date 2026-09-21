@@ -43,7 +43,9 @@ def write_partial(
         df = df.rename(columns={"PATID": "pid", "geoid": "episode_id"})
         df["episode_id"] = df["episode_id"].astype(int)
 
-        meta = variable_registry.get_variable(var_key)
+        # task_dir: custom exposomes live in the task's own snapshot, not
+        # the shipped catalog.
+        meta = variable_registry.get_variable(var_key, task_dir=task_dir)
         value_cols = [c for c in meta["value_cols"] if c in df.columns]
         df = df[["pid", "episode_id"] + value_cols]
 

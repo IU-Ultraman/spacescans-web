@@ -100,7 +100,7 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
     unknown: list[str] = []
     for var in variable_keys:
         try:
-            resolved[var] = variable_registry.get_variable(var)
+            resolved[var] = variable_registry.get_variable(var, task_dir=task_dir)
         except KeyError:
             unknown.append(var)
     if unknown:

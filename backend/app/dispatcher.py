@@ -81,7 +81,7 @@ def dispatch(task_id_or_dir: str) -> dict:
     config = json.loads((task_dir / "config.json").read_text())
     selected = config.get("variables", [])
     legacy_exp_field = config.get("experiment")
-    by_exp = variable_registry.variables_by_experiment(selected)
+    by_exp = variable_registry.variables_by_experiment(selected, task_dir=task_dir)
 
     # Audit-log the legacy `experiment` field receipt into the per-task
     # logs.jsonl (NOT stdlib logging) so spec R10 is structurally provable
