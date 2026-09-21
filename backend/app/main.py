@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings, validate_pipeline_settings
 from app.database import init_db
 from app.routers.auth import router as auth_router
+from app.routers.custom_exposomes import router as custom_exposomes_router
 from app.routers.data_setup import router as data_setup_router
 from app.routers.tasks import router as tasks_router
 from app.routers.variables import router as variables_router
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(auth_router)
+    app.include_router(custom_exposomes_router)
     app.include_router(data_setup_router)
     app.include_router(tasks_router)
     app.include_router(variables_router)
