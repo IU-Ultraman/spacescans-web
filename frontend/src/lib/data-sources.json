@@ -327,8 +327,8 @@
         }
       ],
       "placeDir": [
-        "ACAG/C4/xNorthAmerica/<SPECIES>/BiWeekly/",
-        "ACAG/C4/xNorthAmerica/<SPECIES>_bm/BiWeekly/"
+        "ACAG/C4/xNorthAmerica/{SPECIES}/BiWeekly/",
+        "ACAG/C4/xNorthAmerica/{SPECIES}_bm/BiWeekly/"
       ],
       "notes": [
         "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto the 0.01° grid (grid_weights); the template raster ACAG/C3/acag_template.tif ships with the repo.",
