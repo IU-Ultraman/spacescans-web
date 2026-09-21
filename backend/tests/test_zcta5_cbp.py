@@ -164,7 +164,7 @@ def test_merge_results_emits_result_zcta5_cbp_csv(
 
     with monkeypatch.context() as m:
         m.setattr("app.variable_registry.get_variable",
-                  lambda k: {"value_cols": r_cols})
+                  lambda k, **_kw: {"value_cols": r_cols})
         out = zcta5_cbp.merge_results(task_dir, variables=["cbp_zcta5"])
     assert out == out_dir / "result_zcta5_cbp.csv"
     assert out.exists()

@@ -219,7 +219,7 @@ def test_merge_results_renames_then_delegates(
     }).to_parquet(parquet, index=False)
     with monkeypatch.context() as m:
         m.setattr("app.variable_registry.get_variable",
-                  lambda k: {"value_cols": ["faqsd_o3", "faqsd_pm25"]})
+                  lambda k, **_kw: {"value_cols": ["faqsd_o3", "faqsd_pm25"]})
         out = faqsd.merge_results(task_dir, variables=["faqsd"])
     assert out == out_dir / "result_faqsd.csv"
     assert set(pd.read_parquet(parquet).columns) == {"PATID", "geoid", "faqsd_o3", "faqsd_pm25"}

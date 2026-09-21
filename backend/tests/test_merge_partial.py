@@ -259,7 +259,7 @@ def test_bg_ndi_wi_merge_results_delegates_to_write_partial(tmp_path):
     _write_variable_parquet(task_dir / "output", "c4_wi", n=4, value_cols=["NatWalkInd"])
 
     with patch("app.variable_registry.get_variable",
-               side_effect=lambda k: {"ndi": {"value_cols": ["ndi"]},
+               side_effect=lambda k, **_kw: {"ndi": {"value_cols": ["ndi"]},
                                       "walkability": {"value_cols": ["NatWalkInd"]}}[k]):
         mod.merge_results(task_dir=task_dir, variables=["ndi", "walkability"])
 

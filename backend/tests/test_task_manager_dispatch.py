@@ -41,7 +41,7 @@ def test_dispatch_sequential_order_matches_registry(task_dir_with_config, monkey
     monkeypatch.setattr(dispatcher.subprocess, "Popen",
                         lambda cmd, **kw: _FakePopen(cmd, returncode=0, **kw))
     monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
-                        lambda selected: {"bg_ndi_wi": ["ndi"], "zcta5_cbp": ["cbp_density"]})
+                        lambda selected, **_kw: {"bg_ndi_wi": ["ndi"], "zcta5_cbp": ["cbp_density"]})
     fan_in = MagicMock()
     monkeypatch.setattr("app.experiments._merge.fan_in", fan_in)
 
@@ -65,7 +65,7 @@ def test_dispatch_initialises_experiments_map(task_dir_with_config, monkeypatch)
     monkeypatch.setattr(dispatcher.subprocess, "Popen",
                         lambda cmd, **kw: _FakePopen(cmd, returncode=0, **kw))
     monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
-                        lambda selected: {"bg_ndi_wi": ["ndi"], "zcta5_cbp": ["cbp_density"]})
+                        lambda selected, **_kw: {"bg_ndi_wi": ["ndi"], "zcta5_cbp": ["cbp_density"]})
     monkeypatch.setattr("app.experiments._merge.fan_in", MagicMock())
 
     dispatcher.dispatch(str(task_dir_with_config))
@@ -83,7 +83,7 @@ def test_dispatch_partial_failure_marks_remaining(task_dir_with_config, monkeypa
 
     _FakePopen.instances = []
     monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
-                        lambda selected: {"bg_ndi_wi": ["ndi"], "zcta5_cbp": ["cbp_density"]})
+                        lambda selected, **_kw: {"bg_ndi_wi": ["ndi"], "zcta5_cbp": ["cbp_density"]})
 
     def popen_with_first_fail(cmd, **kw):
         idx = len(_FakePopen.instances)
@@ -110,7 +110,7 @@ def test_dispatch_partial_failure_after_success_calls_fan_in(task_dir_with_confi
 
     _FakePopen.instances = []
     monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
-                        lambda selected: {"bg_ndi_wi": ["ndi"], "zcta5_cbp": ["cbp_density"]})
+                        lambda selected, **_kw: {"bg_ndi_wi": ["ndi"], "zcta5_cbp": ["cbp_density"]})
 
     def popen_with_second_fail(cmd, **kw):
         idx = len(_FakePopen.instances)
@@ -208,7 +208,7 @@ def test_dispatch_derives_top_level_progress_and_steps_from_slots(
     monkeypatch.setattr(dispatcher.subprocess, "Popen",
                         lambda cmd, **kw: _FakePopen(cmd, returncode=0, **kw))
     monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
-                        lambda selected: {
+                        lambda selected, **_kw: {
                             "bg_ndi_wi": ["ndi"],
                             "zcta5_cbp": ["cbp_zcta5"],
                         })
@@ -264,7 +264,7 @@ def test_legacy_experiment_field_logged_but_ignored(task_dir_with_config, monkey
     monkeypatch.setattr(dispatcher.subprocess, "Popen",
                         lambda cmd, **kw: _FakePopen(cmd, returncode=0, **kw))
     monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
-                        lambda selected: {"bg_ndi_wi": ["ndi"], "zcta5_cbp": ["cbp_density"]})
+                        lambda selected, **_kw: {"bg_ndi_wi": ["ndi"], "zcta5_cbp": ["cbp_density"]})
     monkeypatch.setattr("app.experiments._merge.fan_in", MagicMock())
 
     dispatcher.dispatch(str(task_dir_with_config))
@@ -394,7 +394,7 @@ def test_dispatch_writes_pid_and_running_status_atomically(
     monkeypatch.setattr(dispatcher.subprocess, "Popen",
                         lambda cmd, **kw: _FakePopen(cmd, returncode=0, **kw))
     monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
-                        lambda selected: {"bg_ndi_wi": ["ndi"]})
+                        lambda selected, **_kw: {"bg_ndi_wi": ["ndi"]})
     monkeypatch.setattr("app.experiments._merge.fan_in", MagicMock())
 
     dispatcher.dispatch(str(task_dir_with_config))

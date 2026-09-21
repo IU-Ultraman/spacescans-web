@@ -46,7 +46,7 @@ def test_dispatcher_cancellation_preserves_cancelled_status(
 
     _FakePopen.instances = []
     monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
-                        lambda selected: {
+                        lambda selected, **_kw: {
                             "bg_ndi_wi": ["ndi"],
                             "zcta5_cbp": ["cbp_zcta5"],
                         })
@@ -109,7 +109,7 @@ def test_dispatcher_external_sigterm_without_sentinel_routes_to_error(
 
     _FakePopen.instances = []
     monkeypatch.setattr(dispatcher.variable_registry, "variables_by_experiment",
-                        lambda selected: {
+                        lambda selected, **_kw: {
                             "bg_ndi_wi": ["ndi"],
                             "zcta5_cbp": ["cbp_zcta5"],
                         })

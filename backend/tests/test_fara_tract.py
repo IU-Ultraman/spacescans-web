@@ -216,7 +216,7 @@ def test_merge_results_emits_result_fara_tract_csv(
 
     with monkeypatch.context() as m:
         m.setattr("app.variable_registry.get_variable",
-                  lambda k: {"value_cols": headline_cols})
+                  lambda k, **_kw: {"value_cols": headline_cols})
         out = fara_tract.merge_results(task_dir, variables=["fara_tract"])
     assert out == out_dir / "result_fara_tract.csv"
     assert out.exists()
