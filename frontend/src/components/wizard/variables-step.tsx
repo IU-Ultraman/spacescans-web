@@ -7,8 +7,11 @@ import {
 } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
+import type { CustomExposome } from "@/lib/api";
 import { OntologyTree } from "@/components/ontology-tree";
 import { OntologyNodeDetail } from "@/components/ontology/ontology-node-detail";
+import { CustomExposomesBlock } from "./custom-exposomes-block";
+import { CustomExposomeDetail } from "./custom-exposome-detail";
 import { EXPOSOME_ROOT } from "@/lib/ontology";
 import { ErrorCard } from "./error-card";
 import { LoadingCard } from "./loading-card";
@@ -30,6 +33,9 @@ export function VariablesStep({
   const [selected, setSelected] = useState<string[]>(initialSelection);
   // ontology node id currently shown in the right-hand detail panel.
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  // A custom exposome shown in that panel instead — it has no ontology node,
+  // so the two are mutually exclusive: focusing one clears the other.
+  const [focusedCustom, setFocusedCustom] = useState<CustomExposome | null>(null);
 
   // Map between ontology node ids and variable keys (only variables with an
   // ontology_id are selectable in the tree).
@@ -51,7 +57,12 @@ export function VariablesStep({
   useEffect(() => {
     if (!catalog) return;
     const known = new Set(Object.keys(catalog.variables));
-    setSelected((prev) => prev.filter((k) => known.has(k)));
+    // Custom exposomes are deliberately absent from /api/variables (it is
+    // unauthenticated), so they must survive this prune — the block below owns
+    // their validity and drops a key when its dataset is deleted.
+    setSelected((prev) =>
+      prev.filter((k) => known.has(k) || k.startsWith("custom_")),
+    );
   }, [catalog]);
 
   if (loadError) return <ErrorCard message={loadError} />;
@@ -81,10 +92,10 @@ export function VariablesStep({
         <CardTitle className="text-lg">Data Catalog</CardTitle>
         <CardDescription>
           Browse the Spatial &amp; Contextual Exposome ontology. The{" "}
-          {selectableIds.length} exposures you can compute are revealed on the
-          left — check one to compute it for your cohort. Expand any other
-          branch to see its exposures and their exposomes; click a node to read
-          its definition.
+          {selectableIds.length} exposures this deployment provides are revealed
+          on the left — check one to compute it for your cohort. Below the tree,
+          add and select your own uploaded values. Click any node to read its
+          definition.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -105,17 +116,33 @@ export function VariablesStep({
                       .filter((k): k is string => Boolean(k)),
                   )
                 }
-                onNodeClick={setFocusedNodeId}
+                onNodeClick={(id) => {
+                  setFocusedNodeId(id);
+                  setFocusedCustom(null);
+                }}
               />
             </div>
+            <CustomExposomesBlock
+              selected={selected}
+              onSelectionChange={setSelected}
+              focusedKey={focusedCustom?.variable_key ?? null}
+              onFocus={(dataset) => {
+                setFocusedCustom(dataset);
+                if (dataset) setFocusedNodeId(null);
+              }}
+            />
           </div>
 
           {/* Right: detail — shared read-only ontology node panel. */}
           <div className="min-w-0 flex-1">
-            <OntologyNodeDetail
-              nodeId={focusedNodeId}
-              emptyHint="Select a node on the left to read its definition. Checkboxes mark the exposures you can compute."
-            />
+            {focusedCustom ? (
+              <CustomExposomeDetail dataset={focusedCustom} />
+            ) : (
+              <OntologyNodeDetail
+                nodeId={focusedNodeId}
+                emptyHint="Select a node on the left to read its definition. Checkboxes mark the exposures you can compute."
+              />
+            )}
           </div>
         </div>
 

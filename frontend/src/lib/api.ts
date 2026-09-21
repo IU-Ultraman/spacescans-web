@@ -60,6 +60,29 @@ async function downloadFile(path: string, filename: string): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+/** POST a FormData body. Content-Type is deliberately NOT set: the browser has
+ *  to add it itself so the multipart boundary is correct. */
+async function requestMultipart<T>(path: string, body: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body,
+  });
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new ApiError(401, "Unauthorized");
+  }
+  if (!res.ok) {
+    const parsed = await res.json().catch(() => ({ detail: res.statusText }));
+    const raw = parsed.detail ?? parsed.error ?? "Upload failed";
+    throw new ApiError(
+      res.status,
+      typeof raw === "string" ? raw : raw?.message || JSON.stringify(raw),
+    );
+  }
+  return res.json() as Promise<T>;
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -166,6 +189,62 @@ export interface VarCoverage {
   display_unit: string;
   /** "static" products carry one vintage and skip the time-window check. */
   temporal?: 'static' | 'yearly';
+}
+
+/** A custom exposome: a user's own area-level values, uploaded as a CSV and
+ *  attached to a boundary layer the deployment already provisions. Shaped like
+ *  a catalog entry so it renders next to the shipped variables, plus the fields
+ *  the library UI needs. It never carries an ontology_id — custom exposomes
+ *  have no ontology node, which is why they get their own block in the wizard
+ *  rather than appearing in the tree. */
+export interface CustomExposome extends VariableMetadata {
+  dataset_id: string;
+  variable_key: string;
+  /** The user's own geography column in their CSV. */
+  key_col: string;
+  /** The weights-table column it joins to, e.g. GEOID10. */
+  join_col: string;
+  year_col: string | null;
+  value_labels: Record<string, string>;
+  row_count: number;
+  distinct_keys: number;
+  uploaded_filename: string;
+  created_at: string;
+}
+
+export interface CustomBoundary {
+  boundary: 'BG' | 'ZCTA5' | 'Tract' | 'County';
+  label: string;
+  join_col: string;
+  key_len: number;
+  /** False when this deployment has no boundary data, so a dataset on it could
+   *  never run — the dialog hides those. */
+  available: boolean;
+}
+
+export interface CustomPreviewColumn {
+  name: string;
+  numeric: boolean;
+  distinct_sample: string[];
+}
+
+export interface CustomPreview {
+  columns: CustomPreviewColumn[];
+  row_count: number;
+  sample_rows: Record<string, string>[];
+  filename: string;
+}
+
+export interface CreateCustomExposomeInput {
+  file: File;
+  name: string;
+  boundary: string;
+  key_col: string;
+  value_cols: string[];
+  description?: string;
+  year_col?: string | null;
+  display_unit?: string;
+  value_labels?: Record<string, string>;
 }
 
 export interface VariableMetadata {
@@ -397,4 +476,40 @@ export const api = {
     ),
 
   listVariables: () => request<VariableCatalog>("/api/variables"),
+
+  // --- custom exposomes (per-user library) ---------------------------------
+  // Deliberately separate from /api/variables: that endpoint is unauthenticated
+  // with a pinned schema_version, so per-user rows must not appear in it. The
+  // wizard fetches both and merges them.
+
+  listCustomBoundaries: () =>
+    request<{ boundaries: CustomBoundary[] }>("/api/custom-exposomes/boundaries"),
+
+  listCustomExposomes: () =>
+    request<{ variables: Record<string, CustomExposome> }>("/api/custom-exposomes"),
+
+  previewCustomExposome: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return requestMultipart<CustomPreview>("/api/custom-exposomes/preview", form);
+  },
+
+  createCustomExposome: (input: CreateCustomExposomeInput) => {
+    const form = new FormData();
+    form.append("file", input.file);
+    form.append("name", input.name);
+    form.append("boundary", input.boundary);
+    form.append("key_col", input.key_col);
+    form.append("value_cols", JSON.stringify(input.value_cols));
+    form.append("description", input.description ?? "");
+    form.append("display_unit", input.display_unit ?? "");
+    form.append("value_labels", JSON.stringify(input.value_labels ?? {}));
+    if (input.year_col) form.append("year_col", input.year_col);
+    return requestMultipart<CustomExposome>("/api/custom-exposomes", form);
+  },
+
+  deleteCustomExposome: (datasetId: string) =>
+    request<{ status: string }>(`/api/custom-exposomes/${datasetId}`, {
+      method: "DELETE",
+    }),
 };
