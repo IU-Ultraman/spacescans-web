@@ -93,8 +93,8 @@ async def create_dataset(
     value_cols: str = Form(..., description="JSON array of column names"),
     description: str = Form(""),
     year_col: str | None = Form(None),
-    display_unit: str = Form(""),
     value_labels: str = Form("{}", description="JSON object column -> label"),
+    value_units: str = Form("{}", description="JSON object column -> unit"),
     user: dict = Depends(get_current_user),
 ):
     _require_csv(file)
@@ -102,14 +102,21 @@ async def create_dataset(
     try:
         cols = json.loads(value_cols)
         labels = json.loads(value_labels or "{}")
+        units = json.loads(value_units or "{}")
     except json.JSONDecodeError as exc:
         raise HTTPException(
-            status_code=400, detail=f"value_cols/value_labels must be JSON: {exc}"
+            status_code=400,
+            detail=f"value_cols/value_labels/value_units must be JSON: {exc}",
         ) from exc
     if not isinstance(cols, list) or not all(isinstance(c, str) for c in cols):
         raise HTTPException(status_code=400, detail="value_cols must be a list of strings")
-    if not isinstance(labels, dict):
-        raise HTTPException(status_code=400, detail="value_labels must be an object")
+    for field_name, mapping in (("value_labels", labels), ("value_units", units)):
+        if not isinstance(mapping, dict) or not all(
+            isinstance(k, str) and isinstance(v, str) for k, v in mapping.items()
+        ):
+            raise HTTPException(
+                status_code=400, detail=f"{field_name} must be an object of strings"
+            )
 
     available = {
         b["boundary"] for b in custom_exposomes.provisioned_boundaries() if b["available"]
@@ -133,8 +140,8 @@ async def create_dataset(
             key_col=key_col,
             value_cols=cols,
             value_labels=labels,
+            value_units=units,
             year_col=(year_col or None),
-            display_unit=display_unit,
             uploaded_filename=file.filename or "values.csv",
         )
     except custom_exposomes.CustomExposomeError as exc:

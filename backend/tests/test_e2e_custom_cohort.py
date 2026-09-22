@@ -69,7 +69,7 @@ def task_with_custom_exposome(tmp_path, monkeypatch):
         key_col="tract",
         value_cols=_VALUE_COLS,
         year_col=None,
-        display_unit="index",
+        value_units={"greenness": "index", "heat_index": "F"},
         uploaded_filename=fixture.name,
     )
 

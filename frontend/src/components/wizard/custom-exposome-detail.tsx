@@ -25,7 +25,6 @@ export function CustomExposomeDetail({ dataset }: { dataset: CustomExposome }) {
         ? `${dataset.coverage_years[0]}–${dataset.coverage_years[1]}`
         : "Any study period",
     ],
-    ["Unit", dataset.display_unit],
     [
       "Rows",
       `${dataset.row_count.toLocaleString()} (${dataset.distinct_keys.toLocaleString()} distinct ${dataset.boundary} codes)`,
@@ -66,6 +65,11 @@ export function CustomExposomeDetail({ dataset }: { dataset: CustomExposome }) {
                 {dataset.value_labels?.[col] ?? col}
               </span>
               <code className="text-xs text-muted-foreground">{col}</code>
+              {dataset.value_units?.[col] && (
+                <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                  {dataset.value_units[col]}
+                </span>
+              )}
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Area-weighted over the residential buffer

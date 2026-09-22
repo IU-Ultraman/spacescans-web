@@ -206,6 +206,8 @@ export interface CustomExposome extends VariableMetadata {
   join_col: string;
   year_col: string | null;
   value_labels: Record<string, string>;
+  /** Per value column; the dataset-level display_unit is a derived summary. */
+  value_units: Record<string, string>;
   row_count: number;
   distinct_keys: number;
   uploaded_filename: string;
@@ -245,8 +247,8 @@ export interface CreateCustomExposomeInput {
   value_cols: string[];
   description?: string;
   year_col?: string | null;
-  display_unit?: string;
   value_labels?: Record<string, string>;
+  value_units?: Record<string, string>;
 }
 
 export interface VariableMetadata {
@@ -504,8 +506,8 @@ export const api = {
     form.append("key_col", input.key_col);
     form.append("value_cols", JSON.stringify(input.value_cols));
     form.append("description", input.description ?? "");
-    form.append("display_unit", input.display_unit ?? "");
     form.append("value_labels", JSON.stringify(input.value_labels ?? {}));
+    form.append("value_units", JSON.stringify(input.value_units ?? {}));
     if (input.year_col) form.append("year_col", input.year_col);
     return requestMultipart<CustomExposome>("/api/custom-exposomes", form);
   },

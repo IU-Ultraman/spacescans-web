@@ -92,14 +92,53 @@ _MAX_UNIT = 50
 _DEFAULT_UNIT = "unitless"
 
 
-def _clean_unit(raw: str) -> str:
-    """Printable ASCII, non-empty — what the catalog schema allows.
+# Symbols that appear in units and have a lossless ASCII spelling. Dropping
+# them instead would turn "\u00b5g/m\u00b3" into "g/m3" — a different unit.
+_UNIT_ASCII = str.maketrans({
+    "\u00b5": "u", "\u03bc": "u",          # micro sign, Greek mu
+    "\u00b0": "deg",                        # degree
+    "\u00b2": "2", "\u00b3": "3",          # superscripts
+    "\u2212": "-", "\u2013": "-", "\u2014": "-",
+    "\u00d7": "x", "\u00b7": "*",
+})
 
-    A unit typed in another script (or left blank) becomes "unitless" rather
-    than an empty string the schema forbids.
+
+def _clean_unit(raw: str) -> str:
+    """Printable ASCII, non-empty — what the catalog schema allows for the one
+    dataset-level display_unit. Per-column units are stored as typed.
+
+    Known symbols are transliterated, anything else non-ASCII is dropped, and a
+    blank result becomes "unitless" rather than the empty string the schema
+    forbids.
     """
-    kept = "".join(ch for ch in (raw or "").strip() if "\x20" <= ch <= "\x7e")
+    text = (raw or "").strip().translate(_UNIT_ASCII)
+    kept = "".join(ch for ch in text if "\x20" <= ch <= "\x7e")
     return kept[:_MAX_UNIT].strip() or _DEFAULT_UNIT
+
+
+def _unit_as_typed(raw: str) -> str:
+    """A per-column unit: trimmed and capped, otherwise the author's own."""
+    return (raw or "").strip()[:_MAX_UNIT]
+
+
+def _summarise_units(value_cols: list[str], units: dict[str, str]) -> str:
+    """The one catalog-level unit string, derived from the per-column ones.
+
+    Distinct units in column order, " / "-joined, capped at the schema's 50
+    characters; no units at all -> "unitless".
+    """
+    seen: list[str] = []
+    for col in value_cols:
+        raw = (units.get(col) or "").strip()
+        if not raw:
+            continue
+        cleaned = _clean_unit(raw)
+        if cleaned not in seen:
+            seen.append(cleaned)
+    if not seen:
+        return _DEFAULT_UNIT
+    joined = " / ".join(seen)
+    return joined if len(joined) <= _MAX_UNIT else (joined[: _MAX_UNIT - 1].rstrip() + "…")
 
 
 class CustomExposomeError(ValueError):
@@ -374,11 +413,18 @@ def create(
     key_col: str,
     value_cols: list[str],
     value_labels: dict[str, str] | None = None,
+    value_units: dict[str, str] | None = None,
     year_col: str | None = None,
-    display_unit: str = "",
     uploaded_filename: str = "values.csv",
 ) -> dict[str, Any]:
-    """Validate, persist and return the manifest."""
+    """Validate, persist and return the manifest.
+
+    Units are per value column: one dataset can carry a greenness index next
+    to a temperature, so a single dataset-level unit cannot be right. The
+    catalog still has exactly one ``display_unit`` per variable, so that field
+    is DERIVED — the distinct units in column order, joined with " / " (which
+    is how the shipped FAQSD entry already reads: "ppb / ug/m3").
+    """
     name = name.strip()
     if not name:
         raise CustomExposomeError("give the dataset a name")
@@ -421,7 +467,7 @@ def create(
         "data_source": f"Uploaded by user: {uploaded_filename}",
         "temporal": "yearly" if year_col else "static",
         "variable_type": "continuous",
-        "display_unit": _clean_unit(display_unit),
+        "display_unit": _summarise_units(value_cols, value_units or {}),
         "value_cols": list(value_cols),
         # --- private: the runner and the library need these ---
         "dataset_id": dataset_id,
@@ -430,7 +476,10 @@ def create(
         "join_col": BOUNDARY_SPEC[boundary]["join_col"],
         "key_col": key_col,
         "year_col": year_col,
-        "value_labels": dict(value_labels or {}),
+        "value_labels": {c: v.strip() for c, v in (value_labels or {}).items()
+                         if c in value_cols and v and v.strip()},
+        "value_units": {c: _unit_as_typed(v) for c, v in (value_units or {}).items()
+                        if c in value_cols and v and v.strip()},
         "values_path": str(values_path),
         "row_count": facts["row_count"],
         "distinct_keys": facts["distinct_keys"],

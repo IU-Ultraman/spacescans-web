@@ -287,7 +287,7 @@ def test_the_private_fields_are_exactly_the_documented_ones():
     extra = set(m) - set(lib.CATALOG_FIELDS)
     assert extra == {
         "dataset_id", "variable_key", "owner_uid", "join_col", "key_col",
-        "year_col", "value_labels", "values_path", "row_count",
+        "year_col", "value_labels", "value_units", "values_path", "row_count",
         "distinct_keys", "sha256", "uploaded_filename", "created_at",
     }
 
@@ -340,11 +340,47 @@ def test_a_half_written_manifest_does_not_break_the_listing():
     assert [x["dataset_id"] for x in lib.list_for_user(1)] == [m["dataset_id"]]
 
 
-def test_blank_unit_becomes_unitless():
-    """The catalog schema forbids an empty display_unit (printable ASCII,
-    non-empty), and the UI shows the unit next to the value."""
-    assert _create()["display_unit"] == "unitless"
-    assert _create(display_unit="  \u00b5g/m3 ")["display_unit"] == "g/m3"
+def test_units_are_per_column_and_the_catalog_unit_is_derived():
+    """One dataset can hold an index next to a temperature, so units live per
+    column; the catalog's single display_unit is the distinct units joined."""
+    m = _create(value_units={"greenness": "index", "heat_index": "\u00b0F"},
+                value_cols=["greenness", "heat"],
+                content=_csv(["tract,greenness,heat", f"{TRACT_A},0.4,88", f"{TRACT_B},0.5,86"]))
+    # heat_index is not a selected column -> its unit is dropped
+    assert m["value_units"] == {"greenness": "index"}
+    assert m["display_unit"] == "index"
+
+
+def test_distinct_units_join_in_column_order():
+    m = _create(value_units={"heat": "F", "greenness": "index"})
+    assert m["value_units"] == {"greenness": "index", "heat": "F"}
+    assert m["display_unit"] == "index / F"        # column order, not dict order
+
+
+def test_same_unit_twice_is_listed_once():
+    m = _create(value_units={"greenness": "index", "heat": "index"})
+    assert m["display_unit"] == "index"
+
+
+def test_no_units_becomes_unitless():
+    """The catalog schema forbids an empty display_unit."""
+    m = _create()
+    assert m["display_unit"] == "unitless"
+    assert m["value_units"] == {}
+
+
+def test_per_column_unit_is_kept_as_typed_and_the_catalog_unit_transliterated():
+    """value_units is a private field, so \u00b5g/m\u00b3 stays \u00b5g/m\u00b3. The catalog's
+    display_unit must be printable ASCII, and dropping the symbols would turn
+    it into "g/m3" — a different unit — so they are spelled out instead."""
+    m = _create(value_units={"greenness": "  \u00b5g/m\u00b3 ", "heat": "\u00b0F"})
+    assert m["value_units"] == {"greenness": "\u00b5g/m\u00b3", "heat": "\u00b0F"}
+    assert m["display_unit"] == "ug/m3 / degF"
+
+
+def test_labels_are_kept_only_for_selected_columns():
+    m = _create(value_labels={"greenness": "Greenness (NDVI)", "other": "x", "heat": "  "})
+    assert m["value_labels"] == {"greenness": "Greenness (NDVI)"}
 
 
 def test_a_name_in_any_script_is_kept():

@@ -18,6 +18,16 @@ import { cn } from "@/lib/utils";
 
 const NO_YEAR = "__none__";
 
+/** Only the entries for columns that are actually selected, trimmed, non-empty. */
+function pick(map: Record<string, string>, keys: string[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const k of keys) {
+    const v = (map[k] ?? "").trim();
+    if (v) out[k] = v;
+  }
+  return out;
+}
+
 interface CustomExposomeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -43,7 +53,10 @@ export function CustomExposomeDialog({
   const [valueCols, setValueCols] = useState<string[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [unit, setUnit] = useState("");
+  // Per value column. One dataset can carry a greenness index next to a
+  // temperature, so a single dataset-level unit cannot be right.
+  const [colLabels, setColLabels] = useState<Record<string, string>>({});
+  const [colUnits, setColUnits] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<"preview" | "save" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +74,8 @@ export function CustomExposomeDialog({
 
   const reset = () => {
     setFile(null); setPreview(null); setKeyCol(""); setYearCol(NO_YEAR);
-    setValueCols([]); setName(""); setDescription(""); setUnit("");
+    setValueCols([]); setName(""); setDescription("");
+    setColLabels({}); setColUnits({});
     setError(null); setBusy(null);
   };
 
@@ -124,7 +138,8 @@ export function CustomExposomeDialog({
         key_col: keyCol,
         value_cols: valueCols,
         description,
-        display_unit: unit,
+        value_labels: pick(colLabels, valueCols),
+        value_units: pick(colUnits, valueCols),
         year_col: yearCol === NO_YEAR ? null : yearCol,
       });
       await onCreated(created);
@@ -257,30 +272,54 @@ export function CustomExposomeDialog({
                 <span className="text-xs text-muted-foreground">
                   Value columns to compute ({valueCols.length} selected)
                 </span>
-                <div className="max-h-44 overflow-y-auto rounded-md border p-1">
+                <div className="max-h-64 overflow-y-auto rounded-md border p-1">
                   {preview.columns
                     .filter((c) => !reserved.has(c.name))
-                    .map((c) => (
-                      <label
-                        key={c.name}
-                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-muted/60"
-                      >
-                        <Checkbox
-                          checked={valueCols.includes(c.name)}
-                          onCheckedChange={(checked) =>
-                            toggleValueCol(c.name, checked === true)
-                          }
-                        />
-                        <span className="min-w-0 flex-1 truncate text-sm">
-                          {c.name}
-                        </span>
-                        {!c.numeric && (
-                          <span className="shrink-0 text-xs text-muted-foreground">
-                            not numeric
-                          </span>
-                        )}
-                      </label>
-                    ))}
+                    .map((c) => {
+                      const checked = valueCols.includes(c.name);
+                      return (
+                        <div key={c.name} className="rounded hover:bg-muted/60">
+                          <label className="flex cursor-pointer items-center gap-2 px-2 py-1">
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(next) =>
+                                toggleValueCol(c.name, next === true)
+                              }
+                            />
+                            <span className="min-w-0 flex-1 truncate text-sm">
+                              {c.name}
+                            </span>
+                            {!c.numeric && (
+                              <span className="shrink-0 text-xs text-muted-foreground">
+                                not numeric
+                              </span>
+                            )}
+                          </label>
+                          {checked && (
+                            <div className="grid gap-2 px-2 pb-2 pl-8 sm:grid-cols-2">
+                              <Input
+                                value={colLabels[c.name] ?? ""}
+                                onChange={(e) =>
+                                  setColLabels((m) => ({ ...m, [c.name]: e.target.value }))
+                                }
+                                maxLength={80}
+                                placeholder="Display name (optional)"
+                                className="h-8 text-xs"
+                              />
+                              <Input
+                                value={colUnits[c.name] ?? ""}
+                                onChange={(e) =>
+                                  setColUnits((m) => ({ ...m, [c.name]: e.target.value }))
+                                }
+                                maxLength={50}
+                                placeholder="Unit (optional), e.g. index, ug/m3"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             </section>
@@ -290,27 +329,14 @@ export function CustomExposomeDialog({
           {preview && (
             <section className="space-y-3">
               <Label>4. How should it appear in the catalog?</Label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">Name</span>
-                  <Input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    maxLength={80}
-                    placeholder="e.g. Neighborhood greenness"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">
-                    Unit (optional)
-                  </span>
-                  <Input
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    maxLength={50}
-                    placeholder="e.g. index, ug/m3"
-                  />
-                </div>
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground">Name</span>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  maxLength={80}
+                  placeholder="e.g. Neighborhood greenness"
+                />
               </div>
               <div className="space-y-1">
                 <span className="text-xs text-muted-foreground">
