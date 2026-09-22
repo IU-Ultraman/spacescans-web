@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, FileUp, Loader2 } from "lucide-react";
+import { AlertCircle, Download, FileUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -38,6 +38,108 @@ function pick(map: Record<string, string>, keys: string[]): Record<string, strin
     if (v) out[k] = v;
   }
   return out;
+}
+
+// A realistic sample per boundary: the right key width (a zero-padded code from
+// Leon County, FL) and a column name the auto-detect recognises.
+const SAMPLE_KEY: Record<string, { col: string; codes: [string, string, string] }> = {
+  Tract: { col: "tract", codes: ["12073000200", "12073000301", "12073000302"] },
+  BG: { col: "bg_geoid", codes: ["120730002001", "120730002002", "120730003011"] },
+  ZCTA5: { col: "zcta", codes: ["32301", "32303", "32304"] },
+  County: { col: "county_fips", codes: ["12073", "12065", "12039"] },
+};
+
+function csvExample(boundary: string, temporal: Temporal): string {
+  const k = SAMPLE_KEY[boundary] ?? SAMPLE_KEY.Tract;
+  if (temporal === "static") {
+    return [
+      `${k.col},greenness,heat_index`,
+      `${k.codes[0]},0.345,82.8`,
+      `${k.codes[1]},0.346,82.9`,
+      `${k.codes[2]},0.351,83.4`,
+    ].join("\n");
+  }
+  return [
+    `${k.col},year,ndvi`,
+    `${k.codes[0]},2013,0.300`,
+    `${k.codes[0]},2014,0.350`,
+    `${k.codes[1]},2013,0.301`,
+    `${k.codes[1]},2014,0.351`,
+  ].join("\n");
+}
+
+function downloadText(filename: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/** What the upload must look like, given the two choices already made. */
+function ExampleFormat({
+  kind, temporal, boundary, keyLen,
+}: { kind: Kind; temporal: Temporal; boundary: string; keyLen: number | null }) {
+  if (kind === "table") {
+    const text = csvExample(boundary, temporal);
+    return (
+      <div className="rounded-md border bg-muted/30 p-3 text-xs">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <span className="font-medium">Example format</span>
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(`example_${boundary.toLowerCase()}_${temporal}.csv`, text + "\n")
+            }
+            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          >
+            <Download className="size-3" /> Download example CSV
+          </button>
+        </div>
+        <pre className="overflow-x-auto rounded bg-background p-2 font-mono text-[11px] leading-5">
+          {text}
+        </pre>
+        <ul className="mt-2 list-disc space-y-0.5 pl-4 text-muted-foreground">
+          <li>
+            A header row, then{" "}
+            {temporal === "static" ? "one row per polygon" : "one row per polygon per year"}.
+          </li>
+          <li>
+            One column holds the {boundary} code
+            {keyLen ? ` — ${keyLen} digits, zero-padded (Excel drops the leading 0; save as text)` : ""}.
+            Name it anything; you pick it in the next step.
+          </li>
+          {temporal === "yearly" && <li>One column holds a four-digit year.</li>}
+          <li>
+            Every other column you select becomes an exposure; values must be
+            numeric. Blank, NA or N/A means missing.
+          </li>
+        </ul>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-md border bg-muted/30 p-3 text-xs">
+      <div className="mb-2 font-medium">Example format</div>
+      <pre className="overflow-x-auto rounded bg-background p-2 font-mono text-[11px] leading-5">
+        {temporal === "static"
+          ? "greenness.tif"
+          : "ndvi_2013.tif\nndvi_2014.tif\nndvi_2015.tif\n…  (one file per year, selected together)"}
+      </pre>
+      <ul className="mt-2 list-disc space-y-0.5 pl-4 text-muted-foreground">
+        <li>GeoTIFF (.tif) with a coordinate reference system — any CRS, any resolution.</li>
+        <li>North-up (the default export from QGIS, ArcGIS, R terra or Python rasterio).</li>
+        <li>Covers the part of the continental US your cohort lives in.</li>
+        <li>
+          One numeric band is used (you can choose which); set a nodata value for
+          cells without data.
+        </li>
+        {temporal === "yearly" && (
+          <li>Every year on the same grid — same size, resolution and CRS. A year in the filename is picked up automatically.</li>
+        )}
+      </ul>
+    </div>
+  );
 }
 
 interface CustomExposomeDialogProps {
@@ -370,6 +472,13 @@ export function CustomExposomeDialog({
                 : "Each episode is matched to the years it spans and averaged by the days in each."}
             </p>
           </section>
+
+          <ExampleFormat
+            kind={kind}
+            temporal={temporal}
+            boundary={boundary || "Tract"}
+            keyLen={activeBoundary?.key_len ?? null}
+          />
 
           {/* 3. file(s) */}
           {kind === "table" ? (
