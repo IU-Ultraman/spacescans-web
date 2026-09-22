@@ -265,8 +265,8 @@ export function CustomExposomeDialog({
           <DialogTitle>Add a custom exposome</DialogTitle>
           <DialogDescription>
             Upload your own values and they become selectable for any of your
-            tasks — a table keyed by tract, block group, ZIP area or county, or
-            a raster.
+            tasks — values per polygon (tract, block group, ZIP area or county)
+            as a CSV, or a raster.
           </DialogDescription>
         </DialogHeader>
 
@@ -276,7 +276,7 @@ export function CustomExposomeDialog({
             <Label>1. What are you uploading?</Label>
             <div className="flex flex-wrap gap-2">
               {([
-                ["table", "Table (CSV)"],
+                ["table", "Polygon (CSV)"],
                 ["raster", "Raster (GeoTIFF)"],
               ] as [Kind, string][]).map(([k, label]) => (
                 <button
@@ -298,7 +298,7 @@ export function CustomExposomeDialog({
             {kind === "table" && (
               <div className="space-y-2 pt-1">
                 <span className="text-xs text-muted-foreground">
-                  Which geography are the rows keyed by?
+                  Which polygons do the rows describe?
                 </span>
                 {boundaries === null ? (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -307,8 +307,8 @@ export function CustomExposomeDialog({
                   </div>
                 ) : available.length === 0 ? (
                   <p className="text-xs text-destructive">
-                    This deployment has no boundary data provisioned, so a table
-                    could not be computed. Add a boundary dataset on the Data Setup
+                    This deployment has no boundary data provisioned, so polygon
+                    values could not be computed. Add a boundary dataset on the Data Setup
                     page first — or upload a raster instead.
                   </p>
                 ) : (
