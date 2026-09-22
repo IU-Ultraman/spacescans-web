@@ -82,6 +82,7 @@ function ExampleFormat({
 }: { kind: Kind; temporal: Temporal; boundary: string; keyLen: number | null }) {
   if (kind === "table") {
     const text = csvExample(boundary, temporal);
+    const rows = text.split("\n").map((line) => line.split(","));
     return (
       <div className="rounded-md border bg-muted/30 p-3 text-xs">
         <div className="mb-2 flex items-center justify-between gap-2">
@@ -96,13 +97,31 @@ function ExampleFormat({
             <Download className="size-3" /> Download example CSV
           </button>
         </div>
-        <pre className="overflow-x-auto rounded bg-background p-2 font-mono text-[11px] leading-5">
-          {text}
-        </pre>
+        <div className="overflow-x-auto rounded border bg-background">
+          <table className="w-full font-mono text-[11px]">
+            <thead>
+              <tr className="border-b bg-muted/40">
+                {rows[0].map((h) => (
+                  <th key={h} className="px-2 py-1 text-left font-semibold">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.slice(1).map((r, i) => (
+                <tr key={i} className="border-b last:border-0">
+                  {r.map((cell, j) => (
+                    <td key={j} className="px-2 py-1 tabular-nums">{cell}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <ul className="mt-2 list-disc space-y-0.5 pl-4 text-muted-foreground">
           <li>
-            A header row, then{" "}
-            {temporal === "static" ? "one row per polygon" : "one row per polygon per year"}.
+            Saved as CSV: a header row, then{" "}
+            {temporal === "static" ? "one row per polygon" : "one row per polygon per year"},
+            cells separated by commas.
           </li>
           <li>
             One column holds the {boundary} code
