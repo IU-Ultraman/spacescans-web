@@ -309,3 +309,53 @@ def test_parquet_map_matches_the_c4_step_names():
     assert custom._parquet_map([A, C]) == {
         A: f"c4_{A}.parquet", C: f"c4_{C}.parquet",
     }
+
+
+# --------------------------------------------------------------------------
+# coverage diagnosis
+# --------------------------------------------------------------------------
+
+def _diagnosis_setup(tmp_path, touched, covered):
+    """A task whose C3 weights touched `touched` and whose CSV covers `covered`."""
+    import pandas as pd
+    task_dir = tmp_path / "task-diag0001"
+    (task_dir / "output").mkdir(parents=True)
+    pd.DataFrame({"geoid": range(len(touched)), "GEOID10": touched,
+                  "value": [1.0] * len(touched)}).to_parquet(
+        task_dir / "output" / "c3_tract_us.parquet", index=False)
+    values = tmp_path / "values.csv"
+    values.write_text("tract,v\n" + "".join(f"{c},0.5\n" for c in covered))
+    definition = {**TRACT_DEF, "values_path": str(values)}
+    return task_dir, definition
+
+
+def test_diagnosis_names_the_regions_when_nothing_overlaps(tmp_path):
+    """The user's actual report: a Leon County file against a nationwide cohort,
+    "0.0% linked" and no idea why."""
+    touched = ["06037101110", "36061000100", "39035101100", "48201100000"]
+    covered = ["12073000200", "12073000301"]
+    task_dir, definition = _diagnosis_setup(tmp_path, touched, covered)
+    msg = custom._coverage_diagnosis(task_dir, A, definition)
+    assert "touch 4 distinct Tract codes across 4 states" in msg
+    assert "06 (1)" in msg and "36 (1)" in msg
+    assert "covers 2 codes across 1 state: 12 (2)" in msg
+    assert "0 in common" in msg
+    assert "does not cover where this cohort lives" in msg
+
+
+def test_diagnosis_reports_partial_overlap(tmp_path):
+    touched = ["12073000200", "12073000301", "06037101110"]
+    covered = ["12073000200", "12073000301"]
+    task_dir, definition = _diagnosis_setup(tmp_path, touched, covered)
+    msg = custom._coverage_diagnosis(task_dir, A, definition)
+    assert "2 in common" in msg
+    assert "outside the file's geographies get no value" in msg
+
+
+def test_diagnosis_never_raises(tmp_path):
+    """Diagnostics run after the linkage; they must not turn a finished task
+    into a failed one."""
+    task_dir = tmp_path / "task-nofiles"
+    task_dir.mkdir()
+    msg = custom._coverage_diagnosis(task_dir, A, {**TRACT_DEF, "values_path": "/nope.csv"})
+    assert msg.startswith(f"{A}: could not compare geographies")

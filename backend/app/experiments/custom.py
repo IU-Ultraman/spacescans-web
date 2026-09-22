@@ -321,6 +321,7 @@ def _report_linkage_rate(task_dir: Path, variables: list[str], config: dict) -> 
                         f"{var_key}: could not read {parquet.name}: {exc!r}")
             continue
         definition = _definition(config, var_key)
+        low = False
         for col in definition["value_cols"]:
             if col not in df.columns:
                 _append_log(task_dir, "warning", "merge",
@@ -328,14 +329,54 @@ def _report_linkage_rate(task_dir: Path, variables: list[str], config: dict) -> 
                 continue
             matched = float(df[col].notna().mean()) if len(df) else 0.0
             level = "info" if matched >= 0.5 else "warning"
+            low = low or matched < 0.5
             _append_log(
                 task_dir, level, "merge",
                 f"{var_key}.{col}: {matched:.1%} of episodes linked "
-                f"({int(df[col].notna().sum()):,}/{len(df):,})"
-                + ("" if matched >= 0.5 else
-                   " — check that the geography codes in the uploaded file "
-                   "match the boundary layer"),
+                f"({int(df[col].notna().sum()):,}/{len(df):,})",
             )
+        if low:
+            _append_log(task_dir, "warning", "merge",
+                        _coverage_diagnosis(task_dir, var_key, definition))
+
+
+def _coverage_diagnosis(task_dir: Path, var_key: str, definition: dict) -> str:
+    """Say WHY a custom column linked poorly: which geographies the cohort's
+    buffers touched versus which the uploaded file covers.
+
+    "0 % linked" on its own reads as a bug. Almost always it is a file for one
+    region run against a cohort from another — 68 Leon County tracts against a
+    nationwide demo cohort — and the two sets never overlap. Both sets are at
+    hand here (the task's C3 weights and the user's CSV), so name them.
+    """
+    import pandas as pd
+    try:
+        c3_name = BOUNDARY_C3[definition["boundary"]][0]
+        weights = pd.read_parquet(task_dir / "output" / f"{c3_name}.parquet")
+        touched = set(weights[definition["join_col"]].astype(str))
+        uploaded = pd.read_csv(definition["values_path"], dtype=str,
+                               usecols=[definition["key_col"]])
+        covered = set(uploaded[definition["key_col"]].str.strip())
+    except Exception as exc:  # pragma: no cover - diagnostics must never fail a run
+        return f"{var_key}: could not compare geographies ({exc!r})"
+
+    def _states(codes: set[str]) -> str:
+        counts = pd.Series([c[:2] for c in codes]).value_counts()
+        shown = ", ".join(f"{st} ({n})" for st, n in counts.head(6).items())
+        more = f", +{len(counts) - 6} more" if len(counts) > 6 else ""
+        return f"{len(counts)} state{'s' if len(counts) != 1 else ''}: {shown}{more}"
+
+    common = touched & covered
+    return (
+        f"{var_key}: the cohort's buffers touch {len(touched):,} distinct "
+        f"{definition['boundary']} codes across {_states(touched)}; the uploaded "
+        f"file covers {len(covered):,} codes across {_states(covered)}; "
+        f"{len(common):,} in common. "
+        + ("The file does not cover where this cohort lives — upload values for "
+           "those geographies, or run it on a cohort from that region."
+           if not common else
+           "Episodes outside the file's geographies get no value.")
+    )
 
 
 def run(task_dir: Path, variables: list[str] | None = None) -> int:
