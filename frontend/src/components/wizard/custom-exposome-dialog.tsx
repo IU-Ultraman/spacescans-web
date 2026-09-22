@@ -252,7 +252,8 @@ export function CustomExposomeDialog({
           <DialogTitle>Add a custom exposome</DialogTitle>
           <DialogDescription>
             Upload your own values and they become selectable for any of your
-            tasks — either a table keyed by a Census geography, or a raster.
+            tasks — a table keyed by tract, block group, ZIP area or county, or
+            a raster.
           </DialogDescription>
         </DialogHeader>
 
@@ -262,7 +263,7 @@ export function CustomExposomeDialog({
             <Label>1. What are you uploading?</Label>
             <div className="flex flex-wrap gap-2">
               {([
-                ["table", "Table (CSV) on a Census geography"],
+                ["table", "Table (CSV)"],
                 ["raster", "Raster (GeoTIFF)"],
               ] as [Kind, string][]).map(([k, label]) => (
                 <button
@@ -284,7 +285,7 @@ export function CustomExposomeDialog({
             {kind === "table" && (
               <div className="space-y-2 pt-1">
                 <span className="text-xs text-muted-foreground">
-                  Which geography are your rows keyed by?
+                  Which geography are the rows keyed by?
                 </span>
                 {boundaries === null ? (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">

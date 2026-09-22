@@ -80,7 +80,7 @@ export function CustomExposomesBlock({
         <div className="min-w-0">
           <div className="text-sm font-medium">My Exposomes</div>
           <div className="truncate text-xs text-muted-foreground">
-            Your own values — a table on a Census geography, or a raster
+            Your own values — a table by geography, or a raster
           </div>
         </div>
         <Button
