@@ -226,6 +226,8 @@ export interface CustomPreviewColumn {
   name: string;
   numeric: boolean;
   distinct_sample: string[];
+  /** [min, max] of the parsed values; present only when numeric. */
+  range?: [number, number];
 }
 
 export interface CustomPreview {

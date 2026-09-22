@@ -226,8 +226,24 @@ def test_preview_flags_which_columns_look_numeric():
     assert set(by_name) == {"tract", "greenness", "heat"}
     assert by_name["greenness"]["numeric"] is True
     assert by_name["tract"]["numeric"] is True   # a geoid is digits; the UI names it
+    # The range is parsed numerically, not string-sorted, so 80.0 < 88.2 holds.
+    assert by_name["greenness"]["range"] == [0.41, 0.55]
+    assert by_name["heat"]["range"] == [86.0, 88.2]
     assert result["row_count"] == 2
     assert result["sample_rows"][0]["greenness"] == "0.41"
+
+
+def test_preview_range_is_numeric_not_lexical():
+    """A string sort would put "10" before "9"."""
+    result = lib.preview(_csv(["tract,v", f"{TRACT_A},9", f"{TRACT_B},10"]))
+    col = next(c for c in result["columns"] if c["name"] == "v")
+    assert col["range"] == [9.0, 10.0]
+
+
+def test_preview_text_column_has_no_range():
+    result = lib.preview(_csv(["tract,label", f"{TRACT_A},high", f"{TRACT_B},low"]))
+    col = next(c for c in result["columns"] if c["name"] == "label")
+    assert col["numeric"] is False and "range" not in col
 
 
 # --------------------------------------------------------------------------

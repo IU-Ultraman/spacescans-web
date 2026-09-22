@@ -196,11 +196,22 @@ def preview(content: bytes) -> dict[str, Any]:
             continue
         values = _column(header, rows, name)
         non_empty = [v for v in values if v != ""]
-        columns.append({
+        numeric = bool(non_empty) and _numeric_failures(values) == 0
+        col: dict[str, Any] = {
             "name": name,
-            "numeric": bool(non_empty) and _numeric_failures(values) == 0,
+            "numeric": numeric,
+            # A few distinct values so a text column is recognisable at a glance.
             "distinct_sample": sorted({v for v in non_empty[:200]})[:5],
-        })
+        }
+        if numeric:
+            # The observed range is what tells a user which numeric column is
+            # which (0.30–0.40 is an index; 80–85 is a temperature). Parsed as
+            # numbers: a string sort would put "10" before "9".
+            parsed = [float(v) for v in non_empty
+                      if v.upper() not in {"NA", "N/A", "NULL", "NAN", "."}]
+            if parsed:
+                col["range"] = [min(parsed), max(parsed)]
+        columns.append(col)
     return {
         "columns": columns,
         "row_count": len(rows),
