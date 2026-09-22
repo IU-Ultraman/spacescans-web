@@ -18,13 +18,6 @@ import { cn } from "@/lib/utils";
 
 const NO_YEAR = "__none__";
 
-/** Compact number for the column list: keeps 0.300 as 0.3, 82.8 as 82.8, and
- *  120730001100-style codes as-is rather than in exponent notation. */
-function formatNum(n: number): string {
-  if (Number.isInteger(n)) return String(n);
-  return Number(n.toPrecision(4)).toString();
-}
-
 interface CustomExposomeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -281,16 +274,11 @@ export function CustomExposomeDialog({
                         <span className="min-w-0 flex-1 truncate text-sm">
                           {c.name}
                         </span>
-                        <span
-                          className="shrink-0 text-xs text-muted-foreground"
-                          title={c.numeric ? "Observed range in this file" : undefined}
-                        >
-                          {c.numeric && c.range
-                            ? `${formatNum(c.range[0])} – ${formatNum(c.range[1])}`
-                            : c.numeric
-                              ? "numeric"
-                              : "not numeric"}
-                        </span>
+                        {!c.numeric && (
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            not numeric
+                          </span>
+                        )}
                       </label>
                     ))}
                 </div>
