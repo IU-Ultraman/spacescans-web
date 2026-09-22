@@ -197,7 +197,26 @@ export interface VarCoverage {
  *  the library UI needs. It never carries an ontology_id — custom exposomes
  *  have no ontology node, which is why they get their own block in the wizard
  *  rather than appearing in the tree. */
+export interface CustomRasterFile {
+  year: number | null;
+  uploaded_filename: string;
+  sha256: string;
+  bytes: number;
+}
+
+export interface CustomRasterGrid {
+  width: number;
+  height: number;
+  crs: string;
+  resolution: [number, number];
+  resolution_label: string;
+  nodata: number | null;
+  bounds_wgs84: [number, number, number, number];
+}
+
 export interface CustomExposome extends VariableMetadata {
+  /** polygon: a CSV on a Census geography; raster: the user's own GeoTIFF grid. */
+  geometry: 'polygon' | 'raster';
   dataset_id: string;
   variable_key: string;
   /** The user's own geography column in their CSV. */
@@ -212,6 +231,30 @@ export interface CustomExposome extends VariableMetadata {
   distinct_keys: number;
   uploaded_filename: string;
   created_at: string;
+  /** raster only */
+  rasters?: CustomRasterFile[];
+  band?: number;
+  grid?: CustomRasterGrid;
+}
+
+export interface CustomRasterPreview extends CustomRasterGrid {
+  cells: number;
+  band_count: number;
+  bands: { index: number; description: string; dtype: string }[];
+  grid_hash: string;
+  filename: string;
+  bytes: number;
+}
+
+export interface CreateCustomRasterInput {
+  /** One file with year null = time-invariant; several, each with a year. */
+  files: { file: File; year: number | null }[];
+  name: string;
+  value_col: string;
+  band?: number;
+  description?: string;
+  value_label?: string;
+  value_unit?: string;
 }
 
 export interface CustomBoundary {
@@ -510,6 +553,25 @@ export const api = {
     form.append("value_units", JSON.stringify(input.value_units ?? {}));
     if (input.year_col) form.append("year_col", input.year_col);
     return requestMultipart<CustomExposome>("/api/custom-exposomes", form);
+  },
+
+  previewCustomRaster: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return requestMultipart<CustomRasterPreview>("/api/custom-exposomes/preview-raster", form);
+  },
+
+  createCustomRaster: (input: CreateCustomRasterInput) => {
+    const form = new FormData();
+    for (const f of input.files) form.append("files", f.file);
+    form.append("years", JSON.stringify(input.files.map((f) => f.year)));
+    form.append("name", input.name);
+    form.append("value_col", input.value_col);
+    form.append("band", String(input.band ?? 1));
+    form.append("description", input.description ?? "");
+    form.append("value_label", input.value_label ?? "");
+    form.append("value_unit", input.value_unit ?? "");
+    return requestMultipart<CustomExposome>("/api/custom-exposomes/raster", form);
   },
 
   deleteCustomExposome: (datasetId: string) =>

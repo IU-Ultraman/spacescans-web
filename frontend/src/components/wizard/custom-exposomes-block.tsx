@@ -80,7 +80,7 @@ export function CustomExposomesBlock({
         <div className="min-w-0">
           <div className="text-sm font-medium">My Exposomes</div>
           <div className="truncate text-xs text-muted-foreground">
-            Your own values, attached to a Census geography
+            Your own values — a table on a Census geography, or a raster
           </div>
         </div>
         <Button
@@ -108,8 +108,8 @@ export function CustomExposomesBlock({
           className="flex w-full items-center gap-2 px-3 py-4 text-left text-xs text-muted-foreground hover:bg-muted/60"
         >
           <Upload className="size-3.5 shrink-0" />
-          Upload a CSV of your own area-level values to compute it for your
-          cohort alongside the exposures above.
+          Upload a CSV of area-level values, or a GeoTIFF, to compute it for
+          your cohort alongside the exposures above.
         </button>
       ) : (
         <div className="max-h-56 overflow-y-auto p-1">
@@ -142,8 +142,12 @@ export function CustomExposomesBlock({
                     {dataset.label}
                   </div>
                   <div className="truncate text-xs text-muted-foreground">
-                    {dataset.boundary} · {dataset.value_cols.length}{" "}
-                    {dataset.value_cols.length === 1 ? "column" : "columns"} ·{" "}
+                    {dataset.geometry === "raster"
+                      ? `Raster · ${dataset.grid?.resolution_label ?? ""}`
+                      : `${dataset.boundary} · ${dataset.value_cols.length} ${
+                          dataset.value_cols.length === 1 ? "column" : "columns"
+                        }`}{" "}
+                    ·{" "}
                     {dataset.temporal === "yearly"
                       ? `${dataset.coverage_years[0]}–${dataset.coverage_years[1]}`
                       : "time-invariant"}

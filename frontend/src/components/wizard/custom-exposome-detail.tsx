@@ -9,10 +9,22 @@ import { BOUNDARY_LABEL, type BoundaryKey } from "@/lib/variable-grouping";
  * Deliberately echoes that panel's field rows so the two read as one surface.
  */
 export function CustomExposomeDetail({ dataset }: { dataset: CustomExposome }) {
+  const isRaster = dataset.geometry === "raster";
+  const files = dataset.rasters?.map((r) => r.uploaded_filename).join(", ");
   const rows: [string, string][] = [
-    ["Data Source", `Uploaded — ${dataset.uploaded_filename}`],
-    ["Spatial Scale", BOUNDARY_LABEL[dataset.boundary as BoundaryKey] ?? dataset.boundary],
-    ["Linked as", `Area-weighted from ${dataset.boundary}`],
+    ["Data Source", `Uploaded — ${isRaster ? files : dataset.uploaded_filename}`],
+    [
+      "Spatial Scale",
+      isRaster && dataset.grid
+        ? `${dataset.grid.resolution_label} grid (${dataset.grid.width.toLocaleString()} × ${dataset.grid.height.toLocaleString()} cells, ${dataset.grid.crs})`
+        : BOUNDARY_LABEL[dataset.boundary as BoundaryKey] ?? dataset.boundary,
+    ],
+    [
+      "Linked as",
+      isRaster
+        ? "Cell-coverage-weighted within the residential buffer"
+        : `Area-weighted from ${dataset.boundary}`,
+    ],
     [
       "Temporal",
       dataset.temporal === "yearly"
@@ -25,11 +37,20 @@ export function CustomExposomeDetail({ dataset }: { dataset: CustomExposome }) {
         ? `${dataset.coverage_years[0]}–${dataset.coverage_years[1]}`
         : "Any study period",
     ],
-    [
-      "Rows",
-      `${dataset.row_count.toLocaleString()} (${dataset.distinct_keys.toLocaleString()} distinct ${dataset.boundary} codes)`,
-    ],
-    ["Joins on", `${dataset.key_col} → ${dataset.join_col}`],
+    isRaster
+      ? ["Band", String(dataset.band ?? 1)]
+      : [
+          "Rows",
+          `${dataset.row_count.toLocaleString()} (${dataset.distinct_keys.toLocaleString()} distinct ${dataset.boundary} codes)`,
+        ],
+    isRaster
+      ? [
+          "Extent",
+          dataset.grid
+            ? `lon ${dataset.grid.bounds_wgs84[0].toFixed(1)}…${dataset.grid.bounds_wgs84[2].toFixed(1)}, lat ${dataset.grid.bounds_wgs84[1].toFixed(1)}…${dataset.grid.bounds_wgs84[3].toFixed(1)}`
+            : "—",
+        ]
+      : ["Joins on", `${dataset.key_col} → ${dataset.join_col}`],
   ];
 
   return (
@@ -72,9 +93,11 @@ export function CustomExposomeDetail({ dataset }: { dataset: CustomExposome }) {
               )}
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Area-weighted over the residential buffer
+              {isRaster
+                ? "Coverage-weighted mean of the raster cells under the residential buffer"
+                : "Area-weighted over the residential buffer"}
               {dataset.temporal === "yearly"
-                ? " and averaged across each episode's years."
+                ? ", averaged across each episode's years."
                 : "."}{" "}
               (Result column: {col}.)
             </p>
