@@ -286,7 +286,7 @@ export function CustomExposomeDialog({
                           title={c.numeric ? "Observed range in this file" : undefined}
                         >
                           {c.numeric && c.range
-                            ? `range ${formatNum(c.range[0])} – ${formatNum(c.range[1])}`
+                            ? `${formatNum(c.range[0])} – ${formatNum(c.range[1])}`
                             : c.numeric
                               ? "numeric"
                               : "not numeric"}
