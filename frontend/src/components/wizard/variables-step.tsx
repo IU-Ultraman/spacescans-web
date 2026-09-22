@@ -89,20 +89,26 @@ export function VariablesStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Data Catalog</CardTitle>
+        <CardTitle className="text-lg">Select Exposures</CardTitle>
         <CardDescription>
-          Browse the Spatial &amp; Contextual Exposome ontology. The{" "}
-          {selectableIds.length} exposures this deployment provides are revealed
-          on the left — check one to compute it for your cohort. Below the tree,
-          add and select your own uploaded values. Click any node to read its
-          definition.
+          Check the exposures to compute for your cohort — from the catalog this
+          deployment provides, or from values you upload yourself. Click any item
+          to read its definition on the right.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-5 md:min-h-[32rem] md:flex-row">
           {/* Left: scoped, selectable ontology tree */}
           <div className="md:w-2/5 md:shrink-0">
-            <div className="max-h-[32rem] overflow-y-auto rounded-lg border p-2">
+            <div className="rounded-lg border">
+              <div className="border-b px-3 py-2">
+                <div className="text-sm font-medium">Data Catalog</div>
+                <div className="truncate text-xs text-muted-foreground">
+                  {selectableIds.length} exposures from the Spatial &amp;
+                  Contextual Exposome ontology
+                </div>
+              </div>
+              <div className="max-h-[28rem] overflow-y-auto p-2">
               <OntologyTree
                 rootId={EXPOSOME_ROOT}
                 selectable
@@ -121,6 +127,7 @@ export function VariablesStep({
                   setFocusedCustom(null);
                 }}
               />
+              </div>
             </div>
             <CustomExposomesBlock
               selected={selected}
