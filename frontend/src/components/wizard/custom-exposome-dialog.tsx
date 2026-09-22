@@ -20,6 +20,7 @@ const NO_YEAR = "__none__";
 const COLUMN_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 type Kind = "table" | "raster";
+type Temporal = "static" | "yearly";
 
 interface RasterPick {
   file: File;
@@ -56,6 +57,10 @@ export function CustomExposomeDialog({
   open, onOpenChange, onCreated,
 }: CustomExposomeDialogProps) {
   const [kind, setKind] = useState<Kind>("table");
+  // Asked explicitly rather than inferred from "is there a year column" or
+  // "how many files": the user should say whether the values vary by year,
+  // and the rest of the form then asks only for what that needs.
+  const [temporal, setTemporal] = useState<Temporal>("static");
 
   // --- table (CSV on a Census geography) ---
   const [boundaries, setBoundaries] = useState<CustomBoundary[] | null>(null);
@@ -96,12 +101,19 @@ export function CustomExposomeDialog({
   }, [open]);
 
   const reset = () => {
-    setKind("table");
+    setKind("table"); setTemporal("static");
     setFile(null); setPreview(null); setKeyCol(""); setYearCol(NO_YEAR);
     setValueCols([]); setColLabels({}); setColUnits({});
     setRasters([]); setBand(1); setRasterCol("value"); setRasterLabel(""); setRasterUnit("");
     setName(""); setDescription("");
     setError(null); setBusy(null);
+  };
+
+  const chooseTemporal = (next: Temporal) => {
+    setTemporal(next);
+    setError(null);
+    if (next === "static") setYearCol(NO_YEAR);
+    setRasters([]);              // file count and per-file years depend on it
   };
 
   const close = (next: boolean) => {
@@ -129,7 +141,7 @@ export function CustomExposomeDialog({
       );
       if (geo) setKeyCol(geo.name);
       const year = result.columns.find((c) => /^year$/i.test(c.name));
-      if (year) setYearCol(year.name);
+      if (year && temporal === "yearly") setYearCol(year.name);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not read that file");
     } finally {
@@ -158,9 +170,8 @@ export function CustomExposomeDialog({
     setError(null);
     const picks: RasterPick[] = files.map((f) => ({
       file: f, meta: null, error: null,
-      // A four-digit year in the filename is a reasonable first guess when
-      // there are several files; a single file is static unless told otherwise.
-      year: files.length > 1 ? (f.name.match(/(?:19|20)\d{2}/) ?? [""])[0] : "",
+      // A four-digit year in the filename is a reasonable first guess.
+      year: temporal === "yearly" ? (f.name.match(/(?:19|20)\d{2}/) ?? [""])[0] : "",
     }));
     setRasters(picks);
     if (!files.length) return;
@@ -188,9 +199,10 @@ export function CustomExposomeDialog({
   const rastersReady =
     rasters.length > 0 && rasters.every((r) => r.meta && !r.error) && !gridMismatch;
   const yearsOk =
-    rasters.length <= 1
-      ? rasters.length === 0 || rasters[0].year.trim() === "" || /^\d{4}$/.test(rasters[0].year.trim())
-      : rasters.every((r) => /^\d{4}$/.test(r.year.trim())) &&
+    temporal === "static"
+      ? rasters.length === 1
+      : rasters.length > 0 &&
+        rasters.every((r) => /^\d{4}$/.test(r.year.trim())) &&
         new Set(rasters.map((r) => r.year.trim())).size === rasters.length;
 
   // ----------------------------------------------------------------- save ---
@@ -199,7 +211,8 @@ export function CustomExposomeDialog({
     busy === null &&
     name.trim().length > 0 &&
     (kind === "table"
-      ? !!file && !!preview && !!boundary && !!keyCol && valueCols.length > 0
+      ? !!file && !!preview && !!boundary && !!keyCol && valueCols.length > 0 &&
+        (temporal === "static" || yearCol !== NO_YEAR)
       : rastersReady && yearsOk && COLUMN_NAME.test(rasterCol.trim()));
 
   const save = async () => {
@@ -218,13 +231,13 @@ export function CustomExposomeDialog({
           description,
           value_labels: pick(colLabels, valueCols),
           value_units: pick(colUnits, valueCols),
-          year_col: yearCol === NO_YEAR ? null : yearCol,
+          year_col: temporal === "yearly" && yearCol !== NO_YEAR ? yearCol : null,
         });
       } else {
         created = await api.createCustomRaster({
           files: rasters.map((r) => ({
             file: r.file,
-            year: r.year.trim() === "" ? null : Number(r.year.trim()),
+            year: temporal === "yearly" ? Number(r.year.trim()) : null,
           })),
           name: name.trim(),
           value_col: rasterCol.trim(),
@@ -327,10 +340,41 @@ export function CustomExposomeDialog({
             )}
           </section>
 
-          {/* 2. file(s) */}
+          {/* 2. static or yearly */}
+          <section className="space-y-2">
+            <Label>2. Do the values change over time?</Label>
+            <div className="flex flex-wrap gap-2">
+              {([
+                ["static", "Time-invariant", "one value per area"],
+                ["yearly", "Varies by year", "one value per area per year"],
+              ] as [Temporal, string, string][]).map(([t, label, hint]) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => chooseTemporal(t)}
+                  className={cn(
+                    "rounded-md border px-3 py-1.5 text-left text-xs transition-colors",
+                    temporal === t
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60",
+                  )}
+                >
+                  <span className="font-medium">{label}</span>
+                  <span className="ml-1.5 opacity-70">— {hint}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {temporal === "static"
+                ? "The same value is used for every episode, whatever its dates."
+                : "Each episode is matched to the years it spans and averaged by the days in each."}
+            </p>
+          </section>
+
+          {/* 3. file(s) */}
           {kind === "table" ? (
             <section className="space-y-2">
-              <Label htmlFor="custom-file">2. Your CSV</Label>
+              <Label htmlFor="custom-file">3. Your CSV</Label>
               <div className="flex items-center gap-3">
                 <Input
                   id="custom-file"
@@ -353,13 +397,16 @@ export function CustomExposomeDialog({
             </section>
           ) : (
             <section className="space-y-2">
-              <Label htmlFor="custom-rasters">2. Your GeoTIFF(s)</Label>
+              <Label htmlFor="custom-rasters">
+                3. {temporal === "static" ? "Your GeoTIFF" : "Your GeoTIFFs, one per year"}
+              </Label>
               <div className="flex items-center gap-3">
                 <Input
                   id="custom-rasters"
+                  key={temporal}                 /* remount so a stale selection clears */
                   type="file"
                   accept=".tif,.tiff"
-                  multiple
+                  multiple={temporal === "yearly"}
                   onChange={(e) => void pickRasters(e.target.files)}
                   className="cursor-pointer"
                 />
@@ -368,9 +415,9 @@ export function CustomExposomeDialog({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                One file = a time-invariant exposure. Several files, one per year,
-                = a yearly exposure; they must share one grid. North-up GeoTIFFs
-                with a CRS, over the continental US.
+                {temporal === "static"
+                  ? "One north-up GeoTIFF with a CRS, over the continental US."
+                  : "Select all the years at once; the files must share one grid. North-up GeoTIFFs with a CRS, over the continental US."}
               </p>
 
               {rasters.length > 0 && (
@@ -380,9 +427,9 @@ export function CustomExposomeDialog({
                       <tr>
                         <th className="px-2 py-1.5 text-left font-medium">File</th>
                         <th className="px-2 py-1.5 text-left font-medium">Grid</th>
-                        <th className="px-2 py-1.5 text-left font-medium">
-                          Year{rasters.length === 1 ? " (blank = none)" : ""}
-                        </th>
+                        {temporal === "yearly" && (
+                          <th className="px-2 py-1.5 text-left font-medium">Year</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -400,20 +447,22 @@ export function CustomExposomeDialog({
                               <Loader2 className="inline size-3 animate-spin" />
                             )}
                           </td>
-                          <td className="px-2 py-1">
-                            <Input
-                              value={r.year}
-                              onChange={(e) =>
-                                setRasters((prev) =>
-                                  prev.map((p, j) => (j === i ? { ...p, year: e.target.value } : p)),
-                                )
-                              }
-                              inputMode="numeric"
-                              maxLength={4}
-                              placeholder={rasters.length === 1 ? "—" : "YYYY"}
-                              className="h-7 w-20 text-xs"
-                            />
-                          </td>
+                          {temporal === "yearly" && (
+                            <td className="px-2 py-1">
+                              <Input
+                                value={r.year}
+                                onChange={(e) =>
+                                  setRasters((prev) =>
+                                    prev.map((p, j) => (j === i ? { ...p, year: e.target.value } : p)),
+                                  )
+                                }
+                                inputMode="numeric"
+                                maxLength={4}
+                                placeholder="YYYY"
+                                className="h-7 w-20 text-xs"
+                              />
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -426,9 +475,15 @@ export function CustomExposomeDialog({
                   differ). Every year must share one grid.
                 </p>
               )}
-              {rasters.length > 1 && !yearsOk && (
+              {temporal === "yearly" && rasters.length > 0 && !yearsOk && (
                 <p className="text-xs text-destructive">
                   Give every file a distinct four-digit year.
+                </p>
+              )}
+              {temporal === "static" && rasters.length > 1 && (
+                <p className="text-xs text-destructive">
+                  A time-invariant exposure is one file. Choose &ldquo;Varies by
+                  year&rdquo; above to upload several.
                 </p>
               )}
             </section>
@@ -437,9 +492,9 @@ export function CustomExposomeDialog({
           {/* 3. mapping */}
           {kind === "table" && preview && (
             <section className="space-y-3">
-              <Label>3. Which column is which?</Label>
+              <Label>4. Which column is which?</Label>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className={cn("grid gap-3", temporal === "yearly" && "sm:grid-cols-2")}>
                 <div className="space-y-1">
                   <span className="text-xs text-muted-foreground">
                     Geography code
@@ -455,21 +510,24 @@ export function CustomExposomeDialog({
                     ))}
                   </select>
                 </div>
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">
-                    Year (leave empty if the values do not vary by year)
-                  </span>
-                  <select
-                    value={yearCol}
-                    onChange={(e) => setYearCol(e.target.value)}
-                    className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-                  >
-                    <option value={NO_YEAR}>No year column</option>
-                    {preview.columns.map((c) => (
-                      <option key={c.name} value={c.name}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
+                {temporal === "yearly" && (
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">Year</span>
+                    <select
+                      value={yearCol}
+                      onChange={(e) => setYearCol(e.target.value)}
+                      className={cn(
+                        "w-full rounded-md border bg-background px-2 py-1.5 text-sm",
+                        yearCol === NO_YEAR && "border-destructive/60",
+                      )}
+                    >
+                      <option value={NO_YEAR}>Select the year column…</option>
+                      {preview.columns.map((c) => (
+                        <option key={c.name} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1">
@@ -531,7 +589,7 @@ export function CustomExposomeDialog({
 
           {kind === "raster" && rasters.length > 0 && (
             <section className="space-y-3">
-              <Label>3. What do the pixels hold?</Label>
+              <Label>4. What do the pixels hold?</Label>
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="space-y-1">
                   <span className="text-xs text-muted-foreground">Result column</span>
@@ -594,7 +652,7 @@ export function CustomExposomeDialog({
           {/* 4. naming */}
           {showNaming && (
             <section className="space-y-3">
-              <Label>4. How should it appear in the catalog?</Label>
+              <Label>5. How should it appear in the catalog?</Label>
               <div className="space-y-1">
                 <span className="text-xs text-muted-foreground">Name</span>
                 <Input
