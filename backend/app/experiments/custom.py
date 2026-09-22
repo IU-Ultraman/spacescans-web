@@ -14,10 +14,17 @@ variable instead:
     ``_cache_key`` therefore takes the tag as an argument rather than reading a
     module constant.
   * the C4 step — rendered from ``c4/custom_areal.yaml`` with the dataset's own
-    join column, value columns and CSV path, using ``static_areal`` when the
+    join column, value columns and table path, using ``static_areal`` when the
     dataset has no year column and ``yearly_areal`` when it has one. Both
-    patterns read a plain CSV through ``read_table`` because the rendered config
-    sets no ``plugin:``.
+    patterns read a plain table through ``read_table`` because the rendered
+    config sets no ``plugin:``.
+
+A RASTER dataset takes the same two steps with two substitutions: its C3 is
+``grid_weights`` with the uploaded GeoTIFF as the template grid (step name and
+cache tag keyed by the grid's hash, so every year and every dataset on one grid
+share one C3), and before its C4 renders, the runner materialises the value
+table — ``(grid_id, <col>[, year])`` — from the C3 weights' grid ids and the
+pixels under them. From there C4 cannot tell a raster from a polygon.
 
 Dataset definitions come from ``config.json['custom_variables']``, a snapshot
 the config endpoint writes after resolving each key against the authenticated
@@ -68,6 +75,8 @@ BOUNDARY_C3: dict[str, tuple[str, str, str]] = {
 }
 
 _C4_TEMPLATE = "c4/custom_areal.yaml"
+_C3_GRID_TEMPLATE = "c3/custom_grid.yaml"
+_GRID_TAG_PREFIX = "CUSTOMGRID_"
 
 
 def _sanity_check_pipeline_supports_areal_episode() -> None:
@@ -111,7 +120,25 @@ def _definition(config: dict, var_key: str) -> dict:
         ) from None
 
 
-def c3_step_for(boundary: str) -> PipelineStep:
+def is_raster(definition: dict) -> bool:
+    return definition.get("geometry") == "raster"
+
+
+def grid_tag(definition: dict) -> str:
+    return f"{_GRID_TAG_PREFIX}{definition['grid_hash']}"
+
+
+def c3_step_for(definition: dict | str) -> PipelineStep:
+    """The C3 step a dataset needs. Polygons reuse the shipped boundary steps;
+    a raster gets one per distinct grid, named by the grid's hash."""
+    if isinstance(definition, str):            # a bare boundary name
+        definition = {"boundary": definition}
+    if is_raster(definition):
+        return PipelineStep(
+            name=f"c3_customgrid_{definition['grid_hash']}",
+            template_relpath=_C3_GRID_TEMPLATE, is_c3=True,
+        )
+    boundary = definition["boundary"]
     try:
         name, template, _tag = BOUNDARY_C3[boundary]
     except KeyError:
@@ -149,8 +176,7 @@ def plan(config: dict) -> list[PipelineStep]:
     steps: list[PipelineStep] = []
     seen_c3: set[str] = set()
     for var_key in variables:
-        boundary = _definition(config, var_key)["boundary"]
-        c3 = c3_step_for(boundary)
+        c3 = c3_step_for(_definition(config, var_key))
         if c3.name not in seen_c3:
             seen_c3.add(c3.name)
             steps.append(c3)
@@ -171,7 +197,14 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     cfg["buffer"]["patient_file"] = str(task_dir / "input.parquet")
     cfg["buffer"]["buffer_m"] = user_config["buffer"]["size"]
 
-    if step.is_c3:
+    if step.is_c3 and step.template_relpath == _C3_GRID_TEMPLATE:
+        # A raster dataset: the uploaded GeoTIFF is the template grid. Any
+        # dataset on this grid (this one, or another year of it) rendered the
+        # same step, so the first raster of the first such dataset will do.
+        definition = _first_definition_for_grid(user_config, step.name)
+        cfg["source"]["file"] = definition["rasters"][0]["path"]
+        cfg["buffer"]["grid_id_offset"] = 0
+    elif step.is_c3:
         # The boundary templates are the shipped ones; source.file stays
         # relative so the pipeline CLI resolves it against --data-dir.
         # raster_res_m drives boundary_overlap_fast's rasterisation and is part
@@ -182,18 +215,25 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     else:
         var_key = step.name[len("c4_"):]
         definition = _definition(user_config, var_key)
-        boundary = definition["boundary"]
-        c3_name, _template, _tag = BOUNDARY_C3[boundary]
+        c3_name = c3_step_for(definition).name
+        c3_parquet = task_dir / "output" / f"{c3_name}.parquet"
+
+        if is_raster(definition):
+            # Materialise (grid_id, <col>[, year]) from the pixels under the
+            # cohort's cells; from here on C4 is identical to a polygon run.
+            values_path = _materialise_raster_values(task_dir, var_key, definition, c3_parquet)
+        else:
+            values_path = definition["values_path"]
 
         cfg["linkage_pattern"] = (
             "yearly_areal" if definition.get("year_col") else "static_areal"
         )
         cfg["source"] = {
-            "file": str(task_dir / "output" / f"{c3_name}.parquet"),
+            "file": str(c3_parquet),
             "join_col": definition["join_col"],
         }
         exposure = {
-            "file": definition["values_path"],
+            "file": str(values_path),
             "join_col": definition["key_col"],
             "value_cols": list(definition["value_cols"]),
         }
@@ -216,6 +256,53 @@ def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
     out = task_dir / "pipeline_configs" / f"{step.name}.yaml"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(yaml.safe_dump(cfg, sort_keys=False))
+    return out
+
+
+def _first_definition_for_grid(config: dict, c3_step_name: str) -> dict:
+    for var_key in config.get("variables", []):
+        d = _definition(config, var_key)
+        if is_raster(d) and c3_step_for(d).name == c3_step_name:
+            return d
+    raise ValueError(f"no raster dataset in the selection renders {c3_step_name}")
+
+
+def _materialise_raster_values(
+    task_dir: Path, var_key: str, definition: dict, c3_parquet: Path,
+) -> Path:
+    """Write the C4 value table for a raster dataset: one row per grid cell the
+    cohort's buffers touch (per year, for a yearly dataset), with the pixel
+    value under it. NaN where the pixel is nodata.
+
+    Only the cells in the C3 weights are read, so the table is a few thousand
+    rows however large the national raster is.
+    """
+    import numpy as np
+    import pandas as pd
+    from app import raster_values
+
+    weights = pd.read_parquet(c3_parquet, columns=["grid_id"])
+    grid_ids = np.sort(weights["grid_id"].dropna().astype("int64").unique())
+    col = definition["value_cols"][0]
+    band = int(definition.get("band", 1))
+    nodata = (definition.get("grid") or {}).get("nodata")
+
+    frames = []
+    for raster in definition["rasters"]:
+        vals = raster_values.extract_values(raster["path"], grid_ids, band=band, nodata=nodata)
+        frame = pd.DataFrame({"grid_id": grid_ids, col: vals})
+        if raster.get("year") is not None:
+            frame["year"] = int(raster["year"])
+        frames.append(frame)
+    table = pd.concat(frames, ignore_index=True)
+
+    out = task_dir / "output" / f"values_{var_key}.parquet"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    table.to_parquet(out, index=False)
+    _append_log(task_dir, "info", f"c4_{var_key}",
+                f"materialised {len(table):,} (grid_id{', year' if 'year' in table else ''}) "
+                f"rows from {len(definition['rasters'])} raster(s); "
+                f"{int(table[col].isna().sum()):,} nodata")
     return out
 
 
@@ -256,11 +343,18 @@ def _cache_key(input_parquet: Path, boundary_tag: str, user_config: dict) -> str
     """
     sha = _hash_input_parquet(input_parquet)
     buf = user_config["buffer"]["size"]
+    if boundary_tag.startswith(_GRID_TAG_PREFIX):
+        # grid_weights does not rasterise the buffer, so — like the shipped grid
+        # runners (temis, vnl, noise) — no __r suffix. The grid hash in the tag
+        # is what keeps two different uploaded grids apart.
+        return f"{sha[:8]}__{boundary_tag}__b{buf}m"
     raster = user_config["buffer"]["raster_res_m"]
     return f"{sha[:8]}__{boundary_tag}__b{buf}m__r{raster}m"
 
 
 def _boundary_tag_for_step(step: PipelineStep) -> str | None:
+    if step.name.startswith("c3_customgrid_"):
+        return _GRID_TAG_PREFIX + step.name[len("c3_customgrid_"):]
     for _boundary, (name, _template, tag) in BOUNDARY_C3.items():
         if name == step.name:
             return tag
@@ -299,6 +393,27 @@ def merge_results(task_dir: Path, variables: list[str]) -> Path:
         experiment_key=_EXPERIMENT_KEY,
         variables=variables,
         parquet_map=_parquet_map(variables),
+    )
+
+
+def _raster_diagnosis(task_dir: Path, var_key: str, definition: dict) -> str:
+    """For a raster the cells always exist; a poor rate means nodata under the
+    cohort, or a cohort outside the raster's extent."""
+    import pandas as pd
+    try:
+        table = pd.read_parquet(task_dir / "output" / f"values_{var_key}.parquet")
+    except Exception as exc:  # pragma: no cover
+        return f"{var_key}: could not read the materialised values ({exc!r})"
+    col = definition["value_cols"][0]
+    nodata_share = float(table[col].isna().mean()) if len(table) else 1.0
+    b = (definition.get("grid") or {}).get("bounds_wgs84") or [None] * 4
+    extent = (f"lon {b[0]:.1f}…{b[2]:.1f}, lat {b[1]:.1f}…{b[3]:.1f}"
+              if None not in b else "unknown extent")
+    return (
+        f"{var_key}: {nodata_share:.0%} of the {table['grid_id'].nunique():,} raster "
+        f"cells under the cohort's buffers are nodata (raster extent {extent}). "
+        + ("The raster has no data where this cohort lives." if nodata_share > 0.5
+           else "Episodes over nodata cells get no value.")
     )
 
 
@@ -350,8 +465,10 @@ def _coverage_diagnosis(task_dir: Path, var_key: str, definition: dict) -> str:
     hand here (the task's C3 weights and the user's CSV), so name them.
     """
     import pandas as pd
+    if is_raster(definition):
+        return _raster_diagnosis(task_dir, var_key, definition)
     try:
-        c3_name = BOUNDARY_C3[definition["boundary"]][0]
+        c3_name = c3_step_for(definition).name
         weights = pd.read_parquet(task_dir / "output" / f"{c3_name}.parquet")
         touched = set(weights[definition["join_col"]].astype(str))
         uploaded = pd.read_csv(definition["values_path"], dtype=str,

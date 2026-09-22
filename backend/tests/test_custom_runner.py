@@ -359,3 +359,131 @@ def test_diagnosis_never_raises(tmp_path):
     task_dir.mkdir()
     msg = custom._coverage_diagnosis(task_dir, A, {**TRACT_DEF, "values_path": "/nope.csv"})
     assert msg.startswith(f"{A}: could not compare geographies")
+
+
+# --------------------------------------------------------------------------
+# raster datasets
+# --------------------------------------------------------------------------
+
+def _raster_def(tmp_path, *, years=(None,), grid_hash="abcd1234", col="ndvi", offset_per_year=100):
+    """A raster definition backed by real small GeoTIFFs: value = row*10 + col
+    (+ offset per year), so a pixel's value says which cell and year it is."""
+    pytest.importorskip("rasterio")
+    import numpy as np
+    from tests.test_raster_values import write_tif
+    rasters = []
+    for i, y in enumerate(years):
+        arr = np.array([[r * 10 + c + i * offset_per_year for c in range(5)] for r in range(4)])
+        p = write_tif(tmp_path / f"r_{y or 'static'}.tif", arr)
+        rasters.append({"path": str(p), "year": y, "uploaded_filename": p.name,
+                        "sha256": "x", "bytes": p.stat().st_size})
+    return {
+        "label": "My raster", "boundary": "Point", "geometry": "raster",
+        "join_col": "grid_id", "key_col": "grid_id",
+        "year_col": None if years == (None,) else "year",
+        "value_cols": [col], "values_path": None, "rasters": rasters, "band": 1,
+        "grid_hash": grid_hash,
+        "grid": {"width": 5, "height": 4, "nodata": None,
+                 "bounds_wgs84": [-85.0, 30.96, -84.95, 31.0]},
+        "coverage_years": [2013, 2019] if years == (None,) else [min(years), max(years)],
+        "experiment": "custom",
+    }
+
+
+R = "custom_raster01"
+
+
+def test_plan_gives_a_raster_its_own_c3_named_by_grid(tmp_path):
+    steps = custom.plan(_config([R], {R: _raster_def(tmp_path)}))
+    assert [s.name for s in steps] == ["c3_customgrid_abcd1234", f"c4_{R}"]
+    assert steps[0].template_relpath == "c3/custom_grid.yaml"
+
+
+def test_two_rasters_on_one_grid_share_the_c3(tmp_path):
+    other = f"{R}b"
+    cfg = _config([R, other], {R: _raster_def(tmp_path),
+                               other: _raster_def(tmp_path, col="heat")})
+    assert [s.name for s in custom.plan(cfg)] == ["c3_customgrid_abcd1234", f"c4_{R}", f"c4_{other}"]
+
+
+def test_raster_and_polygon_get_separate_c3s(tmp_path):
+    cfg = _config([R, A], {R: _raster_def(tmp_path), A: TRACT_DEF})
+    assert [s.name for s in custom.plan(cfg)] == [
+        "c3_customgrid_abcd1234", "c3_tract_us", f"c4_{R}", f"c4_{A}"]
+
+
+def test_grid_cache_tag_and_key_have_no_rasterisation_suffix(tmp_path):
+    """grid_weights does not rasterise the buffer; like temis/vnl, no __r part.
+    The grid hash in the tag keeps two uploaded grids apart."""
+    step = custom.c3_step_for(_raster_def(tmp_path))
+    assert custom._boundary_tag_for_step(step) == "CUSTOMGRID_abcd1234"
+    parquet = tmp_path / "input.parquet"; parquet.write_bytes(b"cohort")
+    key = custom._cache_key(parquet, "CUSTOMGRID_abcd1234", BUFFER)
+    assert key.split("__")[1:] == ["CUSTOMGRID_abcd1234", "b270m"]
+    assert key != custom._cache_key(parquet, "CUSTOMGRID_ffff0000", BUFFER)
+
+
+def test_c3_raster_render_points_at_the_uploaded_tif(rendered, tmp_path):
+    d = _raster_def(tmp_path)
+    cfg, task_dir = rendered(custom.c3_step_for(d), _config([R], {R: d}))
+    assert cfg["linkage_pattern"] == "grid_weights"
+    assert cfg["source"]["file"] == d["rasters"][0]["path"]
+    assert cfg["buffer"]["grid_id_offset"] == 0
+    assert cfg["buffer"]["patient_file"] == str(task_dir / "input.parquet")
+    # grid_weights does not rasterise the buffer; the polygon-only injection
+    # must not leak into a grid step (it would also be a silent cache-key lie).
+    assert "raster_res_m" not in cfg["buffer"]
+    assert cfg["output"]["path"] == str(task_dir / "output" / "c3_customgrid_abcd1234.parquet")
+
+
+def _c3_weights(task_dir, grid_ids):
+    import pandas as pd
+    (task_dir / "output").mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"geoid": range(len(grid_ids)), "grid_id": grid_ids,
+                  "weight": [1.0] * len(grid_ids)}).to_parquet(
+        task_dir / "output" / "c3_customgrid_abcd1234.parquet", index=False)
+
+
+def test_c4_raster_render_materialises_the_value_table(rendered, tmp_path):
+    """The pixels under the C3 grid ids become (grid_id, col); C4 then reads
+    that parquet with no plugin, exactly like a polygon CSV."""
+    import pandas as pd
+    d = _raster_def(tmp_path)
+    task_dir = tmp_path / "task-abcdef12"
+    _c3_weights(task_dir, [0, 4, 13, 19])                 # (0,0) (0,4) (2,3) (3,4)
+    cfg, _ = rendered(custom.c4_step_for(R), _config([R], {R: d}), task_dir=task_dir)
+
+    assert cfg["linkage_pattern"] == "static_areal"
+    assert cfg["source"] == {"file": str(task_dir / "output" / "c3_customgrid_abcd1234.parquet"),
+                             "join_col": "grid_id"}
+    assert cfg["exposure"]["join_col"] == "grid_id"
+    assert cfg["exposure"]["value_cols"] == ["ndvi"]
+    assert "plugin" not in cfg
+    values = pd.read_parquet(cfg["exposure"]["file"])
+    assert values.sort_values("grid_id")["ndvi"].tolist() == [0.0, 4.0, 23.0, 34.0]
+    assert "year" not in values.columns
+
+
+def test_c4_yearly_raster_render_stacks_one_table_per_year(rendered, tmp_path):
+    import pandas as pd
+    d = _raster_def(tmp_path, years=(2016, 2017))
+    task_dir = tmp_path / "task-abcdef12"
+    _c3_weights(task_dir, [13])
+    cfg, _ = rendered(custom.c4_step_for(R), _config([R], {R: d}), task_dir=task_dir)
+    assert cfg["linkage_pattern"] == "yearly_areal"
+    assert cfg["exposure"]["year_col"] == "year"
+    assert cfg["time"]["years"] == [2016, 2017]
+    values = pd.read_parquet(cfg["exposure"]["file"]).sort_values("year")
+    assert values[["year", "ndvi"]].values.tolist() == [[2016, 23.0], [2017, 123.0]]
+
+
+def test_raster_diagnosis_reports_nodata_share(tmp_path):
+    import numpy as np, pandas as pd
+    d = _raster_def(tmp_path)
+    task_dir = tmp_path / "task-diag"
+    (task_dir / "output").mkdir(parents=True)
+    pd.DataFrame({"grid_id": [1, 2, 3, 4], "ndvi": [1.0, np.nan, np.nan, np.nan]}).to_parquet(
+        task_dir / "output" / f"values_{R}.parquet", index=False)
+    msg = custom._coverage_diagnosis(task_dir, R, d)
+    assert "75% of the 4 raster cells" in msg
+    assert "has no data where this cohort lives" in msg

@@ -165,3 +165,92 @@ def test_custom_c3_shares_the_shipped_tract_cache(task_with_custom_exposome):
     assert custom._cache_key(task_dir / "input.parquet", "TRACT_FARA", config) == (
         fara_tract._cache_key(task_dir / "input.parquet", fara_tract._C3_STEP, config)
     )
+
+
+# --------------------------------------------------------------------------
+# raster (combinations 3 and 4)
+# --------------------------------------------------------------------------
+
+def _tallahassee_raster(path, *, offset=0.0):
+    """0.01° cells over the 5-patient cohort (lon -84.31…-84.25, lat 30.42…30.48).
+    value = 10 + (row + col) % 5 (+ offset), so any area-weighted mix of cells
+    lands in [10, 14] (+ offset) — a join onto the wrong cells or the wrong
+    year cannot."""
+    import numpy as np
+    from tests.test_raster_values import write_tif
+    rows = cols = 60
+    arr = np.array([[10 + (r + c) % 5 + offset for c in range(cols)] for r in range(rows)])
+    return write_tif(path, arr, west=-84.6, north=30.7, res=0.01)
+
+
+@pytest.fixture
+def raster_task(tmp_path, monkeypatch):
+    pytest.importorskip("rasterio")
+    monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("TASKS_DIR", str(tmp_path / "data" / "tasks"))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "data" / "test.db"))
+    import importlib
+    import app.config as _config
+    import app.custom_exposomes as _lib
+    import app.task_manager as _tm
+    importlib.reload(_config); importlib.reload(_lib); importlib.reload(_tm)
+
+    def _make(rasters):
+        manifest = _lib.create_raster(1, rasters=rasters, name="E2E raster",
+                                      description="", value_col="ndvi", value_unit="index")
+        from app.task_manager import create_task, save_config
+        meta = create_task(user_id=1, task_name="e2e-raster")
+        task_dir = _config.settings.TASKS_DIR / f"task-{meta['id']}"
+        task_dir.mkdir(parents=True, exist_ok=True)
+        (task_dir / "output").mkdir(exist_ok=True)
+        shutil.copy(Path(__file__).parent / "fixtures" / "patients_5.csv", task_dir / "input.csv")
+        save_config(meta["id"], {
+            "experiment": "auto",
+            "variables": [manifest["variable_key"]],
+            "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
+            _lib.TASK_CUSTOM_KEY: {manifest["variable_key"]: manifest},
+        })
+        return meta["id"], task_dir, manifest
+    return _make
+
+
+def _run_to_completion(task_id, task_dir):
+    from app.task_manager import start_task, _read_status
+    start_task(task_id)
+    deadline = time.time() + 1800
+    status = {}
+    while time.time() < deadline:
+        status = _read_status(task_dir)
+        if status.get("status") in {"finished", "error", "cancelled"}:
+            break
+        time.sleep(2)
+    assert status.get("status") == "finished", (
+        f"task ended as {status.get('status')!r}: {status.get('message')!r}"
+    )
+    return pd.read_csv(task_dir / "output" / "result_custom.csv")
+
+
+@pytest.mark.integration
+def test_e2e_custom_raster_static(raster_task, tmp_path):
+    tif = _tallahassee_raster(tmp_path / "ndvi.tif")
+    task_id, task_dir, _m = raster_task([("ndvi.tif", tif.read_bytes(), None)])
+    partial = _run_to_completion(task_id, task_dir)
+    cohort = pd.read_csv(task_dir / "input.csv")
+    assert len(partial) == len(cohort)
+    assert partial["ndvi"].notna().mean() >= 0.9
+    assert 10.0 <= partial["ndvi"].min() and partial["ndvi"].max() <= 14.0, partial["ndvi"].tolist()
+    steps = json.loads((task_dir / "status.json").read_text()).get("steps") or []
+    assert any(s.startswith("c3_customgrid_") for s in steps), steps
+
+
+@pytest.mark.integration
+def test_e2e_custom_raster_yearly_picks_the_episode_year(raster_task, tmp_path):
+    """2016 and 2017 differ by +100; every cohort episode lies in 2017, so an
+    episode-weighted value must sit at the 2017 level, not the two-year mean."""
+    a = _tallahassee_raster(tmp_path / "2016.tif")
+    b = _tallahassee_raster(tmp_path / "2017.tif", offset=100)
+    task_id, task_dir, _m = raster_task([("2016.tif", a.read_bytes(), 2016),
+                                         ("2017.tif", b.read_bytes(), 2017)])
+    partial = _run_to_completion(task_id, task_dir)
+    assert partial["ndvi"].notna().mean() >= 0.9
+    assert 110.0 <= partial["ndvi"].min() and partial["ndvi"].max() <= 114.0, partial["ndvi"].tolist()

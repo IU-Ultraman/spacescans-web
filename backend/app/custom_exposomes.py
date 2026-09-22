@@ -4,17 +4,20 @@ A user uploads a CSV of their own values keyed by a Census geography, names the
 columns that hold values, and the dataset becomes a selectable exposure in the
 task wizard next to the shipped ones.
 
-v1 attaches values to a boundary layer the deployment already provisions, so no
-geometry is uploaded and the pipeline needs no new code: ``static_areal`` and
-``yearly_areal`` read the value table with ``read_table`` whenever the config
-sets no ``plugin:``, which is exactly how Walkability and Community
-Organization Density already run.
+Two geometries, one C4 path. A POLYGON dataset attaches a CSV to a boundary
+layer the deployment already provisions; a RASTER dataset is one GeoTIFF (or
+one per year) that becomes its own C3 template grid. Either way the C4 step is
+``static_areal`` / ``yearly_areal`` reading a plain table through ``read_table``
+with no plugin — for a raster, the runner first materialises that table from
+the C3 weights' grid ids and the pixels under them. The pipeline needs no new
+code for either.
 
 Storage mirrors how tasks are stored — on disk, not in the one-table DB:
 
     {DATA_DIR}/custom_exposomes/user-<uid>/<dataset_id>/
-        manifest.json    catalog entry + provenance
-        values.csv       the upload, header-normalised, otherwise untouched
+        manifest.json          catalog entry + provenance
+        values.csv             polygon: the upload, header-normalised
+        rasters/<year>.tif     raster: one file per year, or static.tif
 
 See docs/superpowers/specs/2026-09-21-custom-exposome-design.md.
 """
@@ -470,6 +473,7 @@ def create(
         "display_unit": _summarise_units(value_cols, value_units or {}),
         "value_cols": list(value_cols),
         # --- private: the runner and the library need these ---
+        "geometry": "polygon",
         "dataset_id": dataset_id,
         "variable_key": variable_key(dataset_id),
         "owner_uid": str(uid),
@@ -485,6 +489,158 @@ def create(
         "distinct_keys": facts["distinct_keys"],
         "sha256": hashlib.sha256(content).hexdigest(),
         "uploaded_filename": uploaded_filename,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    (ddir / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    return manifest
+
+
+MAX_RASTER_YEARS = 30
+
+
+def preview_raster(content: bytes) -> dict[str, Any]:
+    """Describe an uploaded GeoTIFF for the dialog; raises on an unusable one."""
+    from app import raster_values
+    try:
+        return raster_values.inspect(content)
+    except raster_values.RasterError as exc:
+        raise CustomExposomeError(str(exc)) from exc
+
+
+def create_raster(
+    uid: int | str,
+    *,
+    rasters: list[tuple[str, bytes, int | None]],
+    name: str,
+    description: str,
+    value_col: str,
+    band: int = 1,
+    value_label: str = "",
+    value_unit: str = "",
+) -> dict[str, Any]:
+    """Validate one GeoTIFF (static) or one per year (yearly), persist, return
+    the manifest.
+
+    ``rasters`` is ``[(filename, bytes, year)]``. A single file with year None
+    is a static dataset; otherwise every file needs a distinct year. All files
+    must share one grid — crs, transform, shape — because the C3 weights are
+    computed once from the first and reused for every year.
+    """
+    from app import raster_values
+
+    name = name.strip()
+    if not name:
+        raise CustomExposomeError("give the dataset a name")
+    if len(name) > _MAX_LABEL:
+        raise CustomExposomeError(f"name is longer than {_MAX_LABEL} characters")
+    if not rasters:
+        raise CustomExposomeError("upload at least one GeoTIFF")
+    if len(rasters) > MAX_RASTER_YEARS:
+        raise CustomExposomeError(f"{len(rasters)} files exceeds the limit of {MAX_RASTER_YEARS}")
+    value_col = value_col.strip()
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", value_col or ""):
+        raise CustomExposomeError(
+            "the value column name must start with a letter and use only letters, "
+            "digits and underscores (it becomes a column in result.csv)"
+        )
+
+    years = [y for _f, _b, y in rasters]
+    static = len(rasters) == 1 and years[0] is None
+    if not static:
+        if any(y is None for y in years):
+            raise CustomExposomeError(
+                "assign a year to every file, or upload a single file with no year "
+                "for a time-invariant dataset"
+            )
+        if len(set(years)) != len(years):
+            raise CustomExposomeError("two files carry the same year")
+        bad = [y for y in years if not 1900 <= int(y) <= 2100]
+        if bad:
+            raise CustomExposomeError(f"unusable year(s): {bad}")
+
+    metas = []
+    for filename, content, _year in rasters:
+        try:
+            meta = raster_values.inspect(content)
+        except raster_values.RasterError as exc:
+            raise CustomExposomeError(f"{filename}: {exc}") from exc
+        if not 1 <= band <= meta["band_count"]:
+            raise CustomExposomeError(
+                f"{filename}: band {band} does not exist (the file has {meta['band_count']})"
+            )
+        metas.append(meta)
+    first = metas[0]
+    for (filename, _c, _y), meta in zip(rasters[1:], metas[1:]):
+        if not raster_values.same_grid(first, meta):
+            raise CustomExposomeError(
+                f"{filename} is on a different grid from {rasters[0][0]} "
+                f"({meta['width']}x{meta['height']}, {meta['crs']} vs "
+                f"{first['width']}x{first['height']}, {first['crs']}); every year "
+                "must share one grid"
+            )
+
+    digest = hashlib.sha256()
+    for _f, content, _y in rasters:
+        digest.update(content)
+    dataset_id = _derive_id(uid, digest.digest(), name)
+    ddir = dataset_dir(uid, dataset_id)
+    rdir = ddir / "rasters"
+    rdir.mkdir(parents=True, exist_ok=False)
+
+    stored = []
+    for (filename, content, year), meta in zip(rasters, metas):
+        target = rdir / (f"{year}.tif" if year is not None else "static.tif")
+        target.write_bytes(content)
+        stored.append({
+            "path": str(target),
+            "year": year,
+            "uploaded_filename": filename,
+            "sha256": hashlib.sha256(content).hexdigest(),
+            "bytes": len(content),
+        })
+    stored.sort(key=lambda r: (r["year"] is None, r["year"] or 0))
+
+    coverage = [min(years), max(years)] if not static else [2013, 2019]
+    label = value_label.strip()
+    unit = value_unit.strip()
+    manifest = {
+        # --- catalog-shaped ---
+        "label": name,
+        "description": (description.strip() or (
+            f"User-uploaded {first['resolution_label']} raster"
+            + ("" if static else f", {coverage[0]}–{coverage[1]}") + "."
+        ))[:_MAX_DESCRIPTION],
+        "boundary": "Point",
+        "spatial_method": "grid",
+        "coverage_years": coverage,
+        "coverage_region": "CONUS",
+        "experiment": EXPERIMENT_KEY,
+        "data_source": "Uploaded by user: " + ", ".join(r["uploaded_filename"] for r in stored)[:200],
+        "temporal": "static" if static else "yearly",
+        "variable_type": "continuous",
+        "display_unit": _clean_unit(unit) if unit else _DEFAULT_UNIT,
+        "value_cols": [value_col],
+        # --- private ---
+        "geometry": "raster",
+        "dataset_id": dataset_id,
+        "variable_key": variable_key(dataset_id),
+        "owner_uid": str(uid),
+        "join_col": "grid_id",
+        "key_col": "grid_id",
+        "year_col": None if static else "year",
+        "value_labels": {value_col: label} if label else {},
+        "value_units": {value_col: _unit_as_typed(unit)} if unit else {},
+        "values_path": None,                     # materialised per task by the runner
+        "rasters": stored,
+        "band": int(band),
+        "grid_hash": first["grid_hash"],
+        "grid": {k: first[k] for k in ("width", "height", "crs", "transform",
+                                       "resolution", "resolution_label", "nodata",
+                                       "bounds_wgs84")},
+        "row_count": first["cells"],
+        "distinct_keys": first["cells"],
+        "sha256": digest.hexdigest(),
+        "uploaded_filename": stored[0]["uploaded_filename"],
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     (ddir / "manifest.json").write_text(json.dumps(manifest, indent=2))

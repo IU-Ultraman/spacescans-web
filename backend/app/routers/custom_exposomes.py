@@ -46,9 +46,18 @@ def _require_csv(file: UploadFile) -> None:
         raise HTTPException(status_code=400, detail="Only .csv files are accepted")
 
 
+def _require_tif(file: UploadFile) -> None:
+    name = (file.filename or "").lower()
+    if not (name.endswith(".tif") or name.endswith(".tiff")):
+        raise HTTPException(status_code=400, detail="Only GeoTIFF (.tif) files are accepted")
+
+
 def _public(manifest: dict) -> dict:
-    """The manifest minus the absolute server path, which is nobody's business."""
-    return {k: v for k, v in manifest.items() if k != "values_path"}
+    """The manifest minus absolute server paths, which are nobody's business."""
+    out = {k: v for k, v in manifest.items() if k != "values_path"}
+    if "rasters" in out:
+        out["rasters"] = [{k: v for k, v in r.items() if k != "path"} for r in out["rasters"]]
+    return out
 
 
 @router.get("/boundaries")
@@ -143,6 +152,73 @@ async def create_dataset(
             value_units=units,
             year_col=(year_col or None),
             uploaded_filename=file.filename or "values.csv",
+        )
+    except custom_exposomes.CustomExposomeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return _public(manifest)
+
+
+@router.post("/preview-raster")
+async def preview_raster_upload(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user),
+):
+    """Grid, CRS, resolution and bands of one GeoTIFF; rejects one that could
+    not serve as a C3 template (no CRS, bottom-up, off the continental US)."""
+    _require_tif(file)
+    content = await _read_upload(file)
+    try:
+        meta = custom_exposomes.preview_raster(content)
+    except custom_exposomes.CustomExposomeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    meta["filename"] = file.filename
+    meta["bytes"] = len(content)
+    return meta
+
+
+@router.post("/raster")
+async def create_raster_dataset(
+    files: list[UploadFile] = File(...),
+    years: str = Form("[]", description="JSON array, one entry per file: year or null"),
+    name: str = Form(...),
+    value_col: str = Form("value"),
+    band: int = Form(1),
+    description: str = Form(""),
+    value_label: str = Form(""),
+    value_unit: str = Form(""),
+    user: dict = Depends(get_current_user),
+):
+    """One GeoTIFF (time-invariant) or one per year, on a single shared grid."""
+    try:
+        year_list = json.loads(years or "[]")
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail=f"years must be JSON: {exc}") from exc
+    if not isinstance(year_list, list) or len(year_list) != len(files):
+        raise HTTPException(
+            status_code=400,
+            detail=f"years must list one entry per file ({len(files)} files, {len(year_list)} years)",
+        )
+    rasters: list[tuple[str, bytes, int | None]] = []
+    for upload, year in zip(files, year_list):
+        _require_tif(upload)
+        content = await _read_upload(upload)
+        if year is not None:
+            try:
+                year = int(year)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail=f"unusable year {year!r}") from None
+        rasters.append((upload.filename or "upload.tif", content, year))
+
+    try:
+        manifest = custom_exposomes.create_raster(
+            user["id"],
+            rasters=rasters,
+            name=name,
+            description=description,
+            value_col=value_col,
+            band=band,
+            value_label=value_label,
+            value_unit=value_unit,
         )
     except custom_exposomes.CustomExposomeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

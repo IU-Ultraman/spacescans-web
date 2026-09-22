@@ -286,7 +286,7 @@ def test_the_private_fields_are_exactly_the_documented_ones():
     m = _create()
     extra = set(m) - set(lib.CATALOG_FIELDS)
     assert extra == {
-        "dataset_id", "variable_key", "owner_uid", "join_col", "key_col",
+        "geometry", "dataset_id", "variable_key", "owner_uid", "join_col", "key_col",
         "year_col", "value_labels", "value_units", "values_path", "row_count",
         "distinct_keys", "sha256", "uploaded_filename", "created_at",
     }
@@ -428,3 +428,137 @@ def test_provisioned_boundaries_marks_missing_data_unavailable(tmp_path, monkeyp
     assert by_boundary["BG"]["available"] is False
     assert by_boundary["County"]["available"] is False   # dir absent entirely
     assert by_boundary["ZCTA5"]["join_col"] == "ZCTA5CE10"
+
+
+# --------------------------------------------------------------------------
+# raster datasets
+# --------------------------------------------------------------------------
+
+def _tif_bytes(tmp_path, name, array, **kw) -> bytes:
+    pytest.importorskip("rasterio")
+    from tests.test_raster_values import write_tif
+    return write_tif(tmp_path / name, array, **kw).read_bytes()
+
+
+def _cells(rows=4, cols=5, offset=0):
+    import numpy as np
+    return np.array([[r * 10 + c + offset for c in range(cols)] for r in range(rows)])
+
+
+def test_create_raster_static(tmp_path):
+    m = lib.create_raster(
+        1, rasters=[("ndvi.tif", _tif_bytes(tmp_path, "s.tif", _cells()), None)],
+        name="My raster", description="", value_col="ndvi",
+        value_label="Greenness", value_unit="index",
+    )
+    assert m["geometry"] == "raster"
+    assert m["boundary"] == "Point" and m["spatial_method"] == "grid"
+    assert m["temporal"] == "static" and m["year_col"] is None
+    assert m["join_col"] == "grid_id" and m["key_col"] == "grid_id"
+    assert m["value_cols"] == ["ndvi"]
+    assert m["value_units"] == {"ndvi": "index"} and m["display_unit"] == "index"
+    assert m["values_path"] is None                    # materialised per task
+    assert len(m["rasters"]) == 1 and m["rasters"][0]["year"] is None
+    assert m["rasters"][0]["path"].endswith("rasters/static.tif")
+    assert m["grid"]["width"] == 5 and m["grid"]["height"] == 4
+    assert m["row_count"] == 20
+    assert "ontology_id" not in m
+
+
+def test_create_raster_yearly_shares_one_grid(tmp_path):
+    m = lib.create_raster(
+        1,
+        rasters=[
+            ("a.tif", _tif_bytes(tmp_path, "y16.tif", _cells()), 2016),
+            ("b.tif", _tif_bytes(tmp_path, "y17.tif", _cells(offset=100)), 2017),
+        ],
+        name="Yearly raster", description="", value_col="ndvi",
+    )
+    assert m["temporal"] == "yearly" and m["year_col"] == "year"
+    assert m["coverage_years"] == [2016, 2017]
+    assert [r["year"] for r in m["rasters"]] == [2016, 2017]
+    assert m["rasters"][0]["path"].endswith("rasters/2016.tif")
+
+
+def test_create_raster_rejects_a_grid_mismatch_between_years(tmp_path):
+    with pytest.raises(lib.CustomExposomeError, match="different grid"):
+        lib.create_raster(
+            1,
+            rasters=[
+                ("a.tif", _tif_bytes(tmp_path, "a.tif", _cells()), 2016),
+                ("b.tif", _tif_bytes(tmp_path, "b.tif", _cells(), res=0.02), 2017),
+            ],
+            name="x", description="", value_col="v",
+        )
+
+
+def test_create_raster_rejects_duplicate_years(tmp_path):
+    with pytest.raises(lib.CustomExposomeError, match="same year"):
+        lib.create_raster(
+            1,
+            rasters=[
+                ("a.tif", _tif_bytes(tmp_path, "a.tif", _cells()), 2016),
+                ("b.tif", _tif_bytes(tmp_path, "b.tif", _cells()), 2016),
+            ],
+            name="x", description="", value_col="v",
+        )
+
+
+def test_create_raster_requires_a_year_on_every_file_when_several(tmp_path):
+    with pytest.raises(lib.CustomExposomeError, match="assign a year to every file"):
+        lib.create_raster(
+            1,
+            rasters=[
+                ("a.tif", _tif_bytes(tmp_path, "a.tif", _cells()), 2016),
+                ("b.tif", _tif_bytes(tmp_path, "b.tif", _cells()), None),
+            ],
+            name="x", description="", value_col="v",
+        )
+
+
+def test_create_raster_rejects_a_bad_column_name(tmp_path):
+    with pytest.raises(lib.CustomExposomeError, match="value column name"):
+        lib.create_raster(
+            1, rasters=[("a.tif", _tif_bytes(tmp_path, "a.tif", _cells()), None)],
+            name="x", description="", value_col="my value!",
+        )
+
+
+def test_create_raster_rejects_a_missing_band(tmp_path):
+    with pytest.raises(lib.CustomExposomeError, match="band 2 does not exist"):
+        lib.create_raster(
+            1, rasters=[("a.tif", _tif_bytes(tmp_path, "a.tif", _cells()), None)],
+            name="x", description="", value_col="v", band=2,
+        )
+
+
+def test_create_raster_surfaces_the_inspection_error_with_the_filename(tmp_path):
+    with pytest.raises(lib.CustomExposomeError, match=r"south\.tif: .*bottom-up"):
+        lib.create_raster(
+            1, rasters=[("south.tif", _tif_bytes(tmp_path, "s.tif", _cells(), bottom_up=True), None)],
+            name="x", description="", value_col="v",
+        )
+
+
+def test_raster_catalog_subset_validates_too(tmp_path):
+    import jsonschema
+    from pathlib import Path
+    import app.variable_registry as vr
+    schema = json.loads(Path(vr._SCHEMA_PATH).read_text())
+    m = lib.create_raster(
+        1, rasters=[("a.tif", _tif_bytes(tmp_path, "a.tif", _cells()), None)],
+        name="x", description="", value_col="v",
+    )
+    jsonschema.validate(
+        {"schema_version": 1, "variables": {m["variable_key"]: lib.catalog_entry(m)}}, schema
+    )
+
+
+def test_resolve_selection_covers_raster_datasets_too(tmp_path):
+    m = lib.create_raster(
+        1, rasters=[("a.tif", _tif_bytes(tmp_path, "a.tif", _cells()), None)],
+        name="x", description="", value_col="v",
+    )
+    assert list(lib.resolve_selection(1, [m["variable_key"]])) == [m["variable_key"]]
+    with pytest.raises(KeyError):
+        lib.resolve_selection(2, [m["variable_key"]])
