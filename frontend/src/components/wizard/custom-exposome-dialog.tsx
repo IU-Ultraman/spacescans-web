@@ -827,7 +827,7 @@ export function CustomExposomeDialog({
           </Button>
           <Button onClick={() => void save()} disabled={!canSave}>
             {busy === "save" && <Loader2 className="size-4 animate-spin" />}
-            Save to my exposomes
+            Save to custom exposomes
           </Button>
         </DialogFooter>
       </DialogContent>

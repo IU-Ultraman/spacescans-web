@@ -19,7 +19,7 @@ interface CustomExposomesBlockProps {
 }
 
 /**
- * "My Exposomes" — the user's uploaded datasets, listed below the ontology
+ * "Custom Exposomes" — the user's uploaded datasets, listed below the ontology
  * tree rather than inside it. They have no ontology node to hang from, and
  * injecting synthetic nodes into the tree would entangle this with the
  * auto-expand pass; a separate block keeps the tree untouched.
@@ -41,7 +41,7 @@ export function CustomExposomesBlock({
       setDatasets(res.variables);
       setError(null);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not load your exposomes");
+      setError(e instanceof ApiError ? e.message : "Could not load custom exposomes");
       setDatasets({});
     }
   }, []);
@@ -78,7 +78,7 @@ export function CustomExposomesBlock({
     <div className="mt-3 rounded-lg border">
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
         <div className="min-w-0">
-          <div className="text-sm font-medium">My Exposomes</div>
+          <div className="text-sm font-medium">Custom Exposomes</div>
           <div className="truncate text-xs text-muted-foreground">
             Your own values — by polygon (CSV) or as a raster (GeoTIFF)
           </div>
