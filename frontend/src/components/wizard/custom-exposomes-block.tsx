@@ -143,7 +143,9 @@ export function CustomExposomesBlock({
                   </div>
                   <div className="truncate text-xs text-muted-foreground">
                     {dataset.geometry === "raster"
-                      ? `Raster · ${dataset.grid?.resolution_label ?? ""}`
+                      ? `Raster · ${dataset.grid?.resolution_label ?? ""}${
+                          dataset.value_cols.length > 1 ? ` · ${dataset.value_cols.length} bands` : ""
+                        }`
                       : `${dataset.boundary} · ${dataset.value_cols.length} ${
                           dataset.value_cols.length === 1 ? "column" : "columns"
                         }`}{" "}

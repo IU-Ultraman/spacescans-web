@@ -562,3 +562,145 @@ def test_resolve_selection_covers_raster_datasets_too(tmp_path):
     assert list(lib.resolve_selection(1, [m["variable_key"]])) == [m["variable_key"]]
     with pytest.raises(KeyError):
         lib.resolve_selection(2, [m["variable_key"]])
+
+
+# --------------------------------------------------------------------------
+# multi-band rasters: one result column per band
+# --------------------------------------------------------------------------
+
+def _stack(n=3):
+    import numpy as np
+    return np.stack([_cells(offset=100 * i) for i in range(n)])
+
+
+def test_create_raster_with_several_bands_names_one_column_each(tmp_path):
+    m = lib.create_raster(
+        1, rasters=[("pollutants.tif", _tif_bytes(tmp_path, "p.tif", _stack(), nodata=-9999), None)],
+        name="Pollutants", description="",
+        bands=[3, 1], value_cols=["no2", "pm25"],
+        value_labels={"no2": "Nitrogen dioxide", "pm25": "  "},
+        value_units={"no2": "ppb", "pm25": "µg/m³", "other": "x"},
+    )
+    assert m["value_cols"] == ["no2", "pm25"]
+    assert m["bands"] == [3, 1] and m["band"] == 3
+    assert m["band_nodata"] == [-9999.0, -9999.0]
+    assert m["value_labels"] == {"no2": "Nitrogen dioxide"}          # blank label dropped
+    assert m["value_units"] == {"no2": "ppb", "pm25": "µg/m³"}   # unknown key dropped
+    assert m["display_unit"] == "ppb / ug/m3"
+
+
+def test_the_single_band_arguments_still_work(tmp_path):
+    m = lib.create_raster(
+        1, rasters=[("a.tif", _tif_bytes(tmp_path, "a.tif", _stack(2)), None)],
+        name="x", description="", value_col=" ndvi ", band=2,
+        value_label="Greenness", value_unit="index",
+    )
+    assert m["value_cols"] == ["ndvi"] and m["bands"] == [2] and m["band"] == 2
+    assert m["value_labels"] == {"ndvi": "Greenness"} and m["value_units"] == {"ndvi": "index"}
+
+
+def test_multi_band_catalog_subset_validates(tmp_path):
+    import jsonschema
+    from pathlib import Path
+    import app.variable_registry as vr
+    schema = json.loads(Path(vr._SCHEMA_PATH).read_text())
+    m = lib.create_raster(
+        1, rasters=[("a.tif", _tif_bytes(tmp_path, "a.tif", _stack()), None)],
+        name="x", description="", bands=[1, 2, 3], value_cols=["a", "b", "c"],
+        value_units={"a": "µg/m³", "b": "ppb", "c": "ppb"},
+    )
+    jsonschema.validate(
+        {"schema_version": 1, "variables": {m["variable_key"]: lib.catalog_entry(m)}}, schema
+    )
+
+
+@pytest.mark.parametrize("bands,cols,match", [
+    ([], [], "select at least one band"),
+    ([1, 1], ["a", "b"], "a band is selected twice"),
+    ([0], ["a"], "band numbers start at 1"),
+    ([1, 2], ["a"], "2 band\\(s\\) but 1 column name"),
+    ([1, 2], ["pm25", "PM25"], "used twice: PM25, pm25"),
+    ([1], ["year"], "already used by result.csv"),
+    ([1], ["episode_id"], "already used by result.csv"),
+    ([1], ["2pm"], "value column name"),
+    ([1, 4], ["a", "b"], "band 4 does not exist \\(the file has 3\\)"),
+])
+def test_create_raster_rejects_bad_band_selections(tmp_path, bands, cols, match):
+    with pytest.raises(lib.CustomExposomeError, match=match):
+        lib.create_raster(
+            1, rasters=[("a.tif", _tif_bytes(tmp_path, "a.tif", _stack()), None)],
+            name="x", description="", bands=bands, value_cols=cols,
+        )
+
+
+def test_every_yearly_file_must_have_every_selected_band(tmp_path):
+    with pytest.raises(lib.CustomExposomeError, match=r"2017\.tif: band 3 does not exist"):
+        lib.create_raster(
+            1,
+            rasters=[
+                ("2016.tif", _tif_bytes(tmp_path, "a.tif", _stack(3)), 2016),
+                ("2017.tif", _tif_bytes(tmp_path, "b.tif", _stack(2)), 2017),
+            ],
+            name="x", description="", bands=[1, 3], value_cols=["a", "c"],
+        )
+
+
+def test_too_many_bands_is_refused_before_reading_files(tmp_path):
+    n = lib.MAX_VALUE_COLS + 1
+    with pytest.raises(lib.CustomExposomeError, match="exceeds the limit"):
+        lib.create_raster(
+            1, rasters=[("a.tif", b"not read", None)], name="x", description="",
+            bands=list(range(1, n + 1)), value_cols=[f"c{i}" for i in range(n)],
+        )
+
+
+# --------------------------------------------------------------------------
+# the raster endpoint's multi-band form fields
+# --------------------------------------------------------------------------
+
+@pytest.fixture
+def api(tmp_path):
+    # A real signed token rather than a dependency override: other test files
+    # reload app.auth, and an override keyed by a stale function never fires.
+    from fastapi.testclient import TestClient
+    from app.auth import create_access_token
+    from app.main import app
+    token = create_access_token({"sub": "1", "email": "t@example.com"})
+    return TestClient(app, headers={"Authorization": f"Bearer {token}"})
+
+
+def _post_raster(api, tmp_path, **fields):
+    content = _tif_bytes(tmp_path, "p.tif", _stack())
+    data = {"name": "Pollutants", "years": "[null]", **fields}
+    return api.post("/api/custom-exposomes/raster", data=data,
+                    files=[("files", ("p.tif", content, "image/tiff"))])
+
+
+def test_raster_endpoint_accepts_several_bands(api, tmp_path):
+    r = _post_raster(api, tmp_path, bands="[2, 3]", value_cols='["no2", "o3"]',
+                     value_labels='{"no2": "NO2"}', value_units='{"o3": "ppb"}')
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["value_cols"] == ["no2", "o3"] and body["bands"] == [2, 3]
+    assert body["value_labels"] == {"no2": "NO2"} and body["value_units"] == {"o3": "ppb"}
+    assert all("path" not in f for f in body["rasters"])
+
+
+def test_raster_endpoint_keeps_the_single_band_fields(api, tmp_path):
+    r = _post_raster(api, tmp_path, value_col="pm25", band="2", value_unit="ug/m3")
+    assert r.status_code == 200, r.text
+    assert r.json()["value_cols"] == ["pm25"] and r.json()["bands"] == [2]
+
+
+@pytest.mark.parametrize("fields,match", [
+    ({"bands": "[1,", "value_cols": '["a"]'}, "must be JSON"),
+    ({"bands": '["1"]', "value_cols": '["a"]'}, "bands must be a list of band numbers"),
+    ({"bands": "[true]", "value_cols": '["a"]'}, "bands must be a list of band numbers"),
+    ({"bands": "[1]", "value_cols": '"a"'}, "value_cols must be a list of strings"),
+    ({"bands": "[1]", "value_cols": '["a"]', "value_units": '{"a": 3}'}, "value_units must be"),
+    ({"bands": "[1, 2]", "value_cols": '["a", "a"]'}, "used twice"),
+])
+def test_raster_endpoint_rejects_malformed_band_fields(api, tmp_path, fields, match):
+    r = _post_raster(api, tmp_path, **fields)
+    assert r.status_code == 400
+    assert match in r.json()["detail"], r.json()["detail"]

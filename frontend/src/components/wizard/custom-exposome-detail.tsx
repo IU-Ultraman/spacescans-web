@@ -10,6 +10,8 @@ import { BOUNDARY_LABEL, type BoundaryKey } from "@/lib/variable-grouping";
  */
 export function CustomExposomeDetail({ dataset }: { dataset: CustomExposome }) {
   const isRaster = dataset.geometry === "raster";
+  // Datasets saved before multi-band uploads carry only `band`.
+  const rasterBands = dataset.bands ?? [dataset.band ?? 1];
   const files = dataset.rasters?.map((r) => r.uploaded_filename).join(", ");
   const rows: [string, string][] = [
     ["Data Source", `Uploaded — ${isRaster ? files : dataset.uploaded_filename}`],
@@ -38,7 +40,10 @@ export function CustomExposomeDetail({ dataset }: { dataset: CustomExposome }) {
         : "Any study period",
     ],
     isRaster
-      ? ["Band", String(dataset.band ?? 1)]
+      ? [
+          rasterBands.length > 1 ? "Bands" : "Band",
+          rasterBands.join(", "),
+        ]
       : [
           "Rows",
           `${dataset.row_count.toLocaleString()} (${dataset.distinct_keys.toLocaleString()} distinct ${dataset.boundary} codes)`,
@@ -86,6 +91,11 @@ export function CustomExposomeDetail({ dataset }: { dataset: CustomExposome }) {
                 {dataset.value_labels?.[col] ?? col}
               </span>
               <code className="text-xs text-muted-foreground">{col}</code>
+              {isRaster && rasterBands.length > 1 && (
+                <span className="text-xs text-muted-foreground">
+                  band {rasterBands[dataset.value_cols.indexOf(col)]}
+                </span>
+              )}
               {dataset.value_units?.[col] && (
                 <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                   {dataset.value_units[col]}

@@ -507,16 +507,65 @@ def preview_raster(content: bytes) -> dict[str, Any]:
         raise CustomExposomeError(str(exc)) from exc
 
 
+_COLUMN_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_]*")
+# Columns the runner already uses in the value table (grid_id, year) or in
+# result.csv (pid, episode_id; PATID and geoid before the merge renames them).
+_RESERVED_RASTER_COLS = {"grid_id", "year", "pid", "episode_id", "patid", "geoid"}
+
+
+def _check_band_columns(bands: list[int], value_cols: list[str] | None) -> tuple[list[int], list[str]]:
+    """Bands distinct and positive, one valid, unused column name per band."""
+    if not bands:
+        raise CustomExposomeError("select at least one band")
+    if len(bands) > MAX_VALUE_COLS:
+        raise CustomExposomeError(f"{len(bands)} bands exceeds the limit of {MAX_VALUE_COLS}")
+    try:
+        bands = [int(b) for b in bands]
+    except (TypeError, ValueError):
+        raise CustomExposomeError(f"bands must be whole numbers, got {bands!r}") from None
+    if any(b < 1 for b in bands):
+        raise CustomExposomeError("band numbers start at 1")
+    if len(set(bands)) != len(bands):
+        raise CustomExposomeError("a band is selected twice")
+    cols = [(c or "").strip() for c in (value_cols or [])]
+    if len(cols) != len(bands):
+        raise CustomExposomeError(
+            f"{len(bands)} band(s) but {len(cols)} column name(s); name one column per band"
+        )
+    for col in cols:
+        if not _COLUMN_NAME.fullmatch(col):
+            raise CustomExposomeError(
+                f"the value column name {col!r} must start with a letter and use only letters, "
+                "digits and underscores (it becomes a column in result.csv)"
+            )
+        if col.lower() in _RESERVED_RASTER_COLS:
+            raise CustomExposomeError(
+                f"column name {col!r} is already used by result.csv; choose another"
+            )
+    lowered = [c.lower() for c in cols]
+    dupes = sorted({c for c in cols if lowered.count(c.lower()) > 1})
+    if dupes:
+        raise CustomExposomeError(
+            f"column name(s) used twice: {', '.join(dupes)} (names are compared "
+            "ignoring case, since spreadsheets and stats packages do)"
+        )
+    return bands, cols
+
+
 def create_raster(
     uid: int | str,
     *,
     rasters: list[tuple[str, bytes, int | None]],
     name: str,
     description: str,
-    value_col: str,
+    value_col: str = "value",
     band: int = 1,
     value_label: str = "",
     value_unit: str = "",
+    bands: list[int] | None = None,
+    value_cols: list[str] | None = None,
+    value_labels: dict[str, str] | None = None,
+    value_units: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Validate one GeoTIFF (static) or one per year (yearly), persist, return
     the manifest.
@@ -525,6 +574,12 @@ def create_raster(
     is a static dataset; otherwise every file needs a distinct year. All files
     must share one grid — crs, transform, shape — because the C3 weights are
     computed once from the first and reused for every year.
+
+    One or more bands become one result column each: ``bands`` and the
+    parallel ``value_cols`` name them, ``value_labels``/``value_units`` are
+    keyed by column. Without ``bands`` the single-band arguments ``band``,
+    ``value_col``, ``value_label`` and ``value_unit`` describe the one column.
+    The C3 weights are per grid, not per band, so every band shares one C3 step.
     """
     from app import raster_values
 
@@ -537,12 +592,16 @@ def create_raster(
         raise CustomExposomeError("upload at least one GeoTIFF")
     if len(rasters) > MAX_RASTER_YEARS:
         raise CustomExposomeError(f"{len(rasters)} files exceeds the limit of {MAX_RASTER_YEARS}")
-    value_col = value_col.strip()
-    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", value_col or ""):
-        raise CustomExposomeError(
-            "the value column name must start with a letter and use only letters, "
-            "digits and underscores (it becomes a column in result.csv)"
-        )
+    if bands is None:
+        bands = [band]
+        value_cols = [value_col]
+        value_labels = {value_col.strip(): value_label} if value_label else {}
+        value_units = {value_col.strip(): value_unit} if value_unit else {}
+    bands, value_cols = _check_band_columns(bands, value_cols)
+    value_labels = {c: v.strip() for c, v in (value_labels or {}).items()
+                    if c in value_cols and v and v.strip()}
+    value_units = {c: _unit_as_typed(v) for c, v in (value_units or {}).items()
+                   if c in value_cols and v and v.strip()}
 
     years = [y for _f, _b, y in rasters]
     static = len(rasters) == 1 and years[0] is None
@@ -564,9 +623,11 @@ def create_raster(
             meta = raster_values.inspect(content)
         except raster_values.RasterError as exc:
             raise CustomExposomeError(f"{filename}: {exc}") from exc
-        if not 1 <= band <= meta["band_count"]:
+        missing = [b for b in bands if not 1 <= b <= meta["band_count"]]
+        if missing:
             raise CustomExposomeError(
-                f"{filename}: band {band} does not exist (the file has {meta['band_count']})"
+                f"{filename}: band {', '.join(map(str, missing))} does not exist "
+                f"(the file has {meta['band_count']})"
             )
         metas.append(meta)
     first = metas[0]
@@ -601,8 +662,7 @@ def create_raster(
     stored.sort(key=lambda r: (r["year"] is None, r["year"] or 0))
 
     coverage = [min(years), max(years)] if not static else [2013, 2019]
-    label = value_label.strip()
-    unit = value_unit.strip()
+    listed = {b["index"]: b for b in first.get("bands", [])}
     manifest = {
         # --- catalog-shaped ---
         "label": name,
@@ -618,8 +678,8 @@ def create_raster(
         "data_source": "Uploaded by user: " + ", ".join(r["uploaded_filename"] for r in stored)[:200],
         "temporal": "static" if static else "yearly",
         "variable_type": "continuous",
-        "display_unit": _clean_unit(unit) if unit else _DEFAULT_UNIT,
-        "value_cols": [value_col],
+        "display_unit": _summarise_units(value_cols, value_units),
+        "value_cols": list(value_cols),
         # --- private ---
         "geometry": "raster",
         "dataset_id": dataset_id,
@@ -628,11 +688,13 @@ def create_raster(
         "join_col": "grid_id",
         "key_col": "grid_id",
         "year_col": None if static else "year",
-        "value_labels": {value_col: label} if label else {},
-        "value_units": {value_col: _unit_as_typed(unit)} if unit else {},
+        "value_labels": value_labels,
+        "value_units": value_units,
         "values_path": None,                     # materialised per task by the runner
         "rasters": stored,
-        "band": int(band),
+        "bands": bands,                          # parallel to value_cols
+        "band": bands[0],                        # manifests before multi-band read this
+        "band_nodata": [listed.get(b, {}).get("nodata", first["nodata"]) for b in bands],
         "grid_hash": first["grid_hash"],
         "grid": {k: first[k] for k in ("width", "height", "crs", "transform",
                                        "resolution", "resolution_label", "nodata",

@@ -26,7 +26,9 @@ import numpy as np
 # report 0 % and a user asking why.
 CONUS_BBOX = (-125.5, 24.0, -66.5, 49.8)          # west, south, east, north
 
-MAX_BANDS_LISTED = 16
+# Every band a user can pick must be listed, so this matches the per-dataset
+# column limit (custom_exposomes.MAX_VALUE_COLS): one result column per band.
+MAX_BANDS_LISTED = 40
 
 
 class RasterError(ValueError):
@@ -90,7 +92,9 @@ def inspect(source: bytes | str | Path) -> dict[str, Any]:
         bands = []
         for i in range(1, min(src.count, MAX_BANDS_LISTED) + 1):
             desc = src.descriptions[i - 1] if src.descriptions else None
-            bands.append({"index": i, "description": desc or "", "dtype": str(src.dtypes[i - 1])})
+            nd = src.nodatavals[i - 1] if src.nodatavals else None
+            bands.append({"index": i, "description": desc or "", "dtype": str(src.dtypes[i - 1]),
+                          "nodata": None if nd is None else float(nd)})
 
         res_x, res_y = src.res
         meta = {
@@ -151,36 +155,65 @@ def extract_values(
 ) -> np.ndarray:
     """Pixel values at each grid_id (row-major, 0-based). NaN for nodata or an
     id outside the raster."""
+    return extract_bands(raster_path, grid_ids, bands=[band], nodata=nodata)[:, 0]
+
+
+def extract_bands(
+    raster_path: str | Path,
+    grid_ids: np.ndarray,
+    *,
+    bands: list[int],
+    nodata: float | None | list[float | None] = None,
+) -> np.ndarray:
+    """Pixel values of several bands at each grid_id: shape (len(grid_ids),
+    len(bands)), columns in the order of ``bands``. NaN for nodata or an id
+    outside the raster.
+
+    ``nodata`` is one value for every band, or a list parallel to ``bands``;
+    None (overall or for one band) falls back to that band's own nodata in the
+    file. A GeoTIFF normally stores one value for all bands.
+    A full read decodes one band at a time, so peak memory is one band, not
+    the whole stack; a windowed read pulls every requested band per block.
+    """
     from rasterio.windows import Window
 
+    bands = [int(b) for b in bands]
+    if not bands:
+        raise RasterError("no band requested")
     ids = np.asarray(grid_ids, dtype=np.int64)
-    out = np.full(ids.shape, np.nan)
+    out = np.full((ids.shape[0], len(bands)), np.nan)
     with _open(raster_path) as src:
         width, height = src.width, src.height
-        if not 1 <= band <= src.count:
-            raise RasterError(f"band {band} does not exist; the raster has {src.count}")
-        nd = src.nodata if nodata is None else nodata
+        for b in bands:
+            if not 1 <= b <= src.count:
+                raise RasterError(f"band {b} does not exist; the raster has {src.count}")
+        given = list(nodata) if isinstance(nodata, (list, tuple)) else [nodata] * len(bands)
+        if len(given) != len(bands):
+            raise RasterError(f"{len(given)} nodata values for {len(bands)} bands")
+        nds = [src.nodatavals[b - 1] if nd is None else nd for b, nd in zip(bands, given)]
 
         inside = (ids >= 0) & (ids < width * height)
         rows = ids[inside] // width
         cols = ids[inside] % width
-        vals = np.full(rows.shape, np.nan)
+        vals = np.full((rows.shape[0], len(bands)), np.nan)
 
         if width * height <= FULL_READ_MAX_CELLS:
-            arr = src.read(band, masked=False)
-            vals = arr[rows, cols].astype("float64")
+            for j, b in enumerate(bands):
+                arr = src.read(b, masked=False)
+                vals[:, j] = arr[rows, cols].astype("float64")
         else:
-            bh, bw = src.block_shapes[band - 1]
+            bh, bw = src.block_shapes[bands[0] - 1]
             block_of = (rows // bh) * ((width + bw - 1) // bw) + (cols // bw)
             for blk in np.unique(block_of):
                 sel = block_of == blk
                 r0 = int(rows[sel][0] // bh) * bh
                 c0 = int(cols[sel][0] // bw) * bw
                 win = Window(c0, r0, min(bw, width - c0), min(bh, height - r0))
-                arr = src.read(band, window=win, masked=False)
-                vals[sel] = arr[rows[sel] - r0, cols[sel] - c0].astype("float64")
+                arr = src.read(bands, window=win, masked=False)     # (n_bands, h, w)
+                vals[sel, :] = arr[:, rows[sel] - r0, cols[sel] - c0].T.astype("float64")
 
-    if nd is not None:
-        vals = np.where(np.isclose(vals, nd), np.nan, vals)
-    out[inside] = vals
+    for j, nd in enumerate(nds):
+        if nd is not None:
+            vals[:, j] = np.where(np.isclose(vals[:, j], nd), np.nan, vals[:, j])
+    out[inside, :] = vals
     return out

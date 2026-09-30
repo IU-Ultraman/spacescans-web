@@ -192,3 +192,72 @@ def test_blockwise_read_matches_full_read(tmp_path, monkeypatch):
     assert np.allclose(full[~np.isnan(full)], blocks[~np.isnan(blocks)])
     assert np.isnan(blocks[2]) and np.isnan(blocks[5])       # nodata and out of range
     assert blocks[3] == 20 * 10 + 33
+
+
+# --------------------------------------------------------------------------
+# several bands at once
+# --------------------------------------------------------------------------
+
+def test_inspect_lists_each_bands_nodata(tmp_path):
+    p = write_tif(tmp_path / "m.tif", np.stack([_grid(), _grid()]), nodata=-9999)
+    meta = rv.inspect(p)
+    assert [b["nodata"] for b in meta["bands"]] == [-9999.0, -9999.0]
+
+
+def test_extract_bands_returns_one_column_per_band_in_the_requested_order(tmp_path):
+    p = write_tif(tmp_path / "m.tif", np.stack([_grid(), _grid() + 100, _grid() + 200]))
+    vals = rv.extract_bands(p, np.array([0, 13]), bands=[3, 1])
+    assert vals.shape == (2, 2)
+    assert vals.tolist() == [[200.0, 0.0], [223.0, 23.0]]
+
+
+def test_extract_values_is_extract_bands_with_one_band(tmp_path):
+    p = write_tif(tmp_path / "m.tif", np.stack([_grid(), _grid() + 100]))
+    ids = np.array([0, 7, 19, 25])
+    assert np.array_equal(rv.extract_values(p, ids, band=2),
+                          rv.extract_bands(p, ids, bands=[2])[:, 0], equal_nan=True)
+
+
+def test_extract_bands_applies_nodata_per_band(tmp_path):
+    """A list of nodata values applies band by band; None falls back to the
+    file's own value."""
+    a = _grid().astype(float)
+    b = _grid().astype(float) + 100
+    a[0, 0] = -9999                       # the file's nodata, in band 1
+    b[0, 1] = -1                          # a sentinel the caller names for band 2
+    p = write_tif(tmp_path / "m.tif", np.stack([a, b]), nodata=-9999)
+    vals = rv.extract_bands(p, np.array([0, 1]), bands=[1, 2], nodata=[None, -1])
+    assert np.isnan(vals[0, 0]) and vals[1, 0] == 1.0
+    assert vals[0, 1] == 100.0 and np.isnan(vals[1, 1])
+    with pytest.raises(rv.RasterError, match="2 nodata values for 1 bands"):
+        rv.extract_bands(p, np.array([0]), bands=[1], nodata=[None, None])
+
+
+def test_extract_bands_rejects_a_missing_band(tmp_path):
+    p = write_tif(tmp_path / "m.tif", np.stack([_grid(), _grid()]))
+    with pytest.raises(rv.RasterError, match="band 3 does not exist"):
+        rv.extract_bands(p, np.array([0]), bands=[1, 3])
+    with pytest.raises(rv.RasterError, match="no band requested"):
+        rv.extract_bands(p, np.array([0]), bands=[])
+
+
+@pytest.mark.parametrize("interleave", ["pixel", "band"])
+def test_blockwise_multi_band_read_matches_full_read(tmp_path, monkeypatch, interleave):
+    import rasterio
+    stack = np.stack([_grid(40, 50), _grid(40, 50) + 1000, _grid(40, 50) + 2000]).astype("float32")
+    stack[1, 7, 9] = -1
+    p = tmp_path / f"tiled_{interleave}.tif"
+    with rasterio.open(
+        p, "w", driver="GTiff", width=50, height=40, count=3, dtype="float32",
+        crs="EPSG:4326", transform=from_origin(-85.0, 31.0, 0.01, 0.01),
+        nodata=-1, tiled=True, blockxsize=16, blockysize=16, interleave=interleave,
+    ) as dst:
+        dst.write(stack)
+    ids = np.array([0, 49, 7 * 50 + 9, 20 * 50 + 33, 39 * 50 + 49, 5000])
+    full = rv.extract_bands(p, ids, bands=[2, 3, 1])
+    monkeypatch.setattr(rv, "FULL_READ_MAX_CELLS", 10)
+    blocks = rv.extract_bands(p, ids, bands=[2, 3, 1])
+    assert np.array_equal(full, blocks, equal_nan=True)
+    assert np.isnan(blocks[2, 0]) and blocks[2, 1] == 2000 + 79   # nodata only in band 2
+    assert blocks[3].tolist() == [1233.0, 2233.0, 233.0]
+    assert np.isnan(blocks[5]).all()                                # out of range

@@ -233,6 +233,9 @@ export interface CustomExposome extends VariableMetadata {
   created_at: string;
   /** raster only */
   rasters?: CustomRasterFile[];
+  /** Parallel to value_cols: the band each result column is read from. */
+  bands?: number[];
+  /** First band; the only band field on datasets saved before multi-band. */
   band?: number;
   grid?: CustomRasterGrid;
 }
@@ -240,7 +243,7 @@ export interface CustomExposome extends VariableMetadata {
 export interface CustomRasterPreview extends CustomRasterGrid {
   cells: number;
   band_count: number;
-  bands: { index: number; description: string; dtype: string }[];
+  bands: { index: number; description: string; dtype: string; nodata: number | null }[];
   grid_hash: string;
   filename: string;
   bytes: number;
@@ -250,11 +253,13 @@ export interface CreateCustomRasterInput {
   /** One file with year null = time-invariant; several, each with a year. */
   files: { file: File; year: number | null }[];
   name: string;
-  value_col: string;
-  band?: number;
+  /** One result column per band; value_cols is parallel to bands. */
+  bands: number[];
+  value_cols: string[];
   description?: string;
-  value_label?: string;
-  value_unit?: string;
+  /** Keyed by column name. */
+  value_labels?: Record<string, string>;
+  value_units?: Record<string, string>;
 }
 
 export interface CustomBoundary {
@@ -566,11 +571,11 @@ export const api = {
     for (const f of input.files) form.append("files", f.file);
     form.append("years", JSON.stringify(input.files.map((f) => f.year)));
     form.append("name", input.name);
-    form.append("value_col", input.value_col);
-    form.append("band", String(input.band ?? 1));
+    form.append("bands", JSON.stringify(input.bands));
+    form.append("value_cols", JSON.stringify(input.value_cols));
     form.append("description", input.description ?? "");
-    form.append("value_label", input.value_label ?? "");
-    form.append("value_unit", input.value_unit ?? "");
+    form.append("value_labels", JSON.stringify(input.value_labels ?? {}));
+    form.append("value_units", JSON.stringify(input.value_units ?? {}));
     return requestMultipart<CustomExposome>("/api/custom-exposomes/raster", form);
   },
 

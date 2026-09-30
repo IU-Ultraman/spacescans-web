@@ -195,9 +195,10 @@ def raster_task(tmp_path, monkeypatch):
     import app.task_manager as _tm
     importlib.reload(_config); importlib.reload(_lib); importlib.reload(_tm)
 
-    def _make(rasters):
+    def _make(rasters, **columns):
+        columns = columns or {"value_col": "ndvi", "value_unit": "index"}
         manifest = _lib.create_raster(1, rasters=rasters, name="E2E raster",
-                                      description="", value_col="ndvi", value_unit="index")
+                                      description="", **columns)
         from app.task_manager import create_task, save_config
         meta = create_task(user_id=1, task_name="e2e-raster")
         task_dir = _config.settings.TASKS_DIR / f"task-{meta['id']}"
@@ -254,3 +255,27 @@ def test_e2e_custom_raster_yearly_picks_the_episode_year(raster_task, tmp_path):
     partial = _run_to_completion(task_id, task_dir)
     assert partial["ndvi"].notna().mean() >= 0.9
     assert 110.0 <= partial["ndvi"].min() and partial["ndvi"].max() <= 114.0, partial["ndvi"].tolist()
+
+
+@pytest.mark.integration
+def test_e2e_custom_raster_multi_band_gives_one_column_per_band(raster_task, tmp_path):
+    """Two bands of one file, offset by +100, linked in one run: each lands in
+    its own column at its own level, so the bands were neither swapped nor
+    averaged together."""
+    import numpy as np
+    import rasterio
+    from tests.test_raster_values import write_tif
+    single = _tallahassee_raster(tmp_path / "one.tif")
+    with rasterio.open(single) as src:
+        base = src.read(1)
+    tif = write_tif(tmp_path / "two_band.tif", np.stack([base, base + 100]),
+                    west=-84.6, north=30.7, res=0.01)
+    task_id, task_dir, m = raster_task([("two_band.tif", tif.read_bytes(), None)],
+                                       bands=[2, 1], value_cols=["hi", "lo"])
+    assert m["bands"] == [2, 1]
+    partial = _run_to_completion(task_id, task_dir)
+    assert partial["lo"].notna().mean() >= 0.9 and partial["hi"].notna().mean() >= 0.9
+    assert 10.0 <= partial["lo"].min() and partial["lo"].max() <= 14.0, partial["lo"].tolist()
+    assert np.allclose(partial["hi"] - partial["lo"], 100.0, equal_nan=True)
+    steps = json.loads((task_dir / "status.json").read_text()).get("steps") or []
+    assert sum(s.startswith("c3_customgrid_") for s in steps) == 1, steps
