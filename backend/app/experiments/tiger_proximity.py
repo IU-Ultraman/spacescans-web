@@ -40,7 +40,10 @@ from app.experiments.bg_ndi_wi import (
 
 _log = logging.getLogger(__name__)
 
-_BOUNDARY = "BG_TIGER"
+# BG_TIGER2: distances from spacescans >= 0.2.7, whose nearest-road search covers
+# every county near each point instead of only the counties holding cohort points.
+# The tag changed from BG_TIGER so no result computed by the old search is reused.
+_BOUNDARY = "BG_TIGER2"
 _EXPERIMENT_KEY = "tiger_proximity"
 
 _C3_STEP = PipelineStep(

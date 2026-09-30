@@ -377,10 +377,10 @@ Pre-flight:
      ndi + NatWalkInd + all 10 r_* + 3 TIGER dist_* +
      5 NHD dist_*_m + 3 noise l50dba_* + 1 VNL value +
      4 TEMIS uv* columns.
-4. Repeat the same task; second run should hit the `BG_VNL` and
+4. Repeat the same task; second run should hit the `BG_VNL1` and
    `BG_TEMIS` C3 caches (status.json shows c3_vnl + c3_temis progress
    to 100% in <1s for the cached cohort + buffer; logs.jsonl carries
-   `cache hit: <sha8>__BG_VNL__b270m` and
+   `cache hit: <sha8>__BG_VNL1__b270m` and
    `cache hit: <sha8>__BG_TEMIS__b270m`).
 5. Negative test (unsupported output_grouping): edit
    `configs/c4/vnl_demo.yaml` (or `configs/c4/temis_demo.yaml`) to

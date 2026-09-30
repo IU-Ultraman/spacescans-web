@@ -9,6 +9,8 @@ buffer:
   patient_file: demo_patients_conus_fast_100000.parquet  # 100k CONUS demo
   patient_adapter: demo_conus
   buffer_m: 270
+  grid_id_offset: 1                  # the vnl reader indexes cells 1-based (R terra parity), like acag;
+                                     # without this every value came from the cell one column west
 
 engine:
   backend: duckdb

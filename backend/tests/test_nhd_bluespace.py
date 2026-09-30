@@ -165,7 +165,7 @@ def test_cache_key_differs_from_bg_ndi_wi_and_tiger_in_shape_and_boundary(
     )
     # Boundary tags differ across all three.
     assert nhd_key.split("__")[1] == "BG_NHD"
-    assert tiger_key.split("__")[1] == "BG_TIGER"
+    assert tiger_key.split("__")[1] == "BG_TIGER2"
     assert bg_key.split("__")[1] == "BG"
     # NHD and TIGER share 3-segment shape (no raster suffix);
     # bg_ndi_wi has 4-segment shape (raster suffix).
