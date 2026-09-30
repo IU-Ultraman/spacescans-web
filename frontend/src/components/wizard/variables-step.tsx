@@ -116,11 +116,15 @@ export function VariablesStep({
                 autoExpandTo={selectableIds}
                 selected={selectedNodeIds}
                 onSelectionChange={(ids) =>
-                  setSelected(
-                    ids
+                  // The tree only knows catalog variables; keep the user's custom
+                  // selections, which live outside it, or ticking any catalog
+                  // box would silently untick them.
+                  setSelected((prev) => [
+                    ...ids
                       .map((id) => nodeIdToVarKey[id])
                       .filter((k): k is string => Boolean(k)),
-                  )
+                    ...prev.filter((k) => k.startsWith("custom_")),
+                  ])
                 }
                 onNodeClick={(id) => {
                   setFocusedNodeId(id);

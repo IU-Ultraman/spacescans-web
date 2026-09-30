@@ -40,6 +40,32 @@ function pick(map: Record<string, string>, keys: string[]): Record<string, strin
   return out;
 }
 
+// Names the runner already uses in the value table or in result.csv; the
+// server refuses them too (compared ignoring case).
+const RESERVED_RASTER_COLS = new Set(["grid_id", "year", "pid", "episode_id", "patid", "geoid"]);
+// One result column per band, capped like a table's value columns.
+const MAX_RASTER_BANDS = 40;
+
+/** A first guess at a band's result column: its description made column-safe,
+ *  else "value" for a one-band file, else band_<n>. */
+function bandColumn(index: number, description: string, single: boolean): string {
+  const s = description.trim().replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40);
+  if (s) return /^[A-Za-z]/.test(s) ? s : `b_${s}`.slice(0, 40);
+  return single ? "value" : `band_${index}`;
+}
+
+/** Why a band's column name would be refused, or null. `others` are the
+ *  names of the other selected bands. */
+function bandColumnProblem(col: string, others: string[]): string | null {
+  const c = col.trim();
+  if (!COLUMN_NAME.test(c)) return "Start with a letter; use only letters, digits and underscores.";
+  if (RESERVED_RASTER_COLS.has(c.toLowerCase())) return `"${c}" is already a column in result.csv.`;
+  if (others.some((o) => o.trim().toLowerCase() === c.toLowerCase())) {
+    return "Another band has this name (names are compared ignoring case).";
+  }
+  return null;
+}
+
 // A realistic sample per boundary: the right key width (a zero-padded code from
 // Leon County, FL) and a column name the auto-detect recognises.
 const SAMPLE_KEY: Record<string, { col: string; codes: [string, string, string] }> = {
@@ -150,8 +176,8 @@ function ExampleFormat({
         <li>North-up (the default export from QGIS, ArcGIS, R terra or Python rasterio).</li>
         <li>Covers the part of the continental US your cohort lives in.</li>
         <li>
-          One numeric band is used (you can choose which); set a nodata value for
-          cells without data.
+          One band, or several: each band you choose becomes its own result
+          column. Set a nodata value for cells without data.
         </li>
         {temporal === "yearly" && (
           <li>Every year on the same grid — same size, resolution and CRS. A year in the filename is picked up automatically.</li>
@@ -198,10 +224,12 @@ export function CustomExposomeDialog({
 
   // --- raster (one GeoTIFF, or one per year) ---
   const [rasters, setRasters] = useState<RasterPick[]>([]);
-  const [band, setBand] = useState(1);
-  const [rasterCol, setRasterCol] = useState("value");
-  const [rasterLabel, setRasterLabel] = useState("");
-  const [rasterUnit, setRasterUnit] = useState("");
+  // Bands to link, kept in band order; per band its result column, display
+  // name and unit, the way a table keeps them per value column.
+  const [bands, setBands] = useState<number[]>([1]);
+  const [bandCols, setBandCols] = useState<Record<number, string>>({ 1: "value" });
+  const [bandLabels, setBandLabels] = useState<Record<number, string>>({});
+  const [bandUnits, setBandUnits] = useState<Record<number, string>>({});
 
   // --- shared ---
   const [name, setName] = useState("");
@@ -225,7 +253,7 @@ export function CustomExposomeDialog({
     setKind("table"); setTemporal("static");
     setFile(null); setPreview(null); setKeyCol(""); setYearCol(NO_YEAR);
     setValueCols([]); setColLabels({}); setColUnits({});
-    setRasters([]); setBand(1); setRasterCol("value"); setRasterLabel(""); setRasterUnit("");
+    setRasters([]); setBands([1]); setBandCols({ 1: "value" }); setBandLabels({}); setBandUnits({});
     setName(""); setDescription("");
     setError(null); setBusy(null);
   };
@@ -300,10 +328,28 @@ export function CustomExposomeDialog({
       setName(files[0].name.replace(/\.(tif|tiff)$/i, "").replace(/[_-]?(?:19|20)\d{2}/, ""));
     }
     setBusy("preview");
+    let named = false;
     for (let i = 0; i < picks.length; i++) {
       try {
         const meta = await api.previewCustomRaster(picks[i].file);
         setRasters((prev) => prev.map((p, j) => (j === i ? { ...p, meta } : p)));
+        if (!named) {
+          // First readable file: one suggested column per band, band 1 selected.
+          named = true;
+          const single = meta.band_count === 1;
+          const cols: Record<number, string> = {};
+          const used = new Set<string>();
+          for (const b of meta.bands) {
+            let c = bandColumn(b.index, b.description, single);
+            if (used.has(c.toLowerCase())) c = `${c}_${b.index}`.slice(0, 40);
+            used.add(c.toLowerCase());
+            cols[b.index] = c;
+          }
+          setBands([1]); setBandCols(cols); setBandUnits({});
+          setBandLabels(Object.fromEntries(
+            meta.bands.filter((b) => b.description).map((b) => [b.index, b.description.slice(0, 80)]),
+          ));
+        }
       } catch (e) {
         const msg = e instanceof ApiError ? e.message : "Could not read that file";
         setRasters((prev) => prev.map((p, j) => (j === i ? { ...p, error: msg } : p)));
@@ -326,6 +372,34 @@ export function CustomExposomeDialog({
         rasters.every((r) => /^\d{4}$/.test(r.year.trim())) &&
         new Set(rasters.map((r) => r.year.trim())).size === rasters.length;
 
+  // Bands every file has: a yearly dataset reads the same bands from each year.
+  const bandChoices = useMemo(() => {
+    const metas = rasters.filter((r) => r.meta).map((r) => r.meta!);
+    if (!metas.length) return [];
+    const common = Math.min(...metas.map((m) => m.band_count));
+    return metas[0].bands.filter((b) => b.index <= common);
+  }, [rasters]);
+  const bandCountDiffers = useMemo(() => {
+    const counts = new Set(rasters.filter((r) => r.meta).map((r) => r.meta!.band_count));
+    return counts.size > 1;
+  }, [rasters]);
+  const chosenBands = bands.filter((b) => bandChoices.some((c) => c.index === b));
+  const bandProblems: Record<number, string | null> = Object.fromEntries(
+    chosenBands.map((b) => [
+      b,
+      bandColumnProblem(bandCols[b] ?? "", chosenBands.filter((o) => o !== b).map((o) => bandCols[o] ?? "")),
+    ]),
+  );
+  const bandsOk =
+    chosenBands.length > 0 &&
+    chosenBands.length <= MAX_RASTER_BANDS &&
+    chosenBands.every((b) => bandProblems[b] === null);
+  const toggleBand = (index: number, checked: boolean) =>
+    setBands((prev) =>
+      checked ? [...prev.filter((b) => b !== index), index].sort((a, b) => a - b)
+              : prev.filter((b) => b !== index),
+    );
+
   // ----------------------------------------------------------------- save ---
 
   const canSave =
@@ -334,7 +408,7 @@ export function CustomExposomeDialog({
     (kind === "table"
       ? !!file && !!preview && !!boundary && !!keyCol && valueCols.length > 0 &&
         (temporal === "static" || yearCol !== NO_YEAR)
-      : rastersReady && yearsOk && COLUMN_NAME.test(rasterCol.trim()));
+      : rastersReady && yearsOk && bandsOk);
 
   const save = async () => {
     setBusy("save");
@@ -355,17 +429,20 @@ export function CustomExposomeDialog({
           year_col: temporal === "yearly" && yearCol !== NO_YEAR ? yearCol : null,
         });
       } else {
+        const cols = chosenBands.map((b) => (bandCols[b] ?? "").trim());
+        const byCol = (m: Record<number, string>) =>
+          Object.fromEntries(chosenBands.map((b, i) => [cols[i], m[b] ?? ""]));
         created = await api.createCustomRaster({
           files: rasters.map((r) => ({
             file: r.file,
             year: temporal === "yearly" ? Number(r.year.trim()) : null,
           })),
           name: name.trim(),
-          value_col: rasterCol.trim(),
-          band,
+          bands: chosenBands,
+          value_cols: cols,
           description,
-          value_label: rasterLabel,
-          value_unit: rasterUnit,
+          value_labels: pick(byCol(bandLabels), cols),
+          value_units: pick(byCol(bandUnits), cols),
         });
       }
       await onCreated(created);
@@ -718,61 +795,147 @@ export function CustomExposomeDialog({
           {kind === "raster" && rasters.length > 0 && (
             <section className="space-y-3">
               <Label>4. What do the pixels hold?</Label>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">Result column</span>
-                  <Input
-                    value={rasterCol}
-                    onChange={(e) => setRasterCol(e.target.value)}
-                    maxLength={40}
-                    placeholder="e.g. ndvi"
-                    className="h-8 text-xs"
-                  />
+              {bandChoices.length <= 1 ? (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">Result column</span>
+                    <Input
+                      value={bandCols[1] ?? ""}
+                      onChange={(e) => setBandCols((m) => ({ ...m, 1: e.target.value }))}
+                      maxLength={40}
+                      placeholder="e.g. ndvi"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">Display name (optional)</span>
+                    <Input
+                      value={bandLabels[1] ?? ""}
+                      onChange={(e) => setBandLabels((m) => ({ ...m, 1: e.target.value }))}
+                      maxLength={80}
+                      placeholder="e.g. Greenness"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">Unit (optional)</span>
+                    <Input
+                      value={bandUnits[1] ?? ""}
+                      onChange={(e) => setBandUnits((m) => ({ ...m, 1: e.target.value }))}
+                      maxLength={50}
+                      placeholder="e.g. index"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  {bandProblems[1] && (
+                    <p className="text-xs text-destructive sm:col-span-3">{bandProblems[1]}</p>
+                  )}
                 </div>
+              ) : (
                 <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">Display name (optional)</span>
-                  <Input
-                    value={rasterLabel}
-                    onChange={(e) => setRasterLabel(e.target.value)}
-                    maxLength={80}
-                    placeholder="e.g. Greenness"
-                    className="h-8 text-xs"
-                  />
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-xs text-muted-foreground">
+                      Bands to compute ({chosenBands.length} of {bandChoices.length} selected;
+                      each becomes its own result column)
+                    </span>
+                    <button
+                      type="button"
+                      className="ml-auto text-xs text-primary hover:underline"
+                      onClick={() =>
+                        setBands(bandChoices.slice(0, MAX_RASTER_BANDS).map((b) => b.index))
+                      }
+                    >
+                      Select all
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setBands([])}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto rounded-md border p-1">
+                    {bandChoices.map((b) => {
+                      const checked = chosenBands.includes(b.index);
+                      const problem = checked ? bandProblems[b.index] : null;
+                      return (
+                        <div key={b.index} className="rounded hover:bg-muted/60">
+                          <label className="flex cursor-pointer items-center gap-2 px-2 py-1">
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(next) => toggleBand(b.index, next === true)}
+                            />
+                            <span className="min-w-0 flex-1 truncate text-sm">
+                              Band {b.index}
+                              {b.description && (
+                                <span className="text-muted-foreground"> · {b.description}</span>
+                              )}
+                            </span>
+                            <span className="shrink-0 text-xs text-muted-foreground">{b.dtype}</span>
+                          </label>
+                          {checked && (
+                            <div className="space-y-1 px-2 pb-2 pl-8">
+                              <div className="grid gap-2 sm:grid-cols-3">
+                                <Input
+                                  value={bandCols[b.index] ?? ""}
+                                  onChange={(e) =>
+                                    setBandCols((m) => ({ ...m, [b.index]: e.target.value }))
+                                  }
+                                  maxLength={40}
+                                  placeholder="Result column, e.g. pm25"
+                                  aria-label={`Result column for band ${b.index}`}
+                                  className={cn("h-8 text-xs", problem && "border-destructive/60")}
+                                />
+                                <Input
+                                  value={bandLabels[b.index] ?? ""}
+                                  onChange={(e) =>
+                                    setBandLabels((m) => ({ ...m, [b.index]: e.target.value }))
+                                  }
+                                  maxLength={80}
+                                  placeholder="Display name (optional)"
+                                  aria-label={`Display name for band ${b.index}`}
+                                  className="h-8 text-xs"
+                                />
+                                <Input
+                                  value={bandUnits[b.index] ?? ""}
+                                  onChange={(e) =>
+                                    setBandUnits((m) => ({ ...m, [b.index]: e.target.value }))
+                                  }
+                                  maxLength={50}
+                                  placeholder="Unit (optional)"
+                                  aria-label={`Unit for band ${b.index}`}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                              {problem && <p className="text-xs text-destructive">{problem}</p>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {chosenBands.length === 0 && (
+                    <p className="text-xs text-destructive">Select at least one band.</p>
+                  )}
+                  {chosenBands.length > MAX_RASTER_BANDS && (
+                    <p className="text-xs text-destructive">
+                      At most {MAX_RASTER_BANDS} bands per dataset.
+                    </p>
+                  )}
+                  {firstMeta && firstMeta.band_count > firstMeta.bands.length && (
+                    <p className="text-xs text-muted-foreground">
+                      The files have {firstMeta.band_count} bands; the first{" "}
+                      {firstMeta.bands.length} are listed.
+                    </p>
+                  )}
+                  {bandCountDiffers && (
+                    <p className="text-xs text-muted-foreground">
+                      The files have different numbers of bands; only bands every
+                      file has are listed.
+                    </p>
+                  )}
                 </div>
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">Unit (optional)</span>
-                  <Input
-                    value={rasterUnit}
-                    onChange={(e) => setRasterUnit(e.target.value)}
-                    maxLength={50}
-                    placeholder="e.g. index"
-                    className="h-8 text-xs"
-                  />
-                </div>
-              </div>
-              {firstMeta && firstMeta.band_count > 1 && (
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground">
-                    Band (the files have {firstMeta.band_count})
-                  </span>
-                  <select
-                    value={band}
-                    onChange={(e) => setBand(Number(e.target.value))}
-                    className="rounded-md border bg-background px-2 py-1.5 text-sm"
-                  >
-                    {firstMeta.bands.map((b) => (
-                      <option key={b.index} value={b.index}>
-                        {b.index}{b.description ? ` — ${b.description}` : ""} ({b.dtype})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              {!COLUMN_NAME.test(rasterCol.trim()) && (
-                <p className="text-xs text-destructive">
-                  The result column must start with a letter and use only letters,
-                  digits and underscores.
-                </p>
               )}
             </section>
           )}
@@ -827,7 +990,7 @@ export function CustomExposomeDialog({
           </Button>
           <Button onClick={() => void save()} disabled={!canSave}>
             {busy === "save" && <Loader2 className="size-4 animate-spin" />}
-            Save to my exposomes
+            Save to custom exposomes
           </Button>
         </DialogFooter>
       </DialogContent>

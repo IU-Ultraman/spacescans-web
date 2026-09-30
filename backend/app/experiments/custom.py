@@ -267,12 +267,31 @@ def _first_definition_for_grid(config: dict, c3_step_name: str) -> dict:
     raise ValueError(f"no raster dataset in the selection renders {c3_step_name}")
 
 
+def raster_bands(definition: dict) -> tuple[list[str], list[int], list[float | None]]:
+    """(value_cols, bands, nodata) of a raster dataset, parallel lists.
+
+    Manifests written before multi-band uploads carry one ``band`` and a
+    dataset-level ``grid.nodata``; they read as a one-band list.
+    """
+    cols = list(definition["value_cols"])
+    bands = [int(b) for b in (definition.get("bands") or [definition.get("band", 1)])]
+    if len(bands) != len(cols):
+        raise ValueError(
+            f"{definition.get('variable_key', 'raster dataset')}: {len(bands)} band(s) "
+            f"for {len(cols)} value column(s)"
+        )
+    nodata = definition.get("band_nodata")
+    if not nodata or len(nodata) != len(bands):
+        nodata = [(definition.get("grid") or {}).get("nodata")] * len(bands)
+    return cols, bands, list(nodata)
+
+
 def _materialise_raster_values(
     task_dir: Path, var_key: str, definition: dict, c3_parquet: Path,
 ) -> Path:
     """Write the C4 value table for a raster dataset: one row per grid cell the
-    cohort's buffers touch (per year, for a yearly dataset), with the pixel
-    value under it. NaN where the pixel is nodata.
+    cohort's buffers touch (per year, for a yearly dataset), with one column
+    per selected band holding the pixel value. NaN where the pixel is nodata.
 
     Only the cells in the C3 weights are read, so the table is a few thousand
     rows however large the national raster is.
@@ -283,14 +302,13 @@ def _materialise_raster_values(
 
     weights = pd.read_parquet(c3_parquet, columns=["grid_id"])
     grid_ids = np.sort(weights["grid_id"].dropna().astype("int64").unique())
-    col = definition["value_cols"][0]
-    band = int(definition.get("band", 1))
-    nodata = (definition.get("grid") or {}).get("nodata")
+    cols, bands, nodata = raster_bands(definition)
 
     frames = []
     for raster in definition["rasters"]:
-        vals = raster_values.extract_values(raster["path"], grid_ids, band=band, nodata=nodata)
-        frame = pd.DataFrame({"grid_id": grid_ids, col: vals})
+        vals = raster_values.extract_bands(raster["path"], grid_ids, bands=bands, nodata=nodata)
+        frame = pd.DataFrame({"grid_id": grid_ids,
+                              **{col: vals[:, j] for j, col in enumerate(cols)}})
         if raster.get("year") is not None:
             frame["year"] = int(raster["year"])
         frames.append(frame)
@@ -301,8 +319,9 @@ def _materialise_raster_values(
     table.to_parquet(out, index=False)
     _append_log(task_dir, "info", f"c4_{var_key}",
                 f"materialised {len(table):,} (grid_id{', year' if 'year' in table else ''}) "
-                f"rows from {len(definition['rasters'])} raster(s); "
-                f"{int(table[col].isna().sum()):,} nodata")
+                f"rows from {len(definition['rasters'])} raster(s), band(s) "
+                f"{', '.join(map(str, bands))}; nodata per column: "
+                + ", ".join(f"{c} {int(table[c].isna().sum()):,}" for c in cols))
     return out
 
 
@@ -404,15 +423,22 @@ def _raster_diagnosis(task_dir: Path, var_key: str, definition: dict) -> str:
         table = pd.read_parquet(task_dir / "output" / f"values_{var_key}.parquet")
     except Exception as exc:  # pragma: no cover
         return f"{var_key}: could not read the materialised values ({exc!r})"
-    col = definition["value_cols"][0]
-    nodata_share = float(table[col].isna().mean()) if len(table) else 1.0
+    cols = [c for c in definition["value_cols"] if c in table.columns]
+    shares = {c: (float(table[c].isna().mean()) if len(table) else 1.0) for c in cols}
+    worst = max(shares.values(), default=1.0)
     b = (definition.get("grid") or {}).get("bounds_wgs84") or [None] * 4
     extent = (f"lon {b[0]:.1f}…{b[2]:.1f}, lat {b[1]:.1f}…{b[3]:.1f}"
               if None not in b else "unknown extent")
+    if len(cols) == 1:
+        what = f"{worst:.0%} of the"
+    else:
+        what = "nodata share by column (" + ", ".join(
+            f"{c} {v:.0%}" for c, v in shares.items()) + ") of the"
     return (
-        f"{var_key}: {nodata_share:.0%} of the {table['grid_id'].nunique():,} raster "
-        f"cells under the cohort's buffers are nodata (raster extent {extent}). "
-        + ("The raster has no data where this cohort lives." if nodata_share > 0.5
+        f"{var_key}: {what} {table['grid_id'].nunique():,} raster "
+        f"cells under the cohort's buffers {'are nodata ' if len(cols) == 1 else ''}"
+        f"(raster extent {extent}). "
+        + ("The raster has no data where this cohort lives." if worst > 0.5
            else "Episodes over nodata cells get no value.")
     )
 

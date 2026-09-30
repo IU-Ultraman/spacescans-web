@@ -487,3 +487,77 @@ def test_raster_diagnosis_reports_nodata_share(tmp_path):
     msg = custom._coverage_diagnosis(task_dir, R, d)
     assert "75% of the 4 raster cells" in msg
     assert "has no data where this cohort lives" in msg
+
+
+# --------------------------------------------------------------------------
+# multi-band rasters
+# --------------------------------------------------------------------------
+
+def _multi_band_def(tmp_path, *, years=(None,)):
+    """Three bands per file: band b holds row*10 + col + 1000*(b-1)
+    (+ 100 per year), so a value says which cell, band and year it came from."""
+    d = _raster_def(tmp_path, years=years)
+    import numpy as np
+    from tests.test_raster_values import write_tif
+    for i, r in enumerate(d["rasters"]):
+        base = np.array([[rr * 10 + c + i * 100 for c in range(5)] for rr in range(4)])
+        base = base.astype(float)
+        stack = np.stack([base, base + 1000, base + 2000])
+        stack[2, 0, 0] = -9999                           # nodata in band 3 only
+        write_tif(r["path"], stack, nodata=-9999)
+    d.update({"value_cols": ["no2", "pm25"], "bands": [3, 1], "band": 3,
+              "band_nodata": [-9999.0, -9999.0]})
+    return d
+
+
+def test_c4_multi_band_raster_writes_one_column_per_band(rendered, tmp_path):
+    import numpy as np, pandas as pd
+    d = _multi_band_def(tmp_path)
+    task_dir = tmp_path / "task-abcdef12"
+    _c3_weights(task_dir, [0, 4, 13])
+    cfg, _ = rendered(custom.c4_step_for(R), _config([R], {R: d}), task_dir=task_dir)
+    assert cfg["exposure"]["value_cols"] == ["no2", "pm25"]
+    values = pd.read_parquet(cfg["exposure"]["file"]).sort_values("grid_id")
+    assert list(values.columns) == ["grid_id", "no2", "pm25"]
+    assert np.isnan(values["no2"].iloc[0])                  # band 3 nodata at (0,0)
+    assert values["no2"].iloc[1:].tolist() == [2004.0, 2023.0]
+    assert values["pm25"].tolist() == [0.0, 4.0, 23.0]      # band 1 keeps its (0,0)
+
+
+def test_c4_yearly_multi_band_raster_stacks_every_band_per_year(rendered, tmp_path):
+    import pandas as pd
+    d = _multi_band_def(tmp_path, years=(2016, 2017))
+    task_dir = tmp_path / "task-abcdef12"
+    _c3_weights(task_dir, [13])
+    cfg, _ = rendered(custom.c4_step_for(R), _config([R], {R: d}), task_dir=task_dir)
+    values = pd.read_parquet(cfg["exposure"]["file"]).sort_values("year")
+    assert values[["year", "no2", "pm25"]].values.tolist() == [
+        [2016, 2023.0, 23.0], [2017, 2123.0, 123.0]]
+
+
+def test_a_manifest_from_before_multi_band_reads_as_one_band(tmp_path):
+    d = _raster_def(tmp_path)
+    d["band"] = 1
+    d.pop("bands", None); d.pop("band_nodata", None)
+    d["grid"]["nodata"] = -5.0
+    assert custom.raster_bands(d) == (["ndvi"], [1], [-5.0])
+
+
+def test_raster_bands_refuses_a_band_column_mismatch(tmp_path):
+    d = _multi_band_def(tmp_path)
+    d["bands"] = [1]
+    with pytest.raises(ValueError, match="1 band\\(s\\) for 2 value column"):
+        custom.raster_bands(d)
+
+
+def test_raster_diagnosis_reports_each_columns_nodata_share(tmp_path):
+    import numpy as np, pandas as pd
+    d = _multi_band_def(tmp_path)
+    task_dir = tmp_path / "task-diag"
+    (task_dir / "output").mkdir(parents=True)
+    pd.DataFrame({"grid_id": [1, 2, 3, 4], "no2": [1.0, np.nan, np.nan, np.nan],
+                  "pm25": [1.0, 2.0, 3.0, np.nan]}).to_parquet(
+        task_dir / "output" / f"values_{R}.parquet", index=False)
+    msg = custom._coverage_diagnosis(task_dir, R, d)
+    assert "no2 75%, pm25 25%" in msg and "4 raster cells" in msg
+    assert "has no data where this cohort lives" in msg

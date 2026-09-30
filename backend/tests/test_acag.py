@@ -223,10 +223,10 @@ def test_cache_key_differs_from_other_experiments_in_boundary(
     # Boundary tags differ across all six.
     assert acag_key.split("__")[1] == "BG_ACAG"
     assert temis_key.split("__")[1] == "BG_TEMIS"
-    assert vnl_key.split("__")[1] == "BG_VNL"
+    assert vnl_key.split("__")[1] == "BG_VNL1"
     assert noise_key.split("__")[1] == "BG_NOISE"
     assert nhd_key.split("__")[1] == "BG_NHD"
-    assert tiger_key.split("__")[1] == "BG_TIGER"
+    assert tiger_key.split("__")[1] == "BG_TIGER2"
     assert bg_key.split("__")[1] == "BG"
     # acag shares 3-segment shape with vnl / noise / NHD / TIGER.
     assert len(acag_key.split("__")) == 3

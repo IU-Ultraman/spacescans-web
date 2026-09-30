@@ -186,9 +186,46 @@ async def create_raster_dataset(
     description: str = Form(""),
     value_label: str = Form(""),
     value_unit: str = Form(""),
+    bands: str = Form("", description="JSON array of band numbers, one result column each"),
+    value_cols: str = Form("", description="JSON array of column names, parallel to bands"),
+    value_labels: str = Form("{}", description="JSON object column -> label"),
+    value_units: str = Form("{}", description="JSON object column -> unit"),
     user: dict = Depends(get_current_user),
 ):
-    """One GeoTIFF (time-invariant) or one per year, on a single shared grid."""
+    """One GeoTIFF (time-invariant) or one per year, on a single shared grid.
+
+    Several bands of the same file(s) become several result columns: send
+    ``bands`` and ``value_cols`` (and optionally ``value_labels`` and
+    ``value_units``) as JSON. Without ``bands`` the single-band fields
+    ``band``/``value_col``/``value_label``/``value_unit`` apply.
+    """
+    multi: dict = {}
+    if bands.strip():
+        try:
+            band_list = json.loads(bands)
+            col_list = json.loads(value_cols or "[]")
+            labels = json.loads(value_labels or "{}")
+            units = json.loads(value_units or "{}")
+        except json.JSONDecodeError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=f"bands/value_cols/value_labels/value_units must be JSON: {exc}",
+            ) from exc
+        if not isinstance(band_list, list) or not all(
+            isinstance(b, int) and not isinstance(b, bool) for b in band_list
+        ):
+            raise HTTPException(status_code=400, detail="bands must be a list of band numbers")
+        if not isinstance(col_list, list) or not all(isinstance(c, str) for c in col_list):
+            raise HTTPException(status_code=400, detail="value_cols must be a list of strings")
+        for field_name, mapping in (("value_labels", labels), ("value_units", units)):
+            if not isinstance(mapping, dict) or not all(
+                isinstance(k, str) and isinstance(v, str) for k, v in mapping.items()
+            ):
+                raise HTTPException(
+                    status_code=400, detail=f"{field_name} must be an object of strings"
+                )
+        multi = {"bands": band_list, "value_cols": col_list,
+                 "value_labels": labels, "value_units": units}
     try:
         year_list = json.loads(years or "[]")
     except json.JSONDecodeError as exc:
@@ -219,6 +256,7 @@ async def create_raster_dataset(
             band=band,
             value_label=value_label,
             value_unit=value_unit,
+            **multi,
         )
     except custom_exposomes.CustomExposomeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

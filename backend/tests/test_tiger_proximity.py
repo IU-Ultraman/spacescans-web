@@ -138,7 +138,7 @@ def test_cache_key_differs_from_bg_ndi_wi_in_shape_and_boundary(
         task_dir / "input.parquet", bg_ndi_wi._C3_STEP, cfg
     )
     # Boundary tag differs.
-    assert tiger_key.split("__")[1] == "BG_TIGER"
+    assert tiger_key.split("__")[1] == "BG_TIGER2"
     assert bg_key.split("__")[1] == "BG"
     # Overall shape differs (bg has 4 segments incl. raster; tiger has 3).
     assert len(tiger_key.split("__")) == 3

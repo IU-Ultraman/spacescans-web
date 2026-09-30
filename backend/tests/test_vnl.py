@@ -216,10 +216,10 @@ def test_cache_key_differs_from_other_experiments_in_boundary(
         task_dir / "input.parquet", bg_ndi_wi._C3_STEP, cfg
     )
     # Boundary tags differ across all five.
-    assert vnl_key.split("__")[1] == "BG_VNL"
+    assert vnl_key.split("__")[1] == "BG_VNL1"
     assert noise_key.split("__")[1] == "BG_NOISE"
     assert nhd_key.split("__")[1] == "BG_NHD"
-    assert tiger_key.split("__")[1] == "BG_TIGER"
+    assert tiger_key.split("__")[1] == "BG_TIGER2"
     assert bg_key.split("__")[1] == "BG"
     # vnl shares 3-segment shape with noise / NHD / TIGER (no raster suffix).
     assert len(vnl_key.split("__")) == 3
@@ -285,3 +285,15 @@ def run_gridded(config, engine):
     monkeypatch.setattr(inspect, "getsource", lambda mod: stale_src)
     with pytest.raises(RuntimeError, match="output_grouping"):
         vnl._sanity_check_pipeline_supports_gridded_episode()
+
+
+
+def test_vnl_c3_template_offsets_grid_ids_for_the_one_based_reader():
+    """The vnl reader reads flat index grid_id - 1 (R terra parity). Weights must
+    therefore carry 1-based ids, as acag's do; with the default offset 0 every
+    VNL value was read from the cell one column west (paper validation,
+    2026-09-29)."""
+    import yaml
+    from pathlib import Path
+    cfg = yaml.safe_load((Path(__file__).resolve().parents[2] / "configs" / "c3" / "vnl_grid_demo.yaml").read_text())
+    assert cfg["buffer"]["grid_id_offset"] == 1

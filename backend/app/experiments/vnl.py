@@ -50,7 +50,10 @@ from app.experiments.bg_ndi_wi import (
 
 _log = logging.getLogger(__name__)
 
-_BOUNDARY = "BG_VNL"
+# BG_VNL1: weights written with grid_id_offset 1 (see configs/c3/vnl_grid_demo.yaml).
+# The tag changed from BG_VNL so no weights cached before that fix (0-based ids,
+# read one cell west by the 1-based reader) can be reused.
+_BOUNDARY = "BG_VNL1"
 _EXPERIMENT_KEY = "vnl"
 
 _C3_STEP = PipelineStep(
@@ -173,9 +176,9 @@ def _hash_input_parquet(path: Path) -> str:
 
 
 def _cache_key(input_parquet: Path, step: PipelineStep, user_config: dict) -> str:
-    """Format: ``<sha8>__BG_VNL__b<buffer>m`` — no raster suffix, no year.
+    """Format: ``<sha8>__BG_VNL1__b<buffer>m`` — no raster suffix, no year.
 
-    Boundary tag BG_VNL avoids collision with bg_ndi_wi's BG cache,
+    Boundary tag BG_VNL1 avoids collision with bg_ndi_wi's BG cache,
     tiger_proximity's BG_TIGER cache, nhd_bluespace's BG_NHD cache, and
     noise's BG_NOISE cache for the same input parquet + buffer.
     """
