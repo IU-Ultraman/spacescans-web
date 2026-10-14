@@ -47,7 +47,7 @@ the `spacescans` package installed; set `SPACESCANS_PYTHON` to point at one
 (`scripts/fetch_distribution.sh --help` has the install line). Without one,
 run the same command in the backend container, which has the package and the
 data root at `/project`:
-`docker compose exec backend python -m spacescans data fetch --data-dir /project --dataset tract_boundaries`.
+`docker compose exec backend /opt/conda/bin/python -m spacescans data fetch --data-dir /project --dataset tract_boundaries`.
 
 Add only what the variables you plan to run need — the in-app **Data Setup**
 page shows the command for each variable, and takes archive uploads if you

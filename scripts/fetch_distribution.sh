@@ -48,9 +48,9 @@ command -v "$PY" >/dev/null || { echo "$PY is required but not installed (set SP
   echo "  $PY -m pip install \"spacescans-pipeline @ git+https://github.com/IU-Ultraman/spacescans.git@<ref>\""
   echo "or point SPACESCANS_PYTHON at an interpreter that has it. The running backend"
   echo "container has one, with the data root mounted at /project:"
-  echo "  docker compose exec backend python -m spacescans data fetch --data-dir /project --dataset <key>"
+  echo "  docker compose exec backend /opt/conda/bin/python -m spacescans data fetch --data-dir /project --dataset <key>"
   echo "(dataset keys: scripts/fetch_distribution.sh --list, once the package is importable,"
-  echo " or docker compose exec backend python -m spacescans data status --data-dir /project)"
+  echo " or docker compose exec backend /opt/conda/bin/python -m spacescans data status --data-dir /project)"
   exit 1
 }
 
