@@ -57,7 +57,7 @@ the SQLite DB / tasks / cache volume).
 
 | Path | Kind | Purpose |
 | --- | --- | --- |
-| `./configs` → `/configs` | bind mount (ro) | C3/C4 config templates — versioned in this repo; `SPACESCANS_CONFIG_TEMPLATES_DIR=/configs` |
+| `./configs` → `/configs` | bind mount (ro) | C3/C4 config templates — a copy of the ones packaged in `spacescans.catalog`, which is what runs render; with `SPACESCANS_CONFIG_TEMPLATES_DIR=/configs` set, the backend refuses to start unless every packaged template hash-matches its file here (the variable is optional; the paper's scripts read `configs/`) |
 | `pipeline-data/` → `/project` | bind mount (host) | exposure data (one folder per dataset); override host path with `SPACESCANS_DATA_HOST`; `SPACESCANS_DATA_DIR=/project` |
 | `backend-data` → `/app/data` | named volume | SQLite DB, `tasks/`, `c3_cache/` — survives restarts |
 
