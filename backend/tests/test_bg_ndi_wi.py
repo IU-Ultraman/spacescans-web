@@ -202,7 +202,7 @@ def test_cache_miss_writes_the_legacy_entries_and_metas(fake_cli):
         assert meta["buffer_m"] == 270 and meta["raster_res_m"] == 25
         assert meta["input_row_count"] == 2
         assert meta["file_size_bytes"] == (cache_dir / f"{sha8}__{tag}__b270m__r25m.parquet").stat().st_size
-    (cache_dir / f"{sha8}__BG__b270m__r25m.parquet").read_bytes() == \
+    assert (cache_dir / f"{sha8}__BG__b270m__r25m.parquet").read_bytes() == \
         (task_dir / "output" / "c3_bg.parquet").read_bytes()
 
 
@@ -327,12 +327,63 @@ def test_input_conversion_failure_is_reported(fake_cli):
     assert not (task_dir / "input.parquet").exists()
 
 
-def test_missing_raster_res_m_fails_an_areal_runner_at_render(fake_cli):
-    task_dir = _task(fake_cli, "task-nores001", ["ndi"], buffer={"size": 270})
-    assert bg_ndi_wi.run(task_dir) == 1
-    assert _status(task_dir)["message"] == "render failed at c3_bg"
-    assert [e["msg"] for e in _logs(task_dir) if e["source"] == "runner"] == [
-        "render_yaml(c3_bg) failed: KeyError('raster_res_m')"]
+def _recorded_slots(monkeypatch) -> list[dict]:
+    """Every status.json write of a dispatched run, as the slot fields it wrote."""
+    import app.task_manager as tm
+
+    writes: list[dict] = []
+    real = tm._write_status
+
+    def recording(task_dir, **kwargs):
+        writes.append(json.loads(json.dumps(kwargs)))
+        return real(task_dir, **kwargs)
+
+    monkeypatch.setattr(tm, "_write_status", recording)
+    return writes
+
+
+@pytest.mark.parametrize("buffer, exc", [
+    ({"size": 270}, "KeyError('raster_res_m')"),
+    ({"raster_res_m": 25}, "KeyError('size')"),
+    (None, "KeyError('buffer')"),
+    ("270", "TypeError(\"string indices must be integers, not 'str'\")"),
+])
+def test_an_unrenderable_buffer_fails_as_the_runners_did(fake_cli, monkeypatch, buffer, exc):
+    """0.2.7: the first step starts, its cache lookup warns and its render fails on the
+    same lookup; status ``render failed at c3_bg``, exit 1, no step runs. The expected
+    lines are the 0.2.7 runner's own output for these four configs (web 31c5dc3, run
+    with the templates present, 2026-10-14)."""
+    task_dir = _task(fake_cli, "task-nores001", ["ndi"])
+    config = json.loads((task_dir / "config.json").read_text())
+    if buffer is None:
+        del config["buffer"]
+    else:
+        config["buffer"] = buffer
+    (task_dir / "config.json").write_text(json.dumps(config))
+    writes = _recorded_slots(monkeypatch)
+
+    assert bg_ndi_wi.run(task_dir, variables=["ndi"]) == 1
+    assert [(e["level"], e["source"], e["msg"]) for e in _logs(task_dir)] == [
+        ("warning", "c3_bg", f"cache check failed for c3_bg: {exc} — running fresh"),
+        ("error", "runner", f"render_yaml(c3_bg) failed: {exc}"),
+    ]
+    slots = [w["experiments"]["bg_ndi_wi"] for w in writes]
+    assert [(s.get("status"), s.get("current_step"), s.get("progress"), s["message"])
+            for s in slots] == [
+        ("running", "csv_to_parquet", 0.0, "Preparing input data"),
+        (None, "c3_bg", 0.0, "Running c3_bg (1/3)"),
+        ("error", None, None, "render failed at c3_bg"),
+    ]
+    assert not (task_dir / "pipeline_configs").exists()
+
+
+def test_missing_raster_res_m_is_fine_for_a_runner_that_never_reads_it(fake_cli):
+    """noise renders and keys without the raster resolution, as its 0.2.7 runner did."""
+    from app.experiments import noise
+
+    task_dir = _task(fake_cli, "task-nores002", ["noise"], buffer={"size": 270})
+    assert noise.run(task_dir) == 0
+    assert _status(task_dir)["status"] == "finished"
 
 
 def test_a_held_run_lock_refuses_the_run(fake_cli):

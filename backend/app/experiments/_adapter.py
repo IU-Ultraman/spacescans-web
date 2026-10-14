@@ -47,6 +47,7 @@ from typing import Any
 import app.config
 from spacescans import catalog, cohort
 from spacescans.orchestrate import (
+    LOG_CACHE_CHECK_FAILED,
     LOG_COHORT_FAILED,
     LOG_MERGE_FAILED,
     LOG_RENDER_FAILED,
@@ -254,6 +255,46 @@ def _check_pipeline() -> None:
                            "grouping (capabilities().flags.episode_grouping); refusing to run")
 
 
+def _unrenderable(steps: Sequence[Any], config: Mapping[str, Any]) -> tuple[int, Any, Exception] | None:
+    """The first step the 0.2.7 runners could not key or render for ``config["buffer"]``.
+
+    Every step's ``_cache_key`` and ``render_yaml`` read ``config["buffer"]["size"]``,
+    and those of a step that uses the raster resolution read
+    ``config["buffer"]["raster_res_m"]`` too, in that order. A config that lacks
+    one (only a hand-written one can: the frontend always sends both) failed there
+    with that lookup's exception. Returns ``(index, step, exception)`` from the
+    same lookups, or None when every step can be rendered.
+    """
+    try:
+        config["buffer"]["size"]
+    except Exception as exc:  # noqa: BLE001 - KeyError or TypeError, as the runners raised it
+        return 0, steps[0], exc
+    for index, step in enumerate(steps):
+        if step.uses_raster_res:
+            try:
+                config["buffer"]["raster_res_m"]
+            except Exception as exc:  # noqa: BLE001
+                return index, step, exc
+            break
+    return None
+
+
+def _render_failure(experiment: str, index: int, step: Any, total: int, exc: Exception,
+                    emit: Any, status: StatusSink) -> int:
+    """What the runners wrote for a step they could not key or render: its start, the
+    cache lookup's warning (C3 steps are looked up first), the render error, status
+    ``render failed at <step>``; exit code 1."""
+    common = {"step": step.name, "index": index, "total": total}
+    emit(Event("step_start", experiment, **common))
+    if step.is_c3:
+        emit(Event("cache_warning", experiment,
+                   text=LOG_CACHE_CHECK_FAILED.format(step=step.name, exc=exc), **common))
+    emit(Event("warning", experiment, text=LOG_RENDER_FAILED.format(step=step.name, exc=exc),
+               data={"level": "error", "source": "runner"}, **common))
+    status.error(f"render failed at {step.name}")
+    return 1
+
+
 def run(experiment: str, task_dir: Path, variables: Sequence[str] | None = None) -> int:
     """Run one experiment for a task: the runners' ``run(task_dir, variables)``.
 
@@ -285,13 +326,14 @@ def _run_locked(experiment: str, task_dir: Path, variables: Sequence[str] | None
     dispatcher_driven = variables is not None
     if dispatcher_driven:
         config = {**config, "variables": list(variables)}
+    steps = plan(experiment, config)          # ValueError for no or foreign variables, as before
     keys = list(config["variables"])
-    steps = plan(experiment, config)
     total = len(steps)
     recipe = catalog.recipe(experiment)
     definitions = custom_definitions(experiment, config)
     status = StatusSink(task_dir, experiment, dispatcher_driven=dispatcher_driven)
     log = LogWriter.for_run_dir(task_dir)
+    emit = tee(log, status)
 
     status.begin([s.name for s in steps])
 
@@ -303,25 +345,20 @@ def _run_locked(experiment: str, task_dir: Path, variables: Sequence[str] | None
         status.error(f"input conversion failed: {exc}")
         return 1
 
+    bad = _unrenderable(steps, config)
+    if bad is not None:
+        return _render_failure(experiment, bad[0], bad[1], total, bad[2], emit, status)
     buffer = config["buffer"]
-    raster_res_m = buffer.get("raster_res_m")
-    if raster_res_m is None:
-        needs = [s for s in steps if s.uses_raster_res]
-        if needs:  # the areal runners read config["buffer"]["raster_res_m"] when rendering
-            exc = KeyError("raster_res_m")
-            log.write("error", "runner", LOG_RENDER_FAILED.format(step=needs[0].name, exc=exc))
-            status.error(f"render failed at {needs[0].name}")
-            return 1
-        raster_res_m = 25
+    # raster_res_m as given; when absent no step reads it (_unrenderable), so the default stands
     ctx = RunContext.from_task_dir(task_dir, data_dir=settings.SPACESCANS_DATA_DIR,
-                                   buffer_m=buffer["size"], raster_res_m=raster_res_m,
+                                   buffer_m=buffer["size"],
+                                   raster_res_m=buffer.get("raster_res_m", 25),
                                    overlay=definitions)
     cache = WeightCache(settings.C3_CACHE_DIR, key_format="legacy-v1")
     executor = SubprocessExecutor([settings.SPACESCANS_PIPELINE_PYTHON,
                                    settings.SPACESCANS_PIPELINE_CLI])
     try:
-        run_source(experiment, keys, ctx, cache=cache, executor=executor,
-                   on_event=tee(log, status))
+        run_source(experiment, keys, ctx, cache=cache, executor=executor, on_event=emit)
     except RenderError as exc:
         status.error(f"render failed at {exc.step}")
         return 1
