@@ -271,9 +271,8 @@ def test_catalog_subset_of_a_manifest_validates_against_the_shipped_schema():
     shipped file before the overlay is applied — but the catalog-shaped half
     must still be correct or the frontend cannot render it like a shipped row."""
     import jsonschema
-    from pathlib import Path
-    import app.variable_registry as vr
-    schema = json.loads(Path(vr._SCHEMA_PATH).read_text())
+    from spacescans import catalog
+    schema = catalog.schema()
     m = _create()
     entry = lib.catalog_entry(m)
     jsonschema.validate({"schema_version": 1, "variables": {m["variable_key"]: entry}},
@@ -542,9 +541,8 @@ def test_create_raster_surfaces_the_inspection_error_with_the_filename(tmp_path)
 
 def test_raster_catalog_subset_validates_too(tmp_path):
     import jsonschema
-    from pathlib import Path
-    import app.variable_registry as vr
-    schema = json.loads(Path(vr._SCHEMA_PATH).read_text())
+    from spacescans import catalog
+    schema = catalog.schema()
     m = lib.create_raster(
         1, rasters=[("a.tif", _tif_bytes(tmp_path, "a.tif", _cells()), None)],
         name="x", description="", value_col="v",
@@ -601,9 +599,8 @@ def test_the_single_band_arguments_still_work(tmp_path):
 
 def test_multi_band_catalog_subset_validates(tmp_path):
     import jsonschema
-    from pathlib import Path
-    import app.variable_registry as vr
-    schema = json.loads(Path(vr._SCHEMA_PATH).read_text())
+    from spacescans import catalog
+    schema = catalog.schema()
     m = lib.create_raster(
         1, rasters=[("a.tif", _tif_bytes(tmp_path, "a.tif", _stack()), None)],
         name="x", description="", bands=[1, 2, 3], value_cols=["a", "b", "c"],

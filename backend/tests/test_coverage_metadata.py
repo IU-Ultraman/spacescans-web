@@ -62,12 +62,10 @@ def _seed(monkeypatch, tmp_path, csv_body: str) -> str:
     import app.variable_registry as vr
     importlib.reload(vr)
 
-    reg_path = tmp_path / "variable_metadata.json"
-    reg_path.write_text(json.dumps(_REGISTRY_FIXTURE))
-    monkeypatch.setattr(vr, "_METADATA_PATH", reg_path)
+    from collections import OrderedDict
+    monkeypatch.setattr(vr, "_shipped_payload", lambda: json.loads(
+        json.dumps(_REGISTRY_FIXTURE), object_pairs_hook=OrderedDict))
     monkeypatch.setattr(vr, "_CACHE", {"mtime": None, "payload": None})
-    monkeypatch.setattr(vr, "_SCHEMA_PATH", reg_path)
-    monkeypatch.setattr("jsonschema.validate", lambda payload, schema: None)
     monkeypatch.setattr(vr, "_discover_experiments",
                         lambda: {"bg_ndi_wi", "zcta5_cbp", "noise"})
 
