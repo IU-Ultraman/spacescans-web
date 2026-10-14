@@ -1,8 +1,11 @@
-"""Sprint 3 T2: variable_registry — load, validate, cache, query helpers."""
+"""Sprint 3 T2: variable_registry — load, validate, cache, query helpers.
+
+Tier-2 phase C: the shipped catalog comes from ``spacescans.catalog``; tests
+that used to point ``_METADATA_PATH`` at another file now substitute
+``variable_registry._shipped_payload``, the one place the catalog enters.
+"""
 from __future__ import annotations
 
-import json
-import time
 from collections import OrderedDict
 from pathlib import Path
 
@@ -43,8 +46,23 @@ def test_get_variable_unknown_key_raises_keyerror():
         vr.get_variable("does_not_exist")
 
 
+def _catalog(monkeypatch, payload: dict) -> None:
+    """Make the registry load ``payload`` as the shipped catalog."""
+    from collections import OrderedDict as _OD
+    import json as _json
+    from app import variable_registry as vr
+
+    def _shipped():
+        return _json.loads(_json.dumps(payload), object_pairs_hook=_OD)
+
+    monkeypatch.setattr(vr, "_shipped_payload", _shipped)
+    vr._CACHE["mtime"] = None
+    vr._CACHE["payload"] = None
+
+
 def test_missing_required_field_rejected(tmp_path, monkeypatch):
-    """A variable lacking a required field must fail jsonschema validation."""
+    """A variable lacking a required field must fail the catalog schema
+    (the package's validator, surfaced as MetadataSchemaError)."""
     from app import variable_registry as vr
 
     bad = {
@@ -63,12 +81,9 @@ def test_missing_required_field_rejected(tmp_path, monkeypatch):
             }
         },
     }
-    bad_path = tmp_path / "variable_metadata.json"
-    bad_path.write_text(json.dumps(bad))
-    monkeypatch.setattr(vr, "_METADATA_PATH", bad_path)
+    _catalog(monkeypatch, bad)
 
-    import jsonschema
-    with pytest.raises(jsonschema.ValidationError):
+    with pytest.raises(vr.MetadataSchemaError, match="missing required field"):
         vr.load_variables(force=True)
 
 
@@ -92,9 +107,7 @@ def test_unknown_experiment_rejected(tmp_path, monkeypatch):
             }
         },
     }
-    bad_path = tmp_path / "variable_metadata.json"
-    bad_path.write_text(json.dumps(bad))
-    monkeypatch.setattr(vr, "_METADATA_PATH", bad_path)
+    _catalog(monkeypatch, bad)
 
     with pytest.raises(vr.MetadataSchemaError, match="unknown experiment"):
         vr.load_variables(force=True)
@@ -104,9 +117,7 @@ def test_schema_version_mismatch_rejected(tmp_path, monkeypatch):
     """schema_version not in supported set raises MetadataSchemaError."""
     from app import variable_registry as vr
 
-    bad_payload = tmp_path / "variable_metadata.json"
-    bad_schema = tmp_path / "variable_metadata.schema.json"
-    bad_payload.write_text(json.dumps({
+    _catalog(monkeypatch, {
         "schema_version": 2,
         "variables": {
             "ndi": {
@@ -121,29 +132,20 @@ def test_schema_version_mismatch_rejected(tmp_path, monkeypatch):
                 "value_cols": ["ndi"],
             }
         },
-    }))
-    # Permissive schema so jsonschema.validate passes and the version gate fires.
-    bad_schema.write_text(json.dumps({
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "required": ["schema_version", "variables"],
-    }))
-    monkeypatch.setattr(vr, "_METADATA_PATH", bad_payload)
-    monkeypatch.setattr(vr, "_SCHEMA_PATH", bad_schema)
+    })
 
     with pytest.raises(vr.MetadataSchemaError, match="unsupported schema_version"):
         vr.load_variables(force=True)
 
 
-def test_mtime_cache_reloads_on_file_change(tmp_path, monkeypatch):
-    """Touching the metadata file (new mtime) must trigger a reload."""
+def test_cache_holds_until_forced(tmp_path, monkeypatch):
+    """The validated catalog (and its pre-flights) is cached per process; the
+    package's catalog has no file to watch, so only ``force=True`` (or a cache
+    reset) reloads it."""
     from app import variable_registry as vr
 
-    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
-    payload_path = tmp_path / "variable_metadata.json"
-
-    def write(label_for_ndi: str) -> None:
-        payload_path.write_text(json.dumps({
+    def payload(label_for_ndi: str) -> dict:
+        return {
             "schema_version": 1,
             "variables": {
                 "ndi": {
@@ -158,27 +160,21 @@ def test_mtime_cache_reloads_on_file_change(tmp_path, monkeypatch):
                     "value_cols": ["ndi"],
                 }
             },
-        }))
+        }
 
-    write("first")
-    monkeypatch.setattr(vr, "_METADATA_PATH", payload_path)
-    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
-
+    _catalog(monkeypatch, payload("first"))
     first = vr.load_variables(force=True)
     assert first["variables"]["ndi"]["label"] == "first"
 
-    # Ensure new mtime is distinct (filesystem mtime resolution >= 1s on some FSes).
-    time.sleep(1.1)
-    write("second")
-    second = vr.load_variables()  # no force — relies on mtime cache invalidation
-    assert second["variables"]["ndi"]["label"] == "second"
+    monkeypatch.setattr(vr, "_shipped_payload", lambda: payload("second"))
+    assert vr.load_variables()["variables"]["ndi"]["label"] == "first"   # cached
+    assert vr.load_variables(force=True)["variables"]["ndi"]["label"] == "second"
+    assert vr.load_variables() is vr.load_variables()                     # one object
 
 
 def test_variables_by_experiment_preserves_file_order(tmp_path, monkeypatch):
     """Reordering the JSON file inverts the OrderedDict iteration order."""
     from app import variable_registry as vr
-
-    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
 
     def variable(label: str, experiment: str, boundary: str) -> dict:
         return {
@@ -189,31 +185,26 @@ def test_variables_by_experiment_preserves_file_order(tmp_path, monkeypatch):
             "value_cols": ["c"],
         }
 
-    p = tmp_path / "variable_metadata.json"
-    monkeypatch.setattr(vr, "_METADATA_PATH", p)
-    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
-
-    # bg_ndi_wi first in file → first in dispatch
-    p.write_text(json.dumps({
+    # bg_ndi_wi first in the catalog → first in dispatch
+    _catalog(monkeypatch, {
         "schema_version": 1,
         "variables": {
             "ndi": variable("NDI", "bg_ndi_wi", "BG"),
             "cbp_zcta5": variable("CBP", "zcta5_cbp", "ZCTA5"),
         },
-    }))
+    })
     grouped = vr.variables_by_experiment(["ndi", "cbp_zcta5"])
     assert isinstance(grouped, OrderedDict)
     assert list(grouped.keys()) == ["bg_ndi_wi", "zcta5_cbp"]
 
     # Invert order — must invert dispatch
-    time.sleep(1.1)
-    p.write_text(json.dumps({
+    _catalog(monkeypatch, {
         "schema_version": 1,
         "variables": {
             "cbp_zcta5": variable("CBP", "zcta5_cbp", "ZCTA5"),
             "ndi": variable("NDI", "bg_ndi_wi", "BG"),
         },
-    }))
+    })
     grouped = vr.variables_by_experiment(["ndi", "cbp_zcta5"])
     assert list(grouped.keys()) == ["zcta5_cbp", "bg_ndi_wi"]
 
@@ -242,9 +233,7 @@ def test_registry_accepts_tiger_proximity_entry(tmp_path, monkeypatch):
     """
     from app import variable_registry as vr
 
-    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
-    payload_path = tmp_path / "variable_metadata.json"
-    payload_path.write_text(json.dumps({
+    _catalog(monkeypatch, {
         "schema_version": 1,
         "variables": {
             "tiger_proximity": {
@@ -264,10 +253,8 @@ def test_registry_accepts_tiger_proximity_entry(tmp_path, monkeypatch):
                 "value_cols": ["dist_pri", "dist_sec", "dist_prisec"],
             }
         },
-    }))
+    })
 
-    monkeypatch.setattr(vr, "_METADATA_PATH", payload_path)
-    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
     # Pretend the tiger_proximity module exists so the whitelist passes — B2
     # will make this real.
     monkeypatch.setattr(
@@ -312,23 +299,28 @@ def test_startup_probe_passes_in_env():
     assert vr._PROBE_DONE is True
 
 
-def test_startup_probe_raises_on_missing_field(monkeypatch):
-    """Drop output_grouping from TimeConfig.model_fields — probe must raise."""
+def test_startup_probe_raises_on_missing_flag(monkeypatch):
+    """An install whose capabilities lack ``episode_grouping`` must be refused."""
     from app import variable_registry as vr
-    import spacescans.models.config as _cfg
+    import spacescans._capabilities as _caps
 
     vr._PROBE_DONE = False
-    patched = {k: v for k, v in _cfg.TimeConfig.model_fields.items() if k != "output_grouping"}
-
-    class _StubTimeConfig:
-        model_fields = patched
-
-    monkeypatch.setattr(_cfg, "TimeConfig", _StubTimeConfig)
+    patched = {k: v for k, v in _caps.FLAGS.items() if k != "episode_grouping"}
+    monkeypatch.setattr(_caps, "FLAGS", patched)
 
     with pytest.raises(vr.MetadataSchemaError) as exc:
         vr._assert_pipeline_version_compatible()
-    assert "output_grouping" in str(exc.value)
+    assert "episode_grouping" in str(exc.value)
     assert vr._PROBE_DONE is False
+
+
+def test_startup_probe_reads_the_capabilities_flag():
+    """The flag the probe tests is the one ``spacescans.capabilities()`` reports."""
+    import spacescans
+    from app import variable_registry as vr
+
+    assert vr._pipeline_flags() == spacescans.capabilities()["flags"]
+    assert vr._pipeline_flags()["episode_grouping"] is True
 
 
 def test_startup_probe_runs_once(monkeypatch):
@@ -638,9 +630,7 @@ def test_registry_accepts_nhd_bluespace_entry(tmp_path, monkeypatch):
     """
     from app import variable_registry as vr
 
-    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
-    payload_path = tmp_path / "variable_metadata.json"
-    payload_path.write_text(json.dumps({
+    _catalog(monkeypatch, {
         "schema_version": 1,
         "variables": {
             "nhd_bluespace": {
@@ -666,10 +656,8 @@ def test_registry_accepts_nhd_bluespace_entry(tmp_path, monkeypatch):
                 ],
             }
         },
-    }))
+    })
 
-    monkeypatch.setattr(vr, "_METADATA_PATH", payload_path)
-    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
     monkeypatch.setattr(
         vr, "_discover_experiments",
         lambda: {"bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace"},
@@ -738,9 +726,7 @@ def test_registry_accepts_noise_entry(tmp_path, monkeypatch):
     """
     from app import variable_registry as vr
 
-    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
-    payload_path = tmp_path / "variable_metadata.json"
-    payload_path.write_text(json.dumps({
+    _catalog(monkeypatch, {
         "schema_version": 1,
         "variables": {
             "noise": {
@@ -762,10 +748,8 @@ def test_registry_accepts_noise_entry(tmp_path, monkeypatch):
                 "value_cols": ["l50dba_exi", "l50dba_imp", "l50dba_nat"],
             }
         },
-    }))
+    })
 
-    monkeypatch.setattr(vr, "_METADATA_PATH", payload_path)
-    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
     monkeypatch.setattr(
         vr, "_discover_experiments",
         lambda: {"bg_ndi_wi", "zcta5_cbp", "tiger_proximity", "nhd_bluespace", "noise"},
@@ -1061,9 +1045,7 @@ def test_registry_accepts_fara_tract_entry(tmp_path, monkeypatch):
     """
     from app import variable_registry as vr
 
-    real_schema = Path(__file__).parent.parent / "app" / "data" / "variable_metadata.schema.json"
-    payload_path = tmp_path / "variable_metadata.json"
-    payload_path.write_text(json.dumps({
+    _catalog(monkeypatch, {
         "schema_version": 1,
         "variables": {
             "fara_tract": {
@@ -1082,10 +1064,8 @@ def test_registry_accepts_fara_tract_entry(tmp_path, monkeypatch):
                 "value_cols": ["LILATracts_1And10", "LATracts1", "HUNVFlag", "LowIncomeTracts"],
             }
         },
-    }))
+    })
 
-    monkeypatch.setattr(vr, "_METADATA_PATH", payload_path)
-    monkeypatch.setattr(vr, "_SCHEMA_PATH", real_schema)
     monkeypatch.setattr(
         vr, "_discover_experiments",
         lambda: {
@@ -1196,14 +1176,11 @@ def test_schema_allows_optional_ontology_id():
     """The variable_metadata schema must accept an optional ontology_id and
     still validate when it is absent (additionalProperties is false, so this
     fails until ontology_id is declared in the schema)."""
-    import json
-    import pathlib
-
     import jsonschema
 
-    schema = json.loads(
-        pathlib.Path("app/data/variable_metadata.schema.json").read_text()
-    )
+    from spacescans import catalog
+
+    schema = catalog.schema()
     base_var = {
         "label": "L", "description": "D", "boundary": "BG",
         "coverage_years": [2010, 2020], "coverage_region": "CONUS",
@@ -1236,9 +1213,9 @@ def test_every_variable_links_to_an_existing_ontology_node():
     import json
     import pathlib
 
-    meta = json.loads(
-        pathlib.Path("app/data/variable_metadata.json").read_text()
-    )["variables"]
+    from spacescans import catalog
+
+    meta = catalog.payload()["variables"]
     onto = json.loads(
         pathlib.Path("../frontend/public/ontology/metadata.json").read_text()
     )
@@ -1262,12 +1239,9 @@ def test_every_variable_links_to_an_existing_ontology_node():
 
 def test_every_variable_declares_a_data_source():
     """FAIR metadata: every variable must name its originating dataset."""
-    import json
-    import pathlib
+    from spacescans import catalog
 
-    meta = json.loads(
-        pathlib.Path("app/data/variable_metadata.json").read_text()
-    )["variables"]
+    meta = catalog.payload()["variables"]
     for var, m in meta.items():
         ds = m.get("data_source")
         assert isinstance(ds, str) and ds.strip(), f"{var} missing data_source"

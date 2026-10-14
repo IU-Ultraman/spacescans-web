@@ -9,7 +9,8 @@ Security model — the endpoint is reachable by any signed-up user, and in
 Codespaces deployments on a public port, so it accepts NOTHING but the known
 artifacts:
 
-  1. `filename` must be in app/data/distribution_manifest.json.
+  1. `filename` must be an artifact of the spacescans data manifest
+     (spacescans/data/manifest.json: the same hashes as SHA256SUMS.txt).
   2. Content-Length must be present and exactly the manifest's byte count.
   3. The stream is capped at that count (a longer body is cut off and rejected).
   4. sha256 of the received bytes must equal the manifest's — checked BEFORE
@@ -18,122 +19,63 @@ artifacts:
 Only after (1)-(4) is the archive opened. That is what makes extraction safe:
 a decompression bomb, a traversal member or poisoned content cannot survive a
 hash match against a published digest. Member-level validation (no absolute
-paths, no `..`, regular files/dirs only, known top-level dataset dir) stays as
-defense in depth, and members are written to `.part` + os.replace so a
-concurrent pipeline run never observes a half-written file.
+paths, no `..`, regular files/dirs only, known top-level dataset dir, and the
+artifact's declared roots) stays as defense in depth, and members are written
+to `.part` + os.replace so a concurrent pipeline run never observes a
+half-written file. Extraction is ``spacescans.data.extract`` (the port of the
+code that used to live here, with the same messages).
 
 Uploads are serialized (one at a time, 409 otherwise): the work is disk-bound,
 and concurrency only multiplies the ways a shared data root can be corrupted.
 """
 import asyncio
-import gzip
 import hashlib
-import json
 import logging
 import os
 import shutil
-import tarfile
 import tempfile
-import zlib
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from spacescans.data import MANIFEST_PATH, load_manifest
+from spacescans.data.errors import DataCorruptError, UnsafeArchiveError
+from spacescans.data.extract import extract_archive
 from starlette.concurrency import run_in_threadpool
 
 from app.auth import get_current_user
-from app.config import settings, _DATASET_DIRS
+from app.config import settings
 
 router = APIRouter(prefix="/api/data", tags=["data"])
 _log = logging.getLogger(__name__)
 
-_CHUNK = 4 * 1024 * 1024
-_MANIFEST_PATH = Path(__file__).resolve().parent.parent / "data" / "distribution_manifest.json"
+# The package's data manifest: the allowlist this endpoint checks against.
+_MANIFEST_PATH = MANIFEST_PATH
 # Disk-bound work; also keeps two uploads from racing on the same dataset dir.
 _upload_lock = asyncio.Lock()
 _PLACEHOLDER_SECRETS = {"change-me-in-production", "change-me-to-a-real-secret"}
 
 
 def _manifest() -> dict[str, dict]:
-    return json.loads(_MANIFEST_PATH.read_text())["artifacts"]
+    """The distribution artifacts, from the spacescans data manifest.
+
+    ``{filename: {"sha256", "bytes", "kind", "extracted_bytes" | "dest",
+    "roots"}}``: every mirrored file (archives and bare files, whether or not
+    it is on the mirror yet; the hash is what admits an upload).
+    """
+    out: dict[str, dict] = {}
+    for name, art in load_manifest().artifacts.items():
+        spec: dict = {"sha256": art.sha256, "bytes": art.bytes, "kind": art.kind}
+        if art.kind == "tar":
+            spec["extracted_bytes"] = int(art.extracted_bytes or 0)
+            spec["roots"] = list(art.roots)
+        else:
+            spec["dest"] = art.dest
+        out[name] = spec
+    return out
 
 
 def _bad(message: str, error: str = "unsafe_or_invalid_archive") -> HTTPException:
     return HTTPException(status_code=400, detail={"error": error, "message": message})
-
-
-def _validate_member(m: tarfile.TarInfo, root: Path) -> None:
-    p = Path(m.name)
-    if not p.parts:
-        raise _bad("empty member name in archive")
-    if p.is_absolute() or ".." in p.parts:
-        raise _bad(f"unsafe path in archive: {m.name!r}")
-    if p.parts[0] not in _DATASET_DIRS:
-        raise _bad(
-            f"archive entry {m.name!r} is outside the known dataset dirs "
-            f"({', '.join(sorted(_DATASET_DIRS))})"
-        )
-    if not (m.isreg() or m.isdir()):
-        raise _bad(
-            f"archive entry {m.name!r} is not a regular file or directory "
-            "(symlinks/hardlinks/devices are not allowed)"
-        )
-    if not (root / p).resolve().is_relative_to(root.resolve()):
-        raise _bad(f"archive entry escapes the data root: {m.name!r}")
-
-
-def _is_macos_metadata(name: str) -> bool:
-    """macOS packaging junk: AppleDouble sidecars, `.DS_Store`, `__MACOSX/`.
-
-    The archives were packed on macOS from files carrying extended attributes
-    (a com.apple.quarantine flag on anything downloaded via a browser), so BSD
-    tar wrote one `._x` member per `x`. BSD tar reabsorbs those on extraction;
-    GNU tar and Python's tarfile write them out as ordinary files — ~15k junk
-    files for the NHD cache alone. Skip them: nothing in the pipeline reads
-    them (every consumer resolves exact filenames).
-    """
-    parts = Path(name).parts
-    return (
-        parts[0] == "__MACOSX"
-        or parts[-1].startswith("._")
-        or parts[-1] == ".DS_Store"
-    )
-
-
-def _extract_tar(archive: Path, root: Path) -> tuple[int, set[str]]:
-    """Validate then write each member. Files land via `.part` + os.replace so
-    a reader (e.g. a running pipeline step) never sees a partial file."""
-    count = 0
-    tops: set[str] = set()
-    with tarfile.open(archive, "r:gz") as tar:
-        for m in tar:
-            # Skipping precedes validation on purpose: skipped members are
-            # never written, and `__MACOSX/` would otherwise trip the
-            # top-level dataset-dir check and reject the whole archive.
-            if _is_macos_metadata(m.name):
-                continue
-            _validate_member(m, root)
-            tops.add(Path(m.name).parts[0])
-            target = root / m.name
-            if m.isdir():
-                target.mkdir(parents=True, exist_ok=True)
-                continue
-            if target.is_dir():
-                raise _bad(
-                    f"archive entry {m.name!r} collides with an existing directory"
-                )
-            target.parent.mkdir(parents=True, exist_ok=True)
-            src = tar.extractfile(m)
-            if src is None:  # pragma: no cover - isreg() implies extractable
-                raise _bad(f"unreadable archive entry: {m.name!r}")
-            part = target.with_name(target.name + ".part")
-            try:
-                with src, open(part, "wb") as dst:
-                    shutil.copyfileobj(src, dst, _CHUNK)
-                os.replace(part, target)
-            finally:
-                part.unlink(missing_ok=True)
-            count += 1
-    return count, tops
 
 
 def _write_stream_sync(fh, chunk: bytes, digest) -> None:
@@ -288,12 +230,15 @@ async def upload_archive(
                 return {"placed": f"{spec['dest']}/{filename}", "bytes": received}
 
             try:
-                count, tops = await run_in_threadpool(_extract_tar, tmp, root)
-            except HTTPException:
-                raise
-            except (tarfile.TarError, EOFError, zlib.error,
-                    gzip.BadGzipFile) as e:
-                raise _bad(f"could not read {filename} as a .tar.gz: {e}") from e
+                result = await run_in_threadpool(
+                    extract_archive, tmp, root, allowed_roots=spec.get("roots"),
+                    hash_files=False,
+                )
+            except UnsafeArchiveError as e:
+                raise _bad(str(e)) from e
+            except DataCorruptError as e:
+                cause = e.__cause__ if e.__cause__ is not None else e
+                raise _bad(f"could not read {filename} as a .tar.gz: {cause}") from e
             except OSError as e:
                 raise HTTPException(
                     status_code=507,
@@ -301,8 +246,8 @@ async def upload_archive(
                             "message": f"write failed while extracting: {e}"},
                 ) from e
             _log.info("upload-archive: extracted %s -> %d files under %s for %s",
-                      filename, count, sorted(tops), user["email"])
-            return {"extracted_files": count, "top_dirs": sorted(tops),
+                      filename, result.count, sorted(result.tops), user["email"])
+            return {"extracted_files": result.count, "top_dirs": sorted(result.tops),
                     "bytes": received}
         finally:
             tmp.unlink(missing_ok=True)

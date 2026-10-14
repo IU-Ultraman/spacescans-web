@@ -1,9 +1,24 @@
-"""Single source of truth for variable definitions.
+"""The variable catalog as the web serves it.
 
-Loads backend/app/data/variable_metadata.json, validates against
-variable_metadata.schema.json on every reload, and exposes typed
-query helpers used by the API layer, the dispatch loop, and the
-coverage endpoint.
+The catalog itself (the 11 shipped variables, their schema and the experiment
+whitelist) lives in the spacescans package since tier-2 phase B:
+``spacescans.catalog`` holds ``variables.json``, a byte copy of the file this
+module used to load from ``app/data/variable_metadata.json``. That file stays in
+the repo this version as a copy for readers outside the app (the paper's
+``catalog_summary.py``); tests/test_variable_metadata_file.py keeps the two
+equal. This module keeps what is the web's own:
+
+* the per-process cache and the ``force=`` reload;
+* the task overlay (``config.json['custom_variables']``, see ``_task_overlay``);
+* the eight data-presence pre-flights against ``SPACESCANS_DATA_DIR``, which
+  turn a half-provisioned deployment into a ``MetadataSchemaError`` (HTTP 500
+  with a path) instead of a failed run;
+* the runner-module whitelist: every catalog experiment must have an
+  ``app.experiments.<experiment>`` module the dispatcher can spawn;
+* the error type ``MetadataSchemaError`` the routers map to status codes.
+
+The pipeline probe reads ``spacescans.capabilities()``'s ``episode_grouping``
+flag instead of grepping the pipeline's source or its pydantic models.
 """
 
 from __future__ import annotations
@@ -13,32 +28,54 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
-import jsonschema
-
-_DATA_DIR = Path(__file__).parent / "data"
-_METADATA_PATH = _DATA_DIR / "variable_metadata.json"
-_SCHEMA_PATH = _DATA_DIR / "variable_metadata.schema.json"
-_SUPPORTED_SCHEMA_VERSIONS = {1}
+from spacescans import catalog as _catalog
 
 _CACHE: dict[str, Any] = {"mtime": None, "payload": None}
+# What _CACHE["mtime"] holds once the shipped catalog is loaded. There is no
+# file to stamp any more (the catalog is package data, cached by the package
+# itself); the slot is kept so ``force=True`` and the tests' cache resets keep
+# their meaning: anything other than this value reloads and re-runs the
+# pre-flights.
+_LOADED = "spacescans.catalog"
 
 
 class MetadataSchemaError(RuntimeError):
-    """Raised when variable_metadata.json fails registry-level validation
-    (schema_version gate or experiment whitelist). jsonschema.ValidationError
-    propagates as-is for raw schema violations."""
+    """Raised when the catalog fails registry-level validation (the package's
+    schema or ``schema_version`` gate, the experiment whitelist), when a data
+    pre-flight finds a half-provisioned dataset, or when the pipeline install
+    lacks what the web needs."""
 
 
 _PROBE_DONE: bool = False
+
+
+def _pipeline_flags() -> dict[str, Any]:
+    """``spacescans.capabilities()["flags"]``.
+
+    The flags are a constant of the installed package; reading them from
+    ``spacescans._capabilities.FLAGS`` is what ``capabilities()`` does, minus
+    the registry and fingerprint work that imports the whole geo stack
+    (about 2 s in a fresh process; a runner process would pay it for a single
+    boolean). The full call is the fallback should that constant move.
+    """
+    try:
+        from spacescans._capabilities import FLAGS
+        return dict(FLAGS)
+    except (ImportError, AttributeError):
+        import spacescans
+        return dict(spacescans.capabilities().get("flags") or {})
 
 
 def _assert_pipeline_version_compatible() -> None:
     """Defensive boot-time check. Raises MetadataSchemaError on drift.
 
     Runs once per process — guarded by module-level _PROBE_DONE flag.
-    Verifies the editable-installed spacescans pipeline has:
-      1. A working `pyreadr` extra (Sprint 3 ZCTA5xCBP .Rda reader).
-      2. `TimeConfig.output_grouping` field (Sprint 2 episode-dimension contract).
+    Verifies the installed spacescans pipeline has:
+      1. A working `pyreadr` extra (the ZCTA5xCBP, FARA and Walkability .Rda
+         readers).
+      2. The ``episode_grouping`` capability flag: ``time.output_grouping =
+         "episode"`` is honoured, so every C4 output has one row per episode
+         and the merge can rename ``geoid`` to ``episode_id``.
     """
     global _PROBE_DONE
     if _PROBE_DONE:
@@ -46,26 +83,41 @@ def _assert_pipeline_version_compatible() -> None:
     try:
         from spacescans._extras import require as _require_extra
         _require_extra("rda", "pyreadr")
-        from spacescans.models.config import TimeConfig
+        flags = _pipeline_flags()
     except Exception as exc:
         raise MetadataSchemaError(
             f"pipeline import failed: {exc}. "
             "Install/upgrade spacescans-pipeline >= 0.2 "
             "(Sprint 2 episode-dimension contract)."
         ) from exc
-    if "output_grouping" not in TimeConfig.model_fields:
+    if not flags.get("episode_grouping"):
         raise MetadataSchemaError(
-            "pipeline missing TimeConfig.output_grouping — install/upgrade "
+            "pipeline capabilities lack the episode_grouping flag — install/upgrade "
             "spacescans-pipeline >= 0.2 (Sprint 2 episode-dimension contract)."
         )
     _PROBE_DONE = True
 
 
+def _shipped_payload() -> "OrderedDict[str, Any]":
+    """The shipped catalog, from the package, as ``load_variables`` serves it.
+
+    A fresh copy of ``spacescans.catalog.payload()`` (``variables.json``,
+    already validated against its schema and the recipe list by the package).
+    Tests substitute this function to feed the registry another catalog.
+    """
+    try:
+        return _catalog.payload()
+    except _catalog.CatalogError as exc:
+        raise MetadataSchemaError(str(exc)) from exc
+
+
 def _discover_experiments() -> set[str]:
+    """Runner modules under app/experiments: every module but the private
+    ones (``__init__``, ``_merge`` and any other ``_``-prefixed helper)."""
     exp_dir = Path(__file__).parent / "experiments"
     return {
         p.stem for p in exp_dir.glob("*.py")
-        if p.stem not in {"__init__", "_merge"}
+        if not p.stem.startswith("_")
     }
 
 
@@ -380,31 +432,23 @@ def _task_overlay(task_dir: "Path | None") -> dict[str, Any]:
 
 
 def load_variables(*, force: bool = False, task_dir: "Path | None" = None) -> dict[str, Any]:
+    """The catalog (shipped entries plus the task's custom ones), validated.
+
+    The shipped entries come from ``spacescans.catalog``; the schema check,
+    the ``schema_version`` gate and the runner-module whitelist are the
+    package's ``validate_payload`` with this app's experiment modules as the
+    known experiments. The result is cached per process (the pre-flights are
+    filesystem probes); ``force=True`` reloads and re-runs them.
+    """
     _assert_pipeline_version_compatible()
-    mtime = _METADATA_PATH.stat().st_mtime
-    if not force and _CACHE["mtime"] == mtime and _CACHE["payload"]:
+    if not force and _CACHE["mtime"] == _LOADED and _CACHE["payload"]:
         return _with_overlay(_CACHE["payload"], task_dir)
 
-    with _METADATA_PATH.open() as f:
-        payload = json.load(f, object_pairs_hook=OrderedDict)
-    with _SCHEMA_PATH.open() as f:
-        schema = json.load(f)
-
-    jsonschema.validate(payload, schema)
-
-    if payload["schema_version"] not in _SUPPORTED_SCHEMA_VERSIONS:
-        raise MetadataSchemaError(
-            f"unsupported schema_version: {payload['schema_version']} "
-            f"(supported: {sorted(_SUPPORTED_SCHEMA_VERSIONS)})"
-        )
-
-    known_experiments = _discover_experiments()
-    for key, m in payload["variables"].items():
-        if m["experiment"] not in known_experiments:
-            raise MetadataSchemaError(
-                f"variable {key!r} references unknown experiment "
-                f"{m['experiment']!r} (known: {sorted(known_experiments)})"
-            )
+    payload = _shipped_payload()
+    try:
+        _catalog.validate_payload(payload, experiments=sorted(_discover_experiments()))
+    except _catalog.CatalogError as exc:
+        raise MetadataSchemaError(str(exc)) from exc
 
     # Pathlib probes inside the pre-flights (exists()/glob()) raise raw
     # OSError on unreadable paths — e.g. a uid-mismatched mode-750 bind
@@ -426,7 +470,7 @@ def load_variables(*, force: bool = False, task_dir: "Path | None" = None) -> di
             f"exposure data pre-flight could not read the data root: {exc}"
         ) from exc
 
-    _CACHE["mtime"] = mtime
+    _CACHE["mtime"] = _LOADED
     _CACHE["payload"] = payload
     return _with_overlay(payload, task_dir)
 

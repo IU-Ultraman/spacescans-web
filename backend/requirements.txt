@@ -10,6 +10,9 @@ owlready2==0.47
 pytest>=7.0
 httpx>=0.24.0
 pyyaml>=6.0
-pandas>=2.0
+# Pinned with pyarrow: the legacy C3 cache keys depend on the pandas patch
+# version (tier-2 phase B #12); these are the versions of the frozen image.
+pandas==3.0.5
+pyarrow==26.0.0
 jsonschema>=4.21
 spacescans-pipeline>=0.2

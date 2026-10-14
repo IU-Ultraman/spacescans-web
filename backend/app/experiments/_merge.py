@@ -1,11 +1,20 @@
-"""Shared per-experiment merge utilities. Extracted from bg_ndi_wi.merge_results."""
+"""Shared per-experiment merge utilities. Extracted from bg_ndi_wi.merge_results.
+
+The joins live in ``spacescans.orchestrate.merge`` since tier-2 phase B (a port
+of this module checked byte for byte against the web's outputs, gate A3). What
+stays here is the web's file layer: which columns the catalog says a variable
+has, the ``logs.jsonl`` warning, and writing ``result_<experiment>.csv``,
+``result.csv`` and ``feature_dictionary.csv`` under the task's ``output/``.
+Both CSVs are written from tables read as text, so values reach result.csv
+exactly as the partials wrote them.
+"""
 from __future__ import annotations
 
 import json
 import time
 from pathlib import Path
 
-import pandas as pd
+from spacescans.orchestrate import merge as _merge
 
 from app import feature_dictionary, variable_registry
 
@@ -23,92 +32,38 @@ def write_partial(
     variables: list[str],
     parquet_map: dict[str, str],
 ) -> Path:
-    """Per-runner merge step. Returns path to result_<experiment_key>.csv."""
+    """Per-runner merge step. Returns path to result_<experiment_key>.csv.
+
+    ``task_dir`` is passed to the registry so custom exposomes resolve from
+    the task's own snapshot, not the shipped catalog.
+    """
     out_dir = task_dir / "output"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"result_{experiment_key}.csv"
+    out_path = out_dir / _merge.partial_csv_name(experiment_key)
 
-    input_df = pd.read_csv(task_dir / "input.csv", dtype=str)
-    input_df["episode_id"] = list(range(len(input_df)))
-    input_df["episode_id"] = input_df["episode_id"].astype(int)
-    if "pid" not in input_df.columns:
-        input_df = input_df.rename(columns={"PATID": "pid"})
-    input_keys = input_df[["pid", "episode_id"]]
-
-    merged: pd.DataFrame | None = None
-    for var_key in variables:
-        parquet_path = out_dir / parquet_map[var_key]
-        df = pd.read_parquet(parquet_path)
-
-        df = df.rename(columns={"PATID": "pid", "geoid": "episode_id"})
-        df["episode_id"] = df["episode_id"].astype(int)
-
-        # task_dir: custom exposomes live in the task's own snapshot, not
-        # the shipped catalog.
-        meta = variable_registry.get_variable(var_key, task_dir=task_dir)
-        value_cols = [c for c in meta["value_cols"] if c in df.columns]
-        df = df[["pid", "episode_id"] + value_cols]
-
-        if merged is None:
-            merged = df
-        else:
-            new_cols = [c for c in df.columns
-                        if c in ("pid", "episode_id") or c not in merged.columns]
-            df = df[new_cols]
-            merged = merged.merge(df, on=["pid", "episode_id"], how="outer")
-
-    if merged is None:
-        merged = input_keys.copy()
-
-    joined = input_keys.merge(merged, on=["pid", "episode_id"], how="left")
-    value_only = joined.drop(columns=["pid", "episode_id"])
-    if value_only.shape[1] == 0:
-        match_pct = 100.0
-        matched = len(input_keys)
-    else:
-        matched = int(value_only.notna().any(axis=1).sum())
-        match_pct = round(100.0 * matched / max(len(input_keys), 1), 2)
-
-    if match_pct < 90.0:
-        _emit_log_warning(
-            task_dir,
-            experiment_key=experiment_key,
-            event="merge_partial_low_match_pct",
-            match_pct=match_pct,
-            cohort_n=len(input_keys),
-            matched_n=int(matched),
-        )
+    value_cols = {
+        var_key: list(variable_registry.get_variable(var_key, task_dir=task_dir)["value_cols"])
+        for var_key in variables
+    }
+    merged, stats = _merge.partial_from_dir(
+        task_dir, experiment_key, variables, parquet_map, value_cols,
+    )
+    if stats.low:
+        _emit_log_warning(task_dir, **stats.as_log_fields())
 
     merged.to_csv(out_path, index=False)
     return out_path
 
 
 def fan_in(task_dir: Path, experiment_keys: list[str]) -> Path:
-    """Left-join each result_<key>.csv on (pid, episode_id) -> result.csv."""
-    df = pd.read_csv(task_dir / "input.csv", dtype=str)
-    if "pid" not in df.columns:
-        df = df.rename(columns={"PATID": "pid"})
-    df["episode_id"] = list(range(len(df)))
-    df["episode_id"] = df["episode_id"].astype(int)
+    """Left-join each result_<key>.csv on (pid, episode_id) -> result.csv.
 
-    for exp_key in experiment_keys:
-        partial = pd.read_csv(
-            task_dir / "output" / f"result_{exp_key}.csv",
-            dtype=str,
-        )
-        partial["episode_id"] = partial["episode_id"].astype(int)
-        df = df.merge(
-            partial,
-            on=["pid", "episode_id"],
-            how="left",
-            suffixes=("", f"_{exp_key}_dup"),
-        )
-
-    # episode_id is the join key, not a result: it is just the input row index,
-    # and every row already carries the input columns (pid + dates + coords)
-    # that identify the episode. Drop it from the deliverable — the per-runner
-    # result_<key>.csv partials keep it, since the joins above need it.
-    df = df.drop(columns=["episode_id"])
+    episode_id is the join key, not a result: it is just the input row index,
+    and every row already carries the input columns (pid + dates + coords)
+    that identify the episode. It is dropped from the deliverable — the
+    per-runner result_<key>.csv partials keep it, since the joins need it.
+    """
+    df = _merge.fan_in_from_dir(task_dir, experiment_keys)
 
     out_path = task_dir / "output" / "result.csv"
     df.to_csv(out_path, index=False)

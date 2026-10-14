@@ -29,7 +29,13 @@ class Settings(BaseSettings):
     SPACESCANS_DATA_DIR: Path = Path("/nonexistent")
     SPACESCANS_PIPELINE_PYTHON: Path = Path("/nonexistent")
     SPACESCANS_PIPELINE_CLI: Path = Path("/nonexistent")
-    SPACESCANS_CONFIG_TEMPLATES_DIR: Path = Path("/nonexistent")
+    # The pipeline templates are rendered from the spacescans package
+    # (spacescans.catalog.template). This directory is optional: when set, it
+    # is the repo's configs/ copy of those templates, and startup refuses to
+    # serve unless every packaged template hash-matches its file there (see
+    # validate_pipeline_settings). configs/ stays in the repo this version
+    # because the paper's scripts read it.
+    SPACESCANS_CONFIG_TEMPLATES_DIR: Path | None = None
     PIPELINE_STEP_TIMEOUT_SECONDS: int = 1800  # 30 min per spacescans run
 
     class Config:
@@ -59,6 +65,28 @@ _DATASET_DIRS = (
 )
 
 
+def check_config_templates(templates_dir: Path) -> list[str]:
+    """Compare a configs directory with the templates packaged in spacescans.
+
+    Returns one line per problem (``missing: c3/x.yaml``, ``differs:
+    c4/y.yaml``), empty when every packaged template has a byte-identical file
+    under ``templates_dir``. Files there that the package does not ship (the
+    three templates nothing references) are ignored.
+    """
+    import hashlib
+
+    from spacescans import catalog
+
+    problems: list[str] = []
+    for rel, digest in sorted(catalog.template_hashes().items()):
+        path = Path(templates_dir) / rel
+        if not path.is_file():
+            problems.append(f"missing: {rel}")
+        elif hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            problems.append(f"differs: {rel}")
+    return problems
+
+
 def validate_pipeline_settings() -> None:
     """Raise RuntimeError early if any pipeline path is missing.
 
@@ -69,17 +97,24 @@ def validate_pipeline_settings() -> None:
     pipeline CLI's --data-dir parameter resolves YAML config relative paths
     against. The exposure dataset folders (BG/, Noise/, VNL/, ...) live
     directly under it.
+
+    SPACESCANS_CONFIG_TEMPLATES_DIR is optional (templates come from the
+    package); when it is set, its files must hash-match the packaged
+    templates, or the process refuses to start: a template edited in configs/
+    alone would silently not be what the runs render.
     """
     missing = []
     for name in (
         "SPACESCANS_DATA_DIR",
         "SPACESCANS_PIPELINE_PYTHON",
         "SPACESCANS_PIPELINE_CLI",
-        "SPACESCANS_CONFIG_TEMPLATES_DIR",
     ):
         path = getattr(settings, name)
         if not path.exists():
             missing.append(f"{name}={path}")
+    templates_dir = settings.SPACESCANS_CONFIG_TEMPLATES_DIR
+    if templates_dir is not None and not templates_dir.exists():
+        missing.append(f"SPACESCANS_CONFIG_TEMPLATES_DIR={templates_dir}")
     # Sanity-check the mount: YAML configs use dataset-folder prefixes
     # (`Noise/...`, `VNL/...`) resolved against the data root, so a wrong
     # mount should fail fast. A fresh clone passes because several dataset
@@ -95,3 +130,14 @@ def validate_pipeline_settings() -> None:
         raise RuntimeError(
             "Pipeline integration disabled. Missing paths: " + ", ".join(missing)
         )
+    if templates_dir is not None:
+        problems = check_config_templates(templates_dir)
+        if problems:
+            import spacescans
+
+            raise RuntimeError(
+                f"SPACESCANS_CONFIG_TEMPLATES_DIR={templates_dir} does not match the "
+                f"templates packaged in spacescans {spacescans.__version__} "
+                f"({'; '.join(problems)}). Runs render the packaged templates; update "
+                "configs/ to match or unset the variable."
+            )

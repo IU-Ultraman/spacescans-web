@@ -1,37 +1,56 @@
-"""Sprint 3 T1: variable_metadata.json + schema co-locate and validate.
+"""Sprint 3 T1 (tier-2 phase C): the variable catalog is the package's.
 
-This test is intentionally loader-free — it only checks the on-disk artefacts
-so a schema bug shows up before the registry loader (T2) is wired in.
+The registry reads the catalog from the spacescans package
+(``spacescans.catalog``: ``variables.json`` + ``variables.schema.json``, byte
+copies of the web's files at 3991c3b). ``app/data/variable_metadata.json`` and
+its schema stay in the repo this version as copies, because readers outside the
+app open the file by path (the paper's ``catalog_summary.py``); the copies must
+equal the package's byte for byte, or someone edited the wrong one. These tests
+check the on-disk artefacts loader-free: the copies match, and the packaged
+file still has the shape the web serves.
 """
 from __future__ import annotations
 
-import json
+import hashlib
+from importlib import resources
 from pathlib import Path
 
 import jsonschema
 import pytest
+from spacescans import catalog
 
 BACKEND = Path(__file__).resolve().parent.parent
-DATA_PATH = BACKEND / "app" / "data" / "variable_metadata.json"
-SCHEMA_PATH = BACKEND / "app" / "data" / "variable_metadata.schema.json"
+DATA = BACKEND / "app" / "data"
 
 
 @pytest.fixture(scope="module")
 def metadata() -> dict:
-    return json.loads(DATA_PATH.read_text())
+    return catalog.payload()
 
 
 @pytest.fixture(scope="module")
 def schema() -> dict:
-    return json.loads(SCHEMA_PATH.read_text())
+    return catalog.schema()
 
 
-def test_metadata_file_exists_at_new_path():
-    assert DATA_PATH.is_file(), f"expected {DATA_PATH} to exist after git mv"
+def _sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
 
 
-def test_schema_file_exists():
-    assert SCHEMA_PATH.is_file(), f"expected {SCHEMA_PATH} to exist"
+@pytest.mark.parametrize("web_name, package_name", [
+    ("variable_metadata.json", "variables.json"),
+    ("variable_metadata.schema.json", "variables.schema.json"),
+    ("feature_dictionary.json", "features.json"),
+])
+def test_web_copies_equal_the_package_catalog(web_name, package_name):
+    """The web's copies are the package's files, byte for byte. A difference
+    means one side was edited alone: change the package's file (the one the
+    app reads) and copy it here, or copy a regenerated feature dictionary
+    (``scripts/extend_ontology.py`` writes the web's) into the package."""
+    web = (DATA / web_name).read_bytes()
+    pkg = resources.files("spacescans.catalog").joinpath(package_name).read_bytes()
+    assert _sha(web) == _sha(pkg), (
+        f"app/data/{web_name} differs from spacescans.catalog/{package_name}")
 
 
 def test_old_metadata_path_is_gone():
@@ -50,6 +69,7 @@ def test_variables_envelope_present(metadata):
     assert "variables" in metadata
     assert isinstance(metadata["variables"], dict)
     assert set(metadata["variables"].keys()) >= {"ndi", "walkability", "cbp_zcta5"}
+    assert len(metadata["variables"]) == 11
 
 
 def test_cbp_zcta5_entry_shape(metadata):
@@ -102,3 +122,21 @@ def test_schema_rejects_bad_variable_key(schema):
     }
     with pytest.raises(jsonschema.ValidationError):
         validator_cls(schema).validate(bad)
+
+
+def test_every_catalog_experiment_has_a_runner_module():
+    """The dispatcher spawns ``python -m app.experiments.<experiment>``; a
+    catalog experiment without a module here could never run."""
+    from app import variable_registry as vr
+
+    assert set(catalog.experiments()) <= vr._discover_experiments()
+
+
+def test_private_experiment_modules_are_not_experiments():
+    """Helper modules under app/experiments (``_merge``, and any other
+    ``_``-prefixed one) are not runners the catalog may name."""
+    from app import variable_registry as vr
+
+    found = vr._discover_experiments()
+    assert not {name for name in found if name.startswith("_")}, found
+    assert "custom" in found and "bg_ndi_wi" in found
