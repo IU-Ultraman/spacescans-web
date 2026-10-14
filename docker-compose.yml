@@ -19,9 +19,11 @@ services:
       # under the data root, mounted at /project. The pipeline resolves
       # config-relative paths (Noise/C3/..., NDI/C4/...) against this.
       SPACESCANS_DATA_DIR: /project
-      # Config templates ship IN this repo (configs/), mounted at /configs — so
-      # they don't depend on the parent. Path resolution is independent of where
-      # the config lives (paths resolve against SPACESCANS_DATA_DIR).
+      # Runs render the config templates packaged in spacescans. This repo's
+      # configs/ copy is mounted at /configs and checked at startup: unless every
+      # packaged template has a byte-identical file there, the backend refuses
+      # to start (configs/ stays in the repo for the paper's scripts). Paths in
+      # the templates resolve against SPACESCANS_DATA_DIR.
       SPACESCANS_CONFIG_TEMPLATES_DIR: /configs
       # In-container interpreter + CLI (the conda base env / wheel console
       # script). Absolute paths — the backend validates these exist on startup.
@@ -33,7 +35,7 @@ services:
       CODESPACE_NAME: ${CODESPACE_NAME:-}
       GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: ${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}
     volumes:
-      # Config templates from this repo (versioned, not from the parent).
+      # This repo's copy of the config templates (hash-checked at startup).
       - ./configs:/configs:ro
       # Exposure data root (contains the dataset folders directly). Defaults to
       # the in-repo pipeline-data/ folder — drop your data there for a
