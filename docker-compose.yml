@@ -14,6 +14,11 @@ services:
     # Auto-recover from crashes (e.g. an OOM-killed process) instead of
     # leaving the frontend with "Failed to fetch" until someone intervenes.
     restart: unless-stopped
+    # Run an init process as PID 1 (the Dockerfile's CMD runs under it).
+    # Cancelling a task kills the pipeline step's whole process group; the
+    # runner reaps only the step itself, so the step's own children are
+    # re-parented to PID 1 and stay zombies unless PID 1 reaps them.
+    init: true
     environment:
       # The exposure dataset folders (BG/, Noise/, VNL/, ...) live directly
       # under the data root, mounted at /project. The pipeline resolves
