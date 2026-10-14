@@ -6,8 +6,6 @@ that used to point ``_METADATA_PATH`` at another file now substitute
 """
 from __future__ import annotations
 
-import json
-import time
 from collections import OrderedDict
 from pathlib import Path
 
@@ -1178,9 +1176,6 @@ def test_schema_allows_optional_ontology_id():
     """The variable_metadata schema must accept an optional ontology_id and
     still validate when it is absent (additionalProperties is false, so this
     fails until ontology_id is declared in the schema)."""
-    import json
-    import pathlib
-
     import jsonschema
 
     from spacescans import catalog
@@ -1244,9 +1239,6 @@ def test_every_variable_links_to_an_existing_ontology_node():
 
 def test_every_variable_declares_a_data_source():
     """FAIR metadata: every variable must name its originating dataset."""
-    import json
-    import pathlib
-
     from spacescans import catalog
 
     meta = catalog.payload()["variables"]

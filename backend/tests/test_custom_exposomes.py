@@ -7,8 +7,6 @@ not at all.
 """
 from __future__ import annotations
 
-import json
-
 import pytest
 
 from app import custom_exposomes as lib

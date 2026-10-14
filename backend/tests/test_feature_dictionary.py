@@ -7,7 +7,6 @@ description sends the analyst back to guessing from the raw name).
 """
 import csv
 import json
-from pathlib import Path
 
 import pytest
 
