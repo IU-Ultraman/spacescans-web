@@ -41,6 +41,14 @@ scripts/fetch_distribution.sh --small                      # everything except B
                                                            # (7 variables, 8.5 GB on disk)
 ```
 
+The script wraps `python -m spacescans data fetch` (resumable downloads,
+SHA-256 checks from the package's data manifest), so it needs a Python with
+the `spacescans` package installed; set `SPACESCANS_PYTHON` to point at one
+(`scripts/fetch_distribution.sh --help` has the install line). Without one,
+run the same command in the backend container, which has the package and the
+data root at `/project`:
+`docker compose exec backend python -m spacescans data fetch --data-dir /project --dataset tract_boundaries`.
+
 Add only what the variables you plan to run need — the in-app **Data Setup**
 page shows the command for each variable, and takes archive uploads if you
 would rather not use a terminal. Datasets whose licenses forbid
