@@ -434,6 +434,60 @@ def test_sigterm_writes_cancelled_and_exits_143(tmp_path):
                                 "source": "runner", "msg": "received SIGTERM — task cancelled"}]
 
 
+def test_sigterm_during_a_step_cancels_the_task_and_stops_the_step(tmp_path):
+    """task_manager.stop_task's SIGTERM while a step runs, through the shim CLI in its own
+    process: status ``cancelled``, the runner's line, exit 143, the run lock free again,
+    and no "exit code" line (as in 0.2.7). New since phase C: the step's process group
+    is killed too (0.2.7 left the step running)."""
+    import subprocess
+    import time
+
+    from spacescans.orchestrate import RunLock
+
+    hang = tmp_path / "hang_cli.py"
+    pidfile = tmp_path / "step.pid"
+    hang.write_text(
+        "import os, time\n"
+        f"open({str(pidfile)!r}, 'w').write(str(os.getpid()))\n"
+        "print('[overlap_fast] tile 1/2 ( 50.0%)', flush=True)\n"
+        "time.sleep(120)\n")
+    (tmp_path / "data").mkdir()
+    task_dir = _task(tmp_path, "task-sigterm01", ["ndi"])
+    env = {**os.environ, "SPACESCANS_PIPELINE_CLI": str(hang),
+           "SPACESCANS_PIPELINE_PYTHON": sys.executable,
+           "SPACESCANS_DATA_DIR": str(tmp_path / "data"), "DATA_DIR": str(tmp_path / "appdata"),
+           "C3_CACHE_DIR": str(tmp_path / "appdata" / "c3_cache"), "PYTHONDONTWRITEBYTECODE": "1"}
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "app.experiments.bg_ndi_wi", "run", str(task_dir),
+         "--variables", "ndi"],
+        cwd=Path(__file__).resolve().parents[1], env=env,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        deadline = time.monotonic() + 60
+        while True:   # the step runs and the runner has turned its progress line into status
+            assert proc.poll() is None, "the runner exited before the step started"
+            assert time.monotonic() < deadline, "the step never reported progress"
+            if pidfile.exists() and (task_dir / "status.json").exists():
+                slot = _status(task_dir)["experiments"].get("bg_ndi_wi", {})
+                if slot.get("message") == "Running c3_bg (1/3) — 50%":
+                    break
+            time.sleep(0.05)
+        step_pid = int(pidfile.read_text())
+        proc.send_signal(signal.SIGTERM)
+        assert proc.wait(timeout=30) == 143
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+    status = _status(task_dir)
+    assert (status["status"], status["message"]) == ("cancelled", "Task cancelled by user")
+    runner = _runner_lines(task_dir)
+    assert runner[0].startswith("spawning c3_bg: ")
+    assert runner[1:] == ["received SIGTERM — task cancelled"]
+    with pytest.raises(ProcessLookupError):
+        os.kill(step_pid, 0)
+    assert RunLock(tmp_path / "appdata").is_free()
+
+
 # ---------------------------------------------------------------------------
 # the partial (merge_results)
 # ---------------------------------------------------------------------------
