@@ -1,151 +1,58 @@
-"""Per-user library of uploaded area-level exposures ("custom exposomes").
+"""Per-user library of uploaded exposures ("custom exposomes").
 
-A user uploads a CSV of their own values keyed by a Census geography, names the
-columns that hold values, and the dataset becomes a selectable exposure in the
-task wizard next to the shipped ones.
+A user uploads a CSV of their own values keyed by a Census geography, or one
+GeoTIFF per year, and the dataset becomes a selectable exposure in the task
+wizard next to the shipped ones.
 
-Two geometries, one C4 path. A POLYGON dataset attaches a CSV to a boundary
-layer the deployment already provisions; a RASTER dataset is one GeoTIFF (or
-one per year) that becomes its own C3 template grid. Either way the C4 step is
-``static_areal`` / ``yearly_areal`` reading a plain table through ``read_table``
-with no plugin — for a raster, the runner first materialises that table from
-the C3 weights' grid ids and the pixels under them. The pipeline needs no new
-code for either.
-
-Storage mirrors how tasks are stored — on disk, not in the one-table DB:
+Since tier-2 phase B the domain half of that path lives in
+``spacescans.custom``: CSV parsing and validation, GeoTIFF inspection, units,
+the definition (the manifest's fields, in the same order), the C3/C4 steps and
+the post-run diagnostics. This module keeps what is the web's own, storage and
+ownership: where a dataset is stored, under which user, and the ``create`` /
+``create_raster`` names the paper's scripts call.
 
     {DATA_DIR}/custom_exposomes/user-<uid>/<dataset_id>/
-        manifest.json          catalog entry + provenance
-        values.csv             polygon: the upload, header-normalised
+        manifest.json          catalog entry + provenance (= the definition)
+        values.csv             polygon: the upload, byte for byte
         rasters/<year>.tif     raster: one file per year, or static.tif
 
 See docs/superpowers/specs/2026-09-21-custom-exposome-design.md.
 """
 from __future__ import annotations
 
-import csv
 import hashlib
-import io
 import json
 import re
 import shutil
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import app.config
-
-# Boundary layer -> (join column in the C3 weights table, expected key width).
-# The widths are what makes a GEOID10 string vs a numeric fips detectable at
-# upload time instead of as an empty join twenty minutes into a run.
-BOUNDARY_SPEC: dict[str, dict[str, Any]] = {
-    "Tract": {"join_col": "GEOID10", "key_len": 11, "label": "Census Tract (2010)"},
-    "BG": {"join_col": "GEOID10", "key_len": 12, "label": "Block Group (2010)"},
-    "ZCTA5": {"join_col": "ZCTA5CE10", "key_len": 5, "label": "ZIP Code Tabulation Area (2010)"},
-    "County": {"join_col": "GEOID10", "key_len": 5, "label": "County (2010)"},
-}
-
-# Which dataset dir under SPACESCANS_DATA_DIR must exist for a boundary's C3
-# step to be runnable. Mirrors the provisioning gates in variable_registry.
-BOUNDARY_DATA_DIR = {
-    "Tract": "TRACT",
-    "BG": "BG",
-    "ZCTA5": "ZCTA5",
-    "County": "County",
-}
-
-EXPERIMENT_KEY = "custom"
-# Key under which a task's config.json records the datasets it selected. The
-# config endpoint writes it, resolving each key against the authenticated
-# caller's own library, so a runner subprocess never has to know who owns the
-# task and a dataset deleted or re-uploaded mid-run cannot change what the task
-# computes. config.json is the single source: the runner's plan() reads it from
-# the config dict it is handed, variable_registry reads it from disk.
-TASK_CUSTOM_KEY = "custom_variables"
-KEY_PREFIX = "custom_"
-MAX_VALUE_COLS = 40
-_NON_NUMERIC_TOLERANCE = 0.5      # reject a value column that is >50% unparseable
-_PREVIEW_ROWS = 5
-
-
-# The fields variable_metadata.schema.json allows. A manifest is a documented
-# SUPERSET of these: the runner needs join_col, values_path and friends, and the
-# schema sets additionalProperties:false, so a manifest deliberately does not
-# validate against it. That is safe because the task overlay is merged into the
-# catalog *after* load_variables() has validated the shipped file — nothing ever
-# validates a merged payload. catalog_entry() below extracts the valid subset
-# for anywhere that needs one.
-CATALOG_FIELDS = (
-    "label", "description", "boundary", "spatial_method", "coverage_years",
-    "coverage_region", "experiment", "ontology_id", "data_source", "temporal",
-    "variable_type", "display_unit", "value_cols",
+from spacescans import custom as _c
+from spacescans.custom import (  # noqa: F401  (re-exported names the routers and tests use)
+    BOUNDARY_DATA_DIR,
+    BOUNDARY_SPEC,
+    CATALOG_FIELDS,
+    EXPERIMENT_KEY,
+    KEY_PREFIX,
+    MAX_RASTER_YEARS,
+    MAX_VALUE_COLS,
+    TASK_CUSTOM_KEY,
+    CustomExposomeError,
+    catalog_entry,
+    dataset_id_from_key,
+    is_custom_key,
+    preview_raster,
+    variable_key,
 )
+from spacescans.custom.units import clean_unit as _clean_unit  # noqa: F401
+from spacescans.custom.units import summarise_units as _summarise_units  # noqa: F401
+from spacescans.custom.units import unit_as_typed as _unit_as_typed  # noqa: F401
 
-
-def catalog_entry(manifest: dict[str, Any]) -> dict[str, Any]:
-    """The part of a manifest that satisfies the shipped catalog schema."""
-    return {k: manifest[k] for k in CATALOG_FIELDS if k in manifest}
-
-
-# Bounds taken from variable_metadata.schema.json so a custom entry stays
-# catalog-shaped and the frontend can render it exactly like a shipped row.
-_MAX_LABEL = 80
-_MAX_DESCRIPTION = 400
-_MAX_UNIT = 50
-_DEFAULT_UNIT = "unitless"
-
-
-# Symbols that appear in units and have a lossless ASCII spelling. Dropping
-# them instead would turn "\u00b5g/m\u00b3" into "g/m3" — a different unit.
-_UNIT_ASCII = str.maketrans({
-    "\u00b5": "u", "\u03bc": "u",          # micro sign, Greek mu
-    "\u00b0": "deg",                        # degree
-    "\u00b2": "2", "\u00b3": "3",          # superscripts
-    "\u2212": "-", "\u2013": "-", "\u2014": "-",
-    "\u00d7": "x", "\u00b7": "*",
-})
-
-
-def _clean_unit(raw: str) -> str:
-    """Printable ASCII, non-empty — what the catalog schema allows for the one
-    dataset-level display_unit. Per-column units are stored as typed.
-
-    Known symbols are transliterated, anything else non-ASCII is dropped, and a
-    blank result becomes "unitless" rather than the empty string the schema
-    forbids.
-    """
-    text = (raw or "").strip().translate(_UNIT_ASCII)
-    kept = "".join(ch for ch in text if "\x20" <= ch <= "\x7e")
-    return kept[:_MAX_UNIT].strip() or _DEFAULT_UNIT
-
-
-def _unit_as_typed(raw: str) -> str:
-    """A per-column unit: trimmed and capped, otherwise the author's own."""
-    return (raw or "").strip()[:_MAX_UNIT]
-
-
-def _summarise_units(value_cols: list[str], units: dict[str, str]) -> str:
-    """The one catalog-level unit string, derived from the per-column ones.
-
-    Distinct units in column order, " / "-joined, capped at the schema's 50
-    characters; no units at all -> "unitless".
-    """
-    seen: list[str] = []
-    for col in value_cols:
-        raw = (units.get(col) or "").strip()
-        if not raw:
-            continue
-        cleaned = _clean_unit(raw)
-        if cleaned not in seen:
-            seen.append(cleaned)
-    if not seen:
-        return _DEFAULT_UNIT
-    joined = " / ".join(seen)
-    return joined if len(joined) <= _MAX_UNIT else (joined[: _MAX_UNIT - 1].rstrip() + "…")
-
-
-class CustomExposomeError(ValueError):
-    """Upload or manifest rejected. The message is shown to the user."""
+# Validation and preview, under the web's names.
+preview = _c.preview_csv
+validate = _c.validate_csv
+_check_band_columns = _c.check_band_columns
 
 
 # --------------------------------------------------------------------------
@@ -166,245 +73,23 @@ def dataset_dir(uid: int | str, dataset_id: str) -> Path:
     return user_dir(uid) / dataset_id
 
 
-def variable_key(dataset_id: str) -> str:
-    return f"{KEY_PREFIX}{dataset_id}"
+def _derive_id(uid: int | str, content: bytes, name: str) -> str:
+    """Content+name hash, re-rolled on collision so a re-upload is distinct.
 
-
-def dataset_id_from_key(key: str) -> str | None:
-    if not key.startswith(KEY_PREFIX):
-        return None
-    candidate = key[len(KEY_PREFIX):]
-    return candidate if re.fullmatch(r"[0-9a-f]{8}", candidate) else None
-
-
-def is_custom_key(key: str) -> bool:
-    return dataset_id_from_key(key) is not None
-
-
-# --------------------------------------------------------------------------
-# validation
-# --------------------------------------------------------------------------
-
-def _normalise_header(name: str) -> str:
-    """Trim and strip a UTF-8 BOM; otherwise leave the author's spelling."""
-    return name.strip().lstrip("﻿")
-
-
-def _parse_csv(content: bytes) -> tuple[list[str], list[list[str]]]:
-    try:
-        text = content.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        try:
-            text = content.decode("latin-1")
-        except Exception as exc:  # pragma: no cover - latin-1 decodes anything
-            raise CustomExposomeError(f"file is not readable text: {exc}") from exc
-    reader = csv.reader(io.StringIO(text))
-    try:
-        header = next(reader)
-    except StopIteration:
-        raise CustomExposomeError("file is empty") from None
-    header = [_normalise_header(h) for h in header]
-    if not any(header):
-        raise CustomExposomeError("first line has no column names")
-    rows = [r for r in reader if any(cell.strip() for cell in r)]
-    if not rows:
-        raise CustomExposomeError("file has a header but no data rows")
-    return header, rows
-
-
-def _column(header: list[str], rows: list[list[str]], name: str) -> list[str]:
-    idx = header.index(name)
-    return [(r[idx].strip() if idx < len(r) else "") for r in rows]
-
-
-def _numeric_failures(values: list[str]) -> int:
-    bad = 0
-    for v in values:
-        if v == "" or v.upper() in {"NA", "N/A", "NULL", "NAN", "."}:
-            continue           # blanks are missing data, not a parse failure
-        try:
-            float(v)
-        except ValueError:
-            bad += 1
-    return bad
-
-
-def preview(content: bytes) -> dict[str, Any]:
-    """Columns, sample rows and a numeric-looking flag, for the mapping UI."""
-    header, rows = _parse_csv(content)
-    columns = []
-    for name in header:
-        if not name:
-            continue
-        values = _column(header, rows, name)
-        non_empty = [v for v in values if v != ""]
-        numeric = bool(non_empty) and _numeric_failures(values) == 0
-        col: dict[str, Any] = {
-            "name": name,
-            "numeric": numeric,
-            # A few distinct values so a text column is recognisable at a glance.
-            "distinct_sample": sorted({v for v in non_empty[:200]})[:5],
-        }
-        if numeric:
-            # The observed range is what tells a user which numeric column is
-            # which (0.30–0.40 is an index; 80–85 is a temperature). Parsed as
-            # numbers: a string sort would put "10" before "9".
-            parsed = [float(v) for v in non_empty
-                      if v.upper() not in {"NA", "N/A", "NULL", "NAN", "."}]
-            if parsed:
-                col["range"] = [min(parsed), max(parsed)]
-        columns.append(col)
-    return {
-        "columns": columns,
-        "row_count": len(rows),
-        "sample_rows": [dict(zip(header, r)) for r in rows[:_PREVIEW_ROWS]],
-    }
-
-
-def validate(
-    content: bytes,
-    *,
-    boundary: str,
-    key_col: str,
-    value_cols: list[str],
-    year_col: str | None,
-) -> dict[str, Any]:
-    """Check the upload against the boundary's contract.
-
-    Returns the derived facts the manifest needs (row count, coverage years).
-    Raises CustomExposomeError with a message meant for the user.
-
-    What this cannot check is set membership against the real national key
-    universe — that would mean loading fifty tract shapefiles per preview. The
-    key-width check below catches the class of defect that matters (a numeric
-    fips against a zero-padded GEOID10 string); the true linkage rate is
-    reported by the runner after the first run.
+    The k-th candidate is ``spacescans.custom.derive_dataset_id`` with the uid
+    as salt and ``attempt=k``, so the ids this library allocates are the ones
+    the web always allocated.
     """
-    if boundary not in BOUNDARY_SPEC:
-        raise CustomExposomeError(
-            f"unknown boundary {boundary!r}; expected one of {sorted(BOUNDARY_SPEC)}"
-        )
-    if not value_cols:
-        raise CustomExposomeError("select at least one value column")
-    if len(value_cols) > MAX_VALUE_COLS:
-        raise CustomExposomeError(
-            f"{len(value_cols)} value columns exceeds the limit of {MAX_VALUE_COLS}"
-        )
-
-    header, rows = _parse_csv(content)
-    missing = [c for c in [key_col, *value_cols, *( [year_col] if year_col else [] )]
-               if c not in header]
-    if missing:
-        raise CustomExposomeError(
-            f"column(s) not in the file: {', '.join(missing)}. "
-            f"The file has: {', '.join(h for h in header if h)}"
-        )
-    overlap = set(value_cols) & ({key_col} | ({year_col} if year_col else set()))
-    if overlap:
-        raise CustomExposomeError(
-            f"column(s) used twice: {', '.join(sorted(overlap))}"
-        )
-
-    # --- geography key ---
-    keys = _column(header, rows, key_col)
-    blanks = sum(1 for k in keys if k == "")
-    if blanks:
-        raise CustomExposomeError(
-            f"{blanks:,} of {len(keys):,} rows have no value in {key_col!r}"
-        )
-    expected_len = BOUNDARY_SPEC[boundary]["key_len"]
-    wrong_width = [k for k in keys if not (k.isdigit() and len(k) == expected_len)]
-    if wrong_width:
-        sample = ", ".join(repr(k) for k in wrong_width[:3])
-        hint = ""
-        if any(k.isdigit() and len(k) == expected_len - 1 for k in wrong_width):
-            hint = (
-                f" Values one digit short usually mean a leading zero was lost by a "
-                f"spreadsheet; {boundary} keys are zero-padded to {expected_len} digits."
-            )
-        raise CustomExposomeError(
-            f"{len(wrong_width):,} of {len(keys):,} values in {key_col!r} are not "
-            f"{expected_len}-digit {boundary} codes (e.g. {sample}).{hint}"
-        )
-
-    # --- year ---
-    years: list[int] = []
-    if year_col:
-        raw_years = _column(header, rows, year_col)
-        bad_years = []
-        for y in raw_years:
-            try:
-                year = int(float(y))
-            except ValueError:
-                bad_years.append(y)
-                continue
-            if not 1900 <= year <= 2100:
-                bad_years.append(y)
-            else:
-                years.append(year)
-        if bad_years:
-            raise CustomExposomeError(
-                f"{len(bad_years):,} rows have an unusable year in {year_col!r} "
-                f"(e.g. {', '.join(repr(y) for y in bad_years[:3])})"
-            )
-
-    # --- duplicate keys: they would multiply rows in the C4 join ---
-    if year_col:
-        seen_pairs = list(zip(keys, years))
-        dup_label = f"({key_col}, {year_col})"
-    else:
-        seen_pairs = keys
-        dup_label = key_col
-    if len(set(seen_pairs)) != len(seen_pairs):
-        dupes = len(seen_pairs) - len(set(seen_pairs))
-        raise CustomExposomeError(
-            f"{dupes:,} duplicate {dup_label} rows. Each geography "
-            f"{'and year ' if year_col else ''}must appear once."
-        )
-
-    # --- value columns ---
-    non_numeric: dict[str, int] = {}
-    all_blank = []
-    for col in value_cols:
-        values = _column(header, rows, col)
-        if all(v == "" for v in values):
-            all_blank.append(col)
-            continue
-        bad = _numeric_failures(values)
-        if bad / max(1, len(values)) > _NON_NUMERIC_TOLERANCE:
-            non_numeric[col] = bad
-    if all_blank:
-        raise CustomExposomeError(
-            f"value column(s) with no data at all: {', '.join(all_blank)}"
-        )
-    if non_numeric:
-        detail = ", ".join(f"{c} ({n:,} rows)" for c, n in non_numeric.items())
-        raise CustomExposomeError(
-            f"value column(s) mostly non-numeric: {detail}. "
-            "Exposure values must be numbers."
-        )
-
-    coverage = [min(years), max(years)] if years else [0, 0]
-    return {
-        "row_count": len(rows),
-        "coverage_years": coverage,
-        "distinct_keys": len(set(keys)),
-    }
+    for attempt in range(1000):
+        candidate = _c.derive_dataset_id(content, name, salt=str(uid), attempt=attempt)
+        if not dataset_dir(uid, candidate).exists():
+            return candidate
+    raise CustomExposomeError("could not allocate a dataset id")  # pragma: no cover
 
 
 # --------------------------------------------------------------------------
 # library
 # --------------------------------------------------------------------------
-
-def _derive_id(uid: int | str, content: bytes, name: str) -> str:
-    """Content+name hash, re-rolled on collision so a re-upload is distinct."""
-    base = hashlib.sha256(content + name.encode() + str(uid).encode()).hexdigest()
-    for attempt in range(1000):
-        candidate = hashlib.sha256(f"{base}:{attempt}".encode()).hexdigest()[:8]
-        if not dataset_dir(uid, candidate).exists():
-            return candidate
-    raise CustomExposomeError("could not allocate a dataset id")  # pragma: no cover
-
 
 def create(
     uid: int | str,
@@ -420,136 +105,23 @@ def create(
     year_col: str | None = None,
     uploaded_filename: str = "values.csv",
 ) -> dict[str, Any]:
-    """Validate, persist and return the manifest.
+    """Validate (``spacescans.custom.define_polygon``), persist and return the manifest.
 
-    Units are per value column: one dataset can carry a greenness index next
-    to a temperature, so a single dataset-level unit cannot be right. The
-    catalog still has exactly one ``display_unit`` per variable, so that field
-    is DERIVED — the distinct units in column order, joined with " / " (which
-    is how the shipped FAQSD entry already reads: "ppb / ug/m3").
+    Units are per value column; the catalog's one ``display_unit`` is derived
+    from them (distinct units in column order, " / "-joined).
     """
-    name = name.strip()
-    if not name:
-        raise CustomExposomeError("give the dataset a name")
-    if len(name) > _MAX_LABEL:
-        raise CustomExposomeError(
-            f"name is longer than {_MAX_LABEL} characters"
-        )
-
-    facts = validate(
-        content,
-        boundary=boundary,
-        key_col=key_col,
-        value_cols=value_cols,
-        year_col=year_col,
-    )
-
-    dataset_id = _derive_id(uid, content, name)
+    dataset_id = _derive_id(uid, content, (name or "").strip())
     ddir = dataset_dir(uid, dataset_id)
+    manifest = _c.define_polygon(
+        content, boundary=boundary, key_col=key_col, value_cols=value_cols, year_col=year_col,
+        label=name, description=description, labels=value_labels, units=value_units,
+        uploaded_filename=uploaded_filename, dataset_id=dataset_id, owner_uid=uid,
+        values_path=ddir / "values.csv",
+    )
     ddir.mkdir(parents=True, exist_ok=False)
-    values_path = ddir / "values.csv"
-    values_path.write_bytes(content)
-
-    # coverage_years drives the wizard's coverage panel. A static dataset has no
-    # years of its own, so it claims the full window the shipped variables use.
-    coverage = facts["coverage_years"] if year_col else [2013, 2019]
-
-    manifest = {
-        # --- catalog-shaped fields, served as-is next to the shipped ones ---
-        "label": name,
-        "description": (description.strip() or f"User-uploaded {boundary} values.")[:_MAX_DESCRIPTION],
-        "boundary": boundary,
-        "spatial_method": "areal",
-        "coverage_years": coverage,
-        "coverage_region": "CONUS",
-        "experiment": EXPERIMENT_KEY,
-        # No ontology_id key at all: the catalog schema requires a non-empty
-        # string when the key is present, and an absent key is falsy in the
-        # frontend exactly as null would be. Custom exposomes have no ontology
-        # node, which is why they render in their own block, not in the tree.
-        "data_source": f"Uploaded by user: {uploaded_filename}",
-        "temporal": "yearly" if year_col else "static",
-        "variable_type": "continuous",
-        "display_unit": _summarise_units(value_cols, value_units or {}),
-        "value_cols": list(value_cols),
-        # --- private: the runner and the library need these ---
-        "geometry": "polygon",
-        "dataset_id": dataset_id,
-        "variable_key": variable_key(dataset_id),
-        "owner_uid": str(uid),
-        "join_col": BOUNDARY_SPEC[boundary]["join_col"],
-        "key_col": key_col,
-        "year_col": year_col,
-        "value_labels": {c: v.strip() for c, v in (value_labels or {}).items()
-                         if c in value_cols and v and v.strip()},
-        "value_units": {c: _unit_as_typed(v) for c, v in (value_units or {}).items()
-                        if c in value_cols and v and v.strip()},
-        "values_path": str(values_path),
-        "row_count": facts["row_count"],
-        "distinct_keys": facts["distinct_keys"],
-        "sha256": hashlib.sha256(content).hexdigest(),
-        "uploaded_filename": uploaded_filename,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
+    (ddir / "values.csv").write_bytes(content)
     (ddir / "manifest.json").write_text(json.dumps(manifest, indent=2))
     return manifest
-
-
-MAX_RASTER_YEARS = 30
-
-
-def preview_raster(content: bytes) -> dict[str, Any]:
-    """Describe an uploaded GeoTIFF for the dialog; raises on an unusable one."""
-    from app import raster_values
-    try:
-        return raster_values.inspect(content)
-    except raster_values.RasterError as exc:
-        raise CustomExposomeError(str(exc)) from exc
-
-
-_COLUMN_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_]*")
-# Columns the runner already uses in the value table (grid_id, year) or in
-# result.csv (pid, episode_id; PATID and geoid before the merge renames them).
-_RESERVED_RASTER_COLS = {"grid_id", "year", "pid", "episode_id", "patid", "geoid"}
-
-
-def _check_band_columns(bands: list[int], value_cols: list[str] | None) -> tuple[list[int], list[str]]:
-    """Bands distinct and positive, one valid, unused column name per band."""
-    if not bands:
-        raise CustomExposomeError("select at least one band")
-    if len(bands) > MAX_VALUE_COLS:
-        raise CustomExposomeError(f"{len(bands)} bands exceeds the limit of {MAX_VALUE_COLS}")
-    try:
-        bands = [int(b) for b in bands]
-    except (TypeError, ValueError):
-        raise CustomExposomeError(f"bands must be whole numbers, got {bands!r}") from None
-    if any(b < 1 for b in bands):
-        raise CustomExposomeError("band numbers start at 1")
-    if len(set(bands)) != len(bands):
-        raise CustomExposomeError("a band is selected twice")
-    cols = [(c or "").strip() for c in (value_cols or [])]
-    if len(cols) != len(bands):
-        raise CustomExposomeError(
-            f"{len(bands)} band(s) but {len(cols)} column name(s); name one column per band"
-        )
-    for col in cols:
-        if not _COLUMN_NAME.fullmatch(col):
-            raise CustomExposomeError(
-                f"the value column name {col!r} must start with a letter and use only letters, "
-                "digits and underscores (it becomes a column in result.csv)"
-            )
-        if col.lower() in _RESERVED_RASTER_COLS:
-            raise CustomExposomeError(
-                f"column name {col!r} is already used by result.csv; choose another"
-            )
-    lowered = [c.lower() for c in cols]
-    dupes = sorted({c for c in cols if lowered.count(c.lower()) > 1})
-    if dupes:
-        raise CustomExposomeError(
-            f"column name(s) used twice: {', '.join(dupes)} (names are compared "
-            "ignoring case, since spreadsheets and stats packages do)"
-        )
-    return bands, cols
 
 
 def create_raster(
@@ -567,145 +139,29 @@ def create_raster(
     value_labels: dict[str, str] | None = None,
     value_units: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Validate one GeoTIFF (static) or one per year (yearly), persist, return
-    the manifest.
+    """Validate one GeoTIFF (static) or one per year (yearly)
+    (``spacescans.custom.define_raster``), persist, return the manifest.
 
-    ``rasters`` is ``[(filename, bytes, year)]``. A single file with year None
-    is a static dataset; otherwise every file needs a distinct year. All files
-    must share one grid — crs, transform, shape — because the C3 weights are
-    computed once from the first and reused for every year.
-
-    One or more bands become one result column each: ``bands`` and the
-    parallel ``value_cols`` name them, ``value_labels``/``value_units`` are
-    keyed by column. Without ``bands`` the single-band arguments ``band``,
-    ``value_col``, ``value_label`` and ``value_unit`` describe the one column.
-    The C3 weights are per grid, not per band, so every band shares one C3 step.
+    ``rasters`` is ``[(filename, bytes, year)]``. One or more bands become one
+    result column each: ``bands`` and the parallel ``value_cols`` name them;
+    without ``bands`` the single-band arguments describe the one column.
     """
-    from app import raster_values
-
-    name = name.strip()
-    if not name:
-        raise CustomExposomeError("give the dataset a name")
-    if len(name) > _MAX_LABEL:
-        raise CustomExposomeError(f"name is longer than {_MAX_LABEL} characters")
-    if not rasters:
-        raise CustomExposomeError("upload at least one GeoTIFF")
-    if len(rasters) > MAX_RASTER_YEARS:
-        raise CustomExposomeError(f"{len(rasters)} files exceeds the limit of {MAX_RASTER_YEARS}")
-    if bands is None:
-        bands = [band]
-        value_cols = [value_col]
-        value_labels = {value_col.strip(): value_label} if value_label else {}
-        value_units = {value_col.strip(): value_unit} if value_unit else {}
-    bands, value_cols = _check_band_columns(bands, value_cols)
-    value_labels = {c: v.strip() for c, v in (value_labels or {}).items()
-                    if c in value_cols and v and v.strip()}
-    value_units = {c: _unit_as_typed(v) for c, v in (value_units or {}).items()
-                   if c in value_cols and v and v.strip()}
-
-    years = [y for _f, _b, y in rasters]
-    static = len(rasters) == 1 and years[0] is None
-    if not static:
-        if any(y is None for y in years):
-            raise CustomExposomeError(
-                "assign a year to every file, or upload a single file with no year "
-                "for a time-invariant dataset"
-            )
-        if len(set(years)) != len(years):
-            raise CustomExposomeError("two files carry the same year")
-        bad = [y for y in years if not 1900 <= int(y) <= 2100]
-        if bad:
-            raise CustomExposomeError(f"unusable year(s): {bad}")
-
-    metas = []
-    for filename, content, _year in rasters:
-        try:
-            meta = raster_values.inspect(content)
-        except raster_values.RasterError as exc:
-            raise CustomExposomeError(f"{filename}: {exc}") from exc
-        missing = [b for b in bands if not 1 <= b <= meta["band_count"]]
-        if missing:
-            raise CustomExposomeError(
-                f"{filename}: band {', '.join(map(str, missing))} does not exist "
-                f"(the file has {meta['band_count']})"
-            )
-        metas.append(meta)
-    first = metas[0]
-    for (filename, _c, _y), meta in zip(rasters[1:], metas[1:]):
-        if not raster_values.same_grid(first, meta):
-            raise CustomExposomeError(
-                f"{filename} is on a different grid from {rasters[0][0]} "
-                f"({meta['width']}x{meta['height']}, {meta['crs']} vs "
-                f"{first['width']}x{first['height']}, {first['crs']}); every year "
-                "must share one grid"
-            )
-
     digest = hashlib.sha256()
     for _f, content, _y in rasters:
         digest.update(content)
-    dataset_id = _derive_id(uid, digest.digest(), name)
-    ddir = dataset_dir(uid, dataset_id)
-    rdir = ddir / "rasters"
+    dataset_id = _derive_id(uid, digest.digest(), (name or "").strip())
+    rdir = dataset_dir(uid, dataset_id) / "rasters"
+    paths = [rdir / (f"{y}.tif" if y is not None else "static.tif") for _f, _c2, y in rasters]
+    manifest = _c.define_raster(
+        rasters, label=name, description=description, bands=bands, value_cols=value_cols,
+        labels=value_labels, units=value_units, band=band, value_col=value_col,
+        value_label=value_label, value_unit=value_unit, paths=paths, dataset_id=dataset_id,
+        owner_uid=uid,
+    )
     rdir.mkdir(parents=True, exist_ok=False)
-
-    stored = []
-    for (filename, content, year), meta in zip(rasters, metas):
-        target = rdir / (f"{year}.tif" if year is not None else "static.tif")
-        target.write_bytes(content)
-        stored.append({
-            "path": str(target),
-            "year": year,
-            "uploaded_filename": filename,
-            "sha256": hashlib.sha256(content).hexdigest(),
-            "bytes": len(content),
-        })
-    stored.sort(key=lambda r: (r["year"] is None, r["year"] or 0))
-
-    coverage = [min(years), max(years)] if not static else [2013, 2019]
-    listed = {b["index"]: b for b in first.get("bands", [])}
-    manifest = {
-        # --- catalog-shaped ---
-        "label": name,
-        "description": (description.strip() or (
-            f"User-uploaded {first['resolution_label']} raster"
-            + ("" if static else f", {coverage[0]}–{coverage[1]}") + "."
-        ))[:_MAX_DESCRIPTION],
-        "boundary": "Point",
-        "spatial_method": "grid",
-        "coverage_years": coverage,
-        "coverage_region": "CONUS",
-        "experiment": EXPERIMENT_KEY,
-        "data_source": "Uploaded by user: " + ", ".join(r["uploaded_filename"] for r in stored)[:200],
-        "temporal": "static" if static else "yearly",
-        "variable_type": "continuous",
-        "display_unit": _summarise_units(value_cols, value_units),
-        "value_cols": list(value_cols),
-        # --- private ---
-        "geometry": "raster",
-        "dataset_id": dataset_id,
-        "variable_key": variable_key(dataset_id),
-        "owner_uid": str(uid),
-        "join_col": "grid_id",
-        "key_col": "grid_id",
-        "year_col": None if static else "year",
-        "value_labels": value_labels,
-        "value_units": value_units,
-        "values_path": None,                     # materialised per task by the runner
-        "rasters": stored,
-        "bands": bands,                          # parallel to value_cols
-        "band": bands[0],                        # manifests before multi-band read this
-        "band_nodata": [listed.get(b, {}).get("nodata", first["nodata"]) for b in bands],
-        "grid_hash": first["grid_hash"],
-        "grid": {k: first[k] for k in ("width", "height", "crs", "transform",
-                                       "resolution", "resolution_label", "nodata",
-                                       "bounds_wgs84")},
-        "row_count": first["cells"],
-        "distinct_keys": first["cells"],
-        "sha256": digest.hexdigest(),
-        "uploaded_filename": stored[0]["uploaded_filename"],
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
-    (ddir / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    for (_f, content, _y), path in zip(rasters, paths):
+        path.write_bytes(content)
+    (rdir.parent / "manifest.json").write_text(json.dumps(manifest, indent=2))
     return manifest
 
 
@@ -761,17 +217,4 @@ def provisioned_boundaries() -> list[dict[str, Any]]:
     Offering a layer whose shapefiles are missing would let a user build a
     dataset that can never run.
     """
-    from app.variable_registry import _unprovisioned
-    root = app.config.settings.SPACESCANS_DATA_DIR
-    out = []
-    for boundary, spec in BOUNDARY_SPEC.items():
-        data_dir = root / BOUNDARY_DATA_DIR[boundary]
-        available = data_dir.is_dir() and not _unprovisioned(data_dir)
-        out.append({
-            "boundary": boundary,
-            "label": spec["label"],
-            "join_col": spec["join_col"],
-            "key_len": spec["key_len"],
-            "available": available,
-        })
-    return out
+    return _c.provisioned_boundaries(app.config.settings.SPACESCANS_DATA_DIR)

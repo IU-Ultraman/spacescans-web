@@ -11,20 +11,24 @@ variable instead:
     shipped step name, template and cache tag (``TRACT_FARA`` for Tract, ``BG``
     for Block Group, ...). Reusing the tag is the point: a user who has already
     run FARA on this cohort and buffer gets its cached tract weights for free.
-    ``_cache_key`` therefore takes the tag as an argument rather than reading a
-    module constant.
   * the C4 step — rendered from ``c4/custom_areal.yaml`` with the dataset's own
     join column, value columns and table path, using ``static_areal`` when the
-    dataset has no year column and ``yearly_areal`` when it has one. Both
-    patterns read a plain table through ``read_table`` because the rendered
-    config sets no ``plugin:``.
+    dataset has no year column and ``yearly_areal`` when it has one.
 
 A RASTER dataset takes the same two steps with two substitutions: its C3 is
 ``grid_weights`` with the uploaded GeoTIFF as the template grid (step name and
-cache tag keyed by the grid's hash, so every year and every dataset on one grid
-share one C3), and before its C4 renders, the runner materialises the value
-table — ``(grid_id, <col>[, year])`` — from the C3 weights' grid ids and the
-pixels under them. From there C4 cannot tell a raster from a polygon.
+cache tag keyed by the grid's hash), and before its C4 renders, the runner
+materialises the value table ``(grid_id, <col>[, year])`` from the C3 weights'
+grid ids and the pixels under them.
+
+Since tier-2 phase B the domain of this runner lives in ``spacescans.custom``:
+the steps and the plan (``catalog.plan("custom", ...)``), rendering
+(``catalog.recipes.render_config``), the value table, the legacy cache key and
+the diagnostics. The templates come from the package (``catalog.template``).
+What stays here is the runner shell: the run lock, status.json / logs.jsonl,
+the C3 cache files, and the module-level names the dispatcher, the paper's
+scripts and the tests call (``plan``, ``run``, ``_cli_main``, ``render_yaml``,
+``_cache_key``, ...).
 
 Dataset definitions come from ``config.json['custom_variables']``, a snapshot
 the config endpoint writes after resolving each key against the authenticated
@@ -38,7 +42,6 @@ from __future__ import annotations
 import argparse
 import fcntl
 import hashlib
-import inspect
 import json
 import logging
 import os
@@ -54,29 +57,18 @@ import yaml
 import app.config
 from app.experiments import _merge
 from app.experiments.bg_ndi_wi import (
-    PipelineStep,
+    PipelineStep,  # noqa: F401  (the sibling runners' step type; kept for callers)
     parse_step_progress,  # noqa: F401  (re-exported for symmetry with siblings)
     run_pipeline_step,
     _append_log,
     _is_valid_cached_parquet,
 )
+from spacescans import catalog as _catalog
+from spacescans import custom as _c
 
 _log = logging.getLogger(__name__)
 
 _EXPERIMENT_KEY = "custom"
-
-# boundary -> (C3 step name, C3 template, cache tag). Step name and tag are the
-# shipped runners' on purpose so the C3 cache is shared with them.
-BOUNDARY_C3: dict[str, tuple[str, str, str]] = {
-    "Tract": ("c3_tract_us", "c3/tract_us_demo.yaml", "TRACT_FARA"),
-    "BG": ("c3_bg", "c3/bg_us_demo.yaml", "BG"),
-    "ZCTA5": ("c3_zcta5", "c3/zcta5_us_demo.yaml", "ZCTA5"),
-    "County": ("c3_county_us", "c3/county_us_demo.yaml", "COUNTY"),
-}
-
-_C4_TEMPLATE = "c4/custom_areal.yaml"
-_C3_GRID_TEMPLATE = "c3/custom_grid.yaml"
-_GRID_TAG_PREFIX = "CUSTOMGRID_"
 
 
 def _sanity_check_pipeline_supports_areal_episode() -> None:
@@ -86,243 +78,124 @@ def _sanity_check_pipeline_supports_areal_episode() -> None:
     DurationWeightedSpec.group_by_episode; left at the "patient" default it
     emits one row per PATID, _merge.write_partial then finds no `geoid` to
     rename to `episode_id`, and the merge raises KeyError. ACAG and FAQSD each
-    hit this. Same deterministic source grep the other runners use.
+    hit this. The check reads the package's ``episode_grouping`` capability
+    flag (what ``spacescans.capabilities()`` reports) instead of grepping the
+    linkage modules' source.
     """
-    from spacescans.linkage import static_areal_linkage, yearly_areal_linkage
-    for module in (static_areal_linkage, yearly_areal_linkage):
-        if "output_grouping" not in inspect.getsource(module):
-            raise RuntimeError(
-                f"custom: live spacescans.linkage.{module.__name__.split('.')[-1]} "
-                "does not mention 'output_grouping' — per-episode dispatch is "
-                "missing or the pipeline install is stale; refusing to run."
-            )
+    try:
+        from spacescans._capabilities import FLAGS
+        flags = dict(FLAGS)
+    except (ImportError, AttributeError):
+        import spacescans
+        flags = dict(spacescans.capabilities().get("flags") or {})
+    if not flags.get("episode_grouping"):
+        raise RuntimeError(
+            "custom: the installed spacescans does not report the episode_grouping "
+            "capability — per-episode dispatch is missing or the pipeline install is "
+            "stale; refusing to run."
+        )
 
 
 # ---------------------------------------------------------------------------
-# dataset definitions
+# domain: spacescans.custom (the web's names, for the dispatcher and the tests)
 # ---------------------------------------------------------------------------
 
-def custom_variables(config: dict) -> dict[str, dict]:
-    """The task's snapshot of the custom datasets it selected."""
-    snapshot = config.get("custom_variables") or {}
-    if not isinstance(snapshot, dict):
-        raise ValueError("config.custom_variables is not a mapping")
-    return snapshot
+# boundary -> (C3 step name, C3 template, cache tag). Step name and tag are the
+# shipped runners' on purpose so the C3 cache is shared with them.
+BOUNDARY_C3 = _c.BOUNDARY_C3
+_C4_TEMPLATE = _c.C4_TEMPLATE
+_C3_GRID_TEMPLATE = _c.C3_GRID_TEMPLATE
+_GRID_TAG_PREFIX = _c.GRID_TAG_PREFIX
+
+custom_variables = _c.definitions_from_config
+is_raster = _c.is_raster
+grid_tag = _c.grid_tag
+c3_step_for = _c.c3_step_for
+raster_bands = _c.raster_bands
+_parquet_map = _c.parquet_map
+_boundary_tag_for_step = _c.boundary_tag_for_step
 
 
 def _definition(config: dict, var_key: str) -> dict:
-    try:
-        return custom_variables(config)[var_key]
-    except KeyError:
-        raise ValueError(
-            f"{var_key!r} has no definition in config.custom_variables — the "
-            "task config was written without resolving it"
-        ) from None
+    return _c.definition_for(custom_variables(config), var_key)
 
 
-def is_raster(definition: dict) -> bool:
-    return definition.get("geometry") == "raster"
+def c4_step_for(var_key: str):
+    return _c.c4_step_for(var_key)
 
 
-def grid_tag(definition: dict) -> str:
-    return f"{_GRID_TAG_PREFIX}{definition['grid_hash']}"
-
-
-def c3_step_for(definition: dict | str) -> PipelineStep:
-    """The C3 step a dataset needs. Polygons reuse the shipped boundary steps;
-    a raster gets one per distinct grid, named by the grid's hash."""
-    if isinstance(definition, str):            # a bare boundary name
-        definition = {"boundary": definition}
-    if is_raster(definition):
-        return PipelineStep(
-            name=f"c3_customgrid_{definition['grid_hash']}",
-            template_relpath=_C3_GRID_TEMPLATE, is_c3=True,
-        )
-    boundary = definition["boundary"]
-    try:
-        name, template, _tag = BOUNDARY_C3[boundary]
-    except KeyError:
-        raise ValueError(
-            f"custom exposome on unsupported boundary {boundary!r}; "
-            f"expected one of {sorted(BOUNDARY_C3)}"
-        ) from None
-    return PipelineStep(name=name, template_relpath=template, is_c3=True)
-
-
-def c4_step_for(var_key: str) -> PipelineStep:
-    return PipelineStep(
-        name=f"c4_{var_key}", template_relpath=_C4_TEMPLATE, is_c3=False
-    )
-
-
-def _parquet_map(variables: list[str]) -> dict[str, str]:
-    return {v: f"{c4_step_for(v).name}.parquet" for v in variables}
-
-
-# ---------------------------------------------------------------------------
-# plan / render
-# ---------------------------------------------------------------------------
-
-def plan(config: dict) -> list[PipelineStep]:
-    """One C3 per distinct boundary, then one C4 per variable.
+def plan(config: dict):
+    """One C3 per distinct boundary or grid, then one C4 per variable.
 
     Two datasets on the same boundary share a single C3 step; the C4 steps run
     against the one weights parquet it produces.
     """
-    variables = config.get("variables", [])
-    if not variables:
-        raise ValueError("at least one variable must be selected")
-
-    steps: list[PipelineStep] = []
-    seen_c3: set[str] = set()
-    for var_key in variables:
-        c3 = c3_step_for(_definition(config, var_key))
-        if c3.name not in seen_c3:
-            seen_c3.add(c3.name)
-            steps.append(c3)
-    for var_key in variables:
-        steps.append(c4_step_for(var_key))
-    return steps
+    return _c.plan(config.get("variables", []), custom_variables(config))
 
 
-def render_yaml(step: PipelineStep, task_dir: Path, user_config: dict) -> Path:
-    """Read the template, inject task- and dataset-specific fields, write it."""
-    template_path = (
-        app.config.settings.SPACESCANS_CONFIG_TEMPLATES_DIR / step.template_relpath
-    )
-    cfg = yaml.safe_load(template_path.read_text())
+def _uses_raster_res(step) -> bool:
+    """A boundary C3 step: boundary_overlap_fast rasterises the buffer at
+    ``raster_res_m``, which its YAML and its cache key carry (a grid C3 and
+    the C4 steps do not read it)."""
+    return bool(step.is_c3) and step.template_relpath != _C3_GRID_TEMPLATE
 
-    task_id_short = task_dir.name[-8:]
-    cfg["name"] = f"{cfg['name']}_task_{task_id_short}"
-    cfg["buffer"]["patient_file"] = str(task_dir / "input.parquet")
-    cfg["buffer"]["buffer_m"] = user_config["buffer"]["size"]
 
-    if step.is_c3 and step.template_relpath == _C3_GRID_TEMPLATE:
-        # A raster dataset: the uploaded GeoTIFF is the template grid. Any
-        # dataset on this grid (this one, or another year of it) rendered the
-        # same step, so the first raster of the first such dataset will do.
-        definition = _first_definition_for_grid(user_config, step.name)
-        cfg["source"]["file"] = definition["rasters"][0]["path"]
-        cfg["buffer"]["grid_id_offset"] = 0
-    elif step.is_c3:
-        # The boundary templates are the shipped ones; source.file stays
-        # relative so the pipeline CLI resolves it against --data-dir.
-        # raster_res_m drives boundary_overlap_fast's rasterisation and is part
-        # of the cache key, so it must be injected exactly as the shipped
-        # polygon runners do or this step would both mis-render and miss their
-        # cached weights.
-        cfg["buffer"]["raster_res_m"] = user_config["buffer"]["raster_res_m"]
-    else:
-        var_key = step.name[len("c4_"):]
-        definition = _definition(user_config, var_key)
-        c3_name = c3_step_for(definition).name
-        c3_parquet = task_dir / "output" / f"{c3_name}.parquet"
+def _context(task_dir: Path, user_config: dict, step=None):
+    buffer = user_config["buffer"]
+    # Read strictly where the step needs it, as the runner always did: a
+    # config without raster_res_m fails such a step's render with KeyError
+    # instead of rendering or keying it with a None resolution.
+    raster_res_m = (buffer["raster_res_m"] if step is not None and _uses_raster_res(step)
+                    else buffer.get("raster_res_m"))
+    return _c.Context(run_dir=task_dir, cohort_parquet=task_dir / "input.parquet",
+                      buffer_m=buffer["size"], raster_res_m=raster_res_m,
+                      name_suffix=f"_task_{task_dir.name[-8:]}")
 
-        if is_raster(definition):
-            # Materialise (grid_id, <col>[, year]) from the pixels under the
-            # cohort's cells; from here on C4 is identical to a polygon run.
-            values_path = _materialise_raster_values(task_dir, var_key, definition, c3_parquet)
-        else:
-            values_path = definition["values_path"]
 
-        cfg["linkage_pattern"] = (
-            "yearly_areal" if definition.get("year_col") else "static_areal"
-        )
-        cfg["source"] = {
-            "file": str(c3_parquet),
-            "join_col": definition["join_col"],
-        }
-        exposure = {
-            "file": str(values_path),
-            "join_col": definition["key_col"],
-            "value_cols": list(definition["value_cols"]),
-        }
-        if definition.get("year_col"):
-            exposure["year_col"] = definition["year_col"]
-        cfg["exposure"] = exposure
+def render_yaml(step, task_dir: Path, user_config: dict) -> Path:
+    """Render one step's pipeline config from the packaged template and write it.
 
-        years = definition.get("coverage_years") or [2013, 2019]
-        cfg.setdefault("time", {})
-        cfg["time"]["years"] = list(range(int(years[0]), int(years[1]) + 1))
-        cfg["time"]["temporal_resolution"] = "yearly"
-        cfg["time"]["temporal_mode"] = "yearly"
-
-    # Never optional: "patient" collapses a patient's episodes into one row and
-    # the merge then cannot find geoid to rename to episode_id.
-    cfg.setdefault("time", {})
-    cfg["time"]["output_grouping"] = "episode"
-    cfg["output"]["path"] = str(task_dir / "output" / f"{step.name}.parquet")
-
+    For a raster dataset's C4 step this first materialises the value table
+    (``output/values_<key>.parquet``) from the C3 weights and logs it, as the
+    web always did.
+    """
+    template = _catalog.template(step.template_relpath)
+    ctx = _context(task_dir, user_config, step)
+    definitions = custom_variables(user_config)
+    for rec in _c.prepare_step(step, ctx, definitions=definitions):
+        _append_log(task_dir, rec["level"], rec["source"], rec["msg"])
+    cfg = _c.render(step, template, ctx, variables=user_config.get("variables", []),
+                    definitions=definitions)
     out = task_dir / "pipeline_configs" / f"{step.name}.yaml"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(yaml.safe_dump(cfg, sort_keys=False))
     return out
 
 
-def _first_definition_for_grid(config: dict, c3_step_name: str) -> dict:
-    for var_key in config.get("variables", []):
-        d = _definition(config, var_key)
-        if is_raster(d) and c3_step_for(d).name == c3_step_name:
-            return d
-    raise ValueError(f"no raster dataset in the selection renders {c3_step_name}")
+def _cache_key(input_parquet: Path, boundary_tag: str, user_config: dict) -> str:
+    """``<sha8>__<boundary tag>__b<buffer>m[__r<raster>m]`` — the shipped
+    polygon runners' key format (legacy-v1), so a custom Tract variable reuses
+    FARA's cached weights; a grid tag gets no ``__r`` part (and needs no
+    ``raster_res_m``; a boundary tag without one raises KeyError, as before)."""
+    buffer = user_config["buffer"]
+    raster_res_m = (None if boundary_tag.startswith(_GRID_TAG_PREFIX)
+                    else buffer["raster_res_m"])
+    return _c.legacy_cache_key(input_parquet, boundary_tag,
+                               buffer_m=buffer["size"], raster_res_m=raster_res_m)
 
 
-def raster_bands(definition: dict) -> tuple[list[str], list[int], list[float | None]]:
-    """(value_cols, bands, nodata) of a raster dataset, parallel lists.
-
-    Manifests written before multi-band uploads carry one ``band`` and a
-    dataset-level ``grid.nodata``; they read as a one-band list.
-    """
-    cols = list(definition["value_cols"])
-    bands = [int(b) for b in (definition.get("bands") or [definition.get("band", 1)])]
-    if len(bands) != len(cols):
-        raise ValueError(
-            f"{definition.get('variable_key', 'raster dataset')}: {len(bands)} band(s) "
-            f"for {len(cols)} value column(s)"
-        )
-    nodata = definition.get("band_nodata")
-    if not nodata or len(nodata) != len(bands):
-        nodata = [(definition.get("grid") or {}).get("nodata")] * len(bands)
-    return cols, bands, list(nodata)
+def _report_linkage_rate(task_dir: Path, variables: list[str], config: dict) -> None:
+    """Log the share of non-null values per column — the real linkage rate."""
+    for rec in _c.diagnostics(task_dir, variables, custom_variables(config)):
+        _append_log(task_dir, rec["level"], rec["source"], rec["msg"])
 
 
-def _materialise_raster_values(
-    task_dir: Path, var_key: str, definition: dict, c3_parquet: Path,
-) -> Path:
-    """Write the C4 value table for a raster dataset: one row per grid cell the
-    cohort's buffers touch (per year, for a yearly dataset), with one column
-    per selected band holding the pixel value. NaN where the pixel is nodata.
+def _coverage_diagnosis(task_dir: Path, var_key: str, definition: dict) -> str:
+    return _c.coverage_diagnosis(task_dir, var_key, definition)
 
-    Only the cells in the C3 weights are read, so the table is a few thousand
-    rows however large the national raster is.
-    """
-    import numpy as np
-    import pandas as pd
-    from app import raster_values
 
-    weights = pd.read_parquet(c3_parquet, columns=["grid_id"])
-    grid_ids = np.sort(weights["grid_id"].dropna().astype("int64").unique())
-    cols, bands, nodata = raster_bands(definition)
-
-    frames = []
-    for raster in definition["rasters"]:
-        vals = raster_values.extract_bands(raster["path"], grid_ids, bands=bands, nodata=nodata)
-        frame = pd.DataFrame({"grid_id": grid_ids,
-                              **{col: vals[:, j] for j, col in enumerate(cols)}})
-        if raster.get("year") is not None:
-            frame["year"] = int(raster["year"])
-        frames.append(frame)
-    table = pd.concat(frames, ignore_index=True)
-
-    out = task_dir / "output" / f"values_{var_key}.parquet"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    table.to_parquet(out, index=False)
-    _append_log(task_dir, "info", f"c4_{var_key}",
-                f"materialised {len(table):,} (grid_id{', year' if 'year' in table else ''}) "
-                f"rows from {len(definition['rasters'])} raster(s), band(s) "
-                f"{', '.join(map(str, bands))}; nodata per column: "
-                + ", ".join(f"{c} {int(table[c].isna().sum()):,}" for c in cols))
-    return out
+def _raster_diagnosis(task_dir: Path, var_key: str, definition: dict) -> str:
+    return _c.raster_diagnosis(task_dir, var_key, definition)
 
 
 # ---------------------------------------------------------------------------
@@ -344,40 +217,6 @@ def _hash_input_parquet(path: Path) -> str:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def _cache_key(input_parquet: Path, boundary_tag: str, user_config: dict) -> str:
-    """``<sha8>__<boundary tag>__b<buffer>m__r<raster>m`` — byte-for-byte the
-    format the shipped polygon runners use.
-
-    Every part matters. The tag is an argument rather than a module constant
-    because this runner serves four boundaries, and matching the shipped tag is
-    what lets a custom Tract variable reuse FARA's cached weights. The raster
-    suffix is equally load-bearing: bg_ndi_wi and fara_tract both append it, so
-    omitting it here would compute a key that can never match theirs — the
-    cache sharing this design is built on would silently never happen.
-
-    The uploaded CSV deliberately does NOT enter the key: it is read only by
-    C4, and C4 is never cached.
-    """
-    sha = _hash_input_parquet(input_parquet)
-    buf = user_config["buffer"]["size"]
-    if boundary_tag.startswith(_GRID_TAG_PREFIX):
-        # grid_weights does not rasterise the buffer, so — like the shipped grid
-        # runners (temis, vnl, noise) — no __r suffix. The grid hash in the tag
-        # is what keeps two different uploaded grids apart.
-        return f"{sha[:8]}__{boundary_tag}__b{buf}m"
-    raster = user_config["buffer"]["raster_res_m"]
-    return f"{sha[:8]}__{boundary_tag}__b{buf}m__r{raster}m"
-
-
-def _boundary_tag_for_step(step: PipelineStep) -> str | None:
-    if step.name.startswith("c3_customgrid_"):
-        return _GRID_TAG_PREFIX + step.name[len("c3_customgrid_"):]
-    for _boundary, (name, _template, tag) in BOUNDARY_C3.items():
-        if name == step.name:
-            return tag
-    return None
 
 
 def _write_cache_meta(path: Path, **fields) -> None:
@@ -412,113 +251,6 @@ def merge_results(task_dir: Path, variables: list[str]) -> Path:
         experiment_key=_EXPERIMENT_KEY,
         variables=variables,
         parquet_map=_parquet_map(variables),
-    )
-
-
-def _raster_diagnosis(task_dir: Path, var_key: str, definition: dict) -> str:
-    """For a raster the cells always exist; a poor rate means nodata under the
-    cohort, or a cohort outside the raster's extent."""
-    import pandas as pd
-    try:
-        table = pd.read_parquet(task_dir / "output" / f"values_{var_key}.parquet")
-    except Exception as exc:  # pragma: no cover
-        return f"{var_key}: could not read the materialised values ({exc!r})"
-    cols = [c for c in definition["value_cols"] if c in table.columns]
-    shares = {c: (float(table[c].isna().mean()) if len(table) else 1.0) for c in cols}
-    worst = max(shares.values(), default=1.0)
-    b = (definition.get("grid") or {}).get("bounds_wgs84") or [None] * 4
-    extent = (f"lon {b[0]:.1f}…{b[2]:.1f}, lat {b[1]:.1f}…{b[3]:.1f}"
-              if None not in b else "unknown extent")
-    if len(cols) == 1:
-        what = f"{worst:.0%} of the"
-    else:
-        what = "nodata share by column (" + ", ".join(
-            f"{c} {v:.0%}" for c, v in shares.items()) + ") of the"
-    return (
-        f"{var_key}: {what} {table['grid_id'].nunique():,} raster "
-        f"cells under the cohort's buffers {'are nodata ' if len(cols) == 1 else ''}"
-        f"(raster extent {extent}). "
-        + ("The raster has no data where this cohort lives." if worst > 0.5
-           else "Episodes over nodata cells get no value.")
-    )
-
-
-def _report_linkage_rate(task_dir: Path, variables: list[str], config: dict) -> None:
-    """Log the share of non-null values per column — the real linkage rate.
-
-    Upload validation can check the shape of a geography key but not its
-    membership in the national key universe; this is where the user finds out
-    whether their keys actually matched.
-    """
-    import pandas as pd
-    for var_key in variables:
-        parquet = task_dir / "output" / _parquet_map([var_key])[var_key]
-        if not parquet.exists():
-            continue
-        try:
-            df = pd.read_parquet(parquet)
-        except Exception as exc:  # pragma: no cover - diagnostics only
-            _append_log(task_dir, "warning", "merge",
-                        f"{var_key}: could not read {parquet.name}: {exc!r}")
-            continue
-        definition = _definition(config, var_key)
-        low = False
-        for col in definition["value_cols"]:
-            if col not in df.columns:
-                _append_log(task_dir, "warning", "merge",
-                            f"{var_key}: value column {col!r} missing from output")
-                continue
-            matched = float(df[col].notna().mean()) if len(df) else 0.0
-            level = "info" if matched >= 0.5 else "warning"
-            low = low or matched < 0.5
-            _append_log(
-                task_dir, level, "merge",
-                f"{var_key}.{col}: {matched:.1%} of episodes linked "
-                f"({int(df[col].notna().sum()):,}/{len(df):,})",
-            )
-        if low:
-            _append_log(task_dir, "warning", "merge",
-                        _coverage_diagnosis(task_dir, var_key, definition))
-
-
-def _coverage_diagnosis(task_dir: Path, var_key: str, definition: dict) -> str:
-    """Say WHY a custom column linked poorly: which geographies the cohort's
-    buffers touched versus which the uploaded file covers.
-
-    "0 % linked" on its own reads as a bug. Almost always it is a file for one
-    region run against a cohort from another — 68 Leon County tracts against a
-    nationwide demo cohort — and the two sets never overlap. Both sets are at
-    hand here (the task's C3 weights and the user's CSV), so name them.
-    """
-    import pandas as pd
-    if is_raster(definition):
-        return _raster_diagnosis(task_dir, var_key, definition)
-    try:
-        c3_name = c3_step_for(definition).name
-        weights = pd.read_parquet(task_dir / "output" / f"{c3_name}.parquet")
-        touched = set(weights[definition["join_col"]].astype(str))
-        uploaded = pd.read_csv(definition["values_path"], dtype=str,
-                               usecols=[definition["key_col"]])
-        covered = set(uploaded[definition["key_col"]].str.strip())
-    except Exception as exc:  # pragma: no cover - diagnostics must never fail a run
-        return f"{var_key}: could not compare geographies ({exc!r})"
-
-    def _states(codes: set[str]) -> str:
-        counts = pd.Series([c[:2] for c in codes]).value_counts()
-        shown = ", ".join(f"{st} ({n})" for st, n in counts.head(6).items())
-        more = f", +{len(counts) - 6} more" if len(counts) > 6 else ""
-        return f"{len(counts)} state{'s' if len(counts) != 1 else ''}: {shown}{more}"
-
-    common = touched & covered
-    return (
-        f"{var_key}: the cohort's buffers touch {len(touched):,} distinct "
-        f"{definition['boundary']} codes across {_states(touched)}; the uploaded "
-        f"file covers {len(covered):,} codes across {_states(covered)}; "
-        f"{len(common):,} in common. "
-        + ("The file does not cover where this cohort lives — upload values for "
-           "those geographies, or run it on a cohort from that region."
-           if not common else
-           "Episodes outside the file's geographies get no value.")
     )
 
 
