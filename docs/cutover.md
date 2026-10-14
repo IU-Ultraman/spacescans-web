@@ -265,3 +265,11 @@ the commit step 2 pushes.
   - The commands of steps 5 and 7 were run in it as written.
 - **synth_10k in the frozen image:** bg_ndi_wi and noise through the shims equal the 0.2.7
   runner within 3.6e-15.
+- **After the review fixes** (package `tier2/c-integration` 8d61fa5, this branch with
+  `backend/constraints.txt`):
+  - Rebuilt from this Dockerfile (`SPACESCANS_REF=7e2aa88`, 35 s with the conda layer
+    cached): all 66 installed Python distributions have the versions of the tested image.
+    Step 7's pin check printed `[]` and its version line `7e2aa88… 3.0.5 26.0.0 True`.
+  - In the frozen image with the fixed package mounted, bg_ndi_wi, noise and both uploads
+    match the 0.2.7 runs again (values within 8.9e-16), and a cache seeded with 0.2.7's
+    entries is hit by every C3 step.
