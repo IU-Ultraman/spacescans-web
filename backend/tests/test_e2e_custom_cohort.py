@@ -158,13 +158,20 @@ def test_custom_c3_shares_the_shipped_tract_cache(task_with_custom_exposome):
     would, or the sharing this design relies on silently never happens."""
     task_id, task_dir, _manifest = task_with_custom_exposome
     from app.experiments import custom, fara_tract
-    from app.experiments.zcta5_cbp import csv_to_parquet
+    from spacescans.cohort import csv_to_parquet
+    from spacescans.orchestrate import RunContext, WeightCache
 
-    csv_to_parquet(task_dir / "input.csv", task_dir / "input.parquet")
+    csv_to_parquet(task_dir / "input.csv", task_dir / "input.parquet", variant="zcta5")
     config = json.loads((task_dir / "config.json").read_text())
-    assert custom._cache_key(task_dir / "input.parquet", "TRACT_FARA", config) == (
-        fara_tract._cache_key(task_dir / "input.parquet", fara_tract._C3_STEP, config)
-    )
+    ours = custom.plan(config)[0]
+    theirs = fara_tract.plan({**config, "variables": ["fara_tract"]})[0]
+    assert (ours.name, ours.cache_tag) == (theirs.name, theirs.cache_tag) == ("c3_tract_us", "TRACT_FARA")
+    ctx = RunContext.from_task_dir(task_dir, data_dir=app.config.settings.SPACESCANS_DATA_DIR,
+                                   buffer_m=config["buffer"]["size"],
+                                   raster_res_m=config["buffer"]["raster_res_m"],
+                                   overlay=config.get("custom_variables"))
+    cache = WeightCache(task_dir / "cache", key_format="legacy-v1")
+    assert cache.key(ours, ctx) == cache.key(theirs, ctx)
 
 
 # --------------------------------------------------------------------------
