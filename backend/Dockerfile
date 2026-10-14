@@ -38,10 +38,13 @@ WORKDIR /app
 #    on PyPI; it's installed from GitHub in the next step. requirements.txt
 #    pins pandas and pyarrow: the C3 weight-cache keys of the legacy format
 #    depend on the pandas patch version (tier-2 phase B, finding #12), so the
-#    image must keep the versions the goldens were made with.
-COPY --chown=$MAMBA_USER:$MAMBA_USER requirements.txt ./
+#    image must keep the versions the goldens were made with. constraints.txt
+#    pins every other package pip installs, here and in step 3, to the versions
+#    of the image the tier-2 gates tested: a rebuild (a new SPACESCANS_REF
+#    re-runs both steps) would otherwise take whatever PyPI has that day.
+COPY --chown=$MAMBA_USER:$MAMBA_USER requirements.txt constraints.txt ./
 RUN grep -vi "spacescans-pipeline" requirements.txt > /tmp/req.txt \
-    && python -m pip install --no-cache-dir -r /tmp/req.txt
+    && python -m pip install --no-cache-dir -c constraints.txt -r /tmp/req.txt
 
 # 3) The pipeline package, installed straight from its public GitHub repo
 #    (IU-Ultraman/spacescans), pinned to a commit or release tag, WITH its
@@ -50,9 +53,10 @@ RUN grep -vi "spacescans-pipeline" requirements.txt > /tmp/req.txt \
 #    conda-forge above). Provides `import spacescans` (catalog, custom, data,
 #    orchestrate) and the `spacescans` CLI the runners call. Bump
 #    SPACESCANS_REF to pull a newer release. The pandas / pyarrow pins are
-#    repeated so the resolver cannot move them while installing the extras.
+#    repeated so the resolver cannot move them while installing the extras, and
+#    constraints.txt holds the extras' dependencies to the tested versions.
 ARG SPACESCANS_REF=7e2aa88
-RUN python -m pip install --no-cache-dir \
+RUN python -m pip install --no-cache-dir -c constraints.txt \
     "pandas==3.0.5" "pyarrow==26.0.0" \
     "spacescans-pipeline[geo,rda,hdf4,nc] @ git+https://github.com/IU-Ultraman/spacescans.git@${SPACESCANS_REF}"
 

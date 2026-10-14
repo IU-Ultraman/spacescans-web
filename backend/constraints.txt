@@ -1,0 +1,63 @@
+# Every package pip installs into the backend image, at the versions of the image the
+# tier-2 phase-C gates tested (spacescans-web-backend:tier2-c-container, built 2026-10-14
+# from SPACESCANS_REF=7e2aa88). Both pip RUN lines of the Dockerfile pass -c constraints.txt,
+# so a rebuild (a new SPACESCANS_REF re-runs them) cannot pick up newer releases.
+# - The computation libraries (pandas, pyarrow, duckdb, geopandas, shapely, pyproj, pyogrio,
+#   xarray, netCDF4, pyreadr, mercantile) are the versions of the frozen 0.2.7 image the
+#   goldens came from (ten web-stack packages, such as anyio and cryptography, are newer).
+#   pandas and pyarrow are also pinned in requirements.txt and the Dockerfile: the legacy
+#   C3 cache keys depend on the pandas patch version (phase B #12).
+# - Not here: spacescans-pipeline (installed from SPACESCANS_REF) and the conda-forge layer
+#   (python, libgdal, rasterio, exactextract, pyhdf and what they pull in, such as numpy),
+#   which the Dockerfile's micromamba line resolves.
+# To regenerate after a deliberate upgrade: list the pip-installed distributions of the
+# image you tested (their INSTALLER file says "pip") as name==version.
+aiofiles==24.1.0
+annotated-types==0.8.0
+anyio==4.15.1
+bcrypt==5.0.0
+cffi==2.1.1
+cftime==1.6.6
+cryptography==50.0.2
+duckdb==1.5.6
+ecdsa==0.19.2
+fastapi==0.115.6
+geopandas==1.2.0
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.20
+iniconfig==2.3.1
+jsonschema-specifications==2025.9.1
+jsonschema==4.26.0
+mercantile==1.2.1
+narwhals==2.27.1
+netCDF4==1.7.4
+owlready2==0.47
+pandas==3.0.5
+pluggy==1.6.0
+pyarrow==26.0.0
+pyasn1==0.6.4
+pycparser==3.11
+pydantic-settings==2.7.0
+pydantic==2.10.3
+pydantic_core==2.27.1
+Pygments==2.21.0
+pyogrio==0.13.0
+pyproj==3.8.0
+pyreadr==0.5.7
+pytest==9.1.1
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.4
+python-jose==3.3.0
+python-multipart==0.0.18
+PyYAML==6.0.3
+referencing==0.37.0
+rpds-py==2026.9.1
+rsa==4.9.1
+shapely==2.2.0
+six==1.17.0
+starlette==0.41.3
+typing_extensions==4.16.0
+uvicorn==0.34.0
+xarray==2026.9.0
