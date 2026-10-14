@@ -30,8 +30,13 @@ paper's ``independent_impl_chain.sh`` greps for), the SIGTERM handler (status
 and exit codes, and the order of variables (as received: ``walkability,ndi``
 still works and still orders the partial's columns).
 
-Cohort values never appear in logs, status or errors: only step names, counts,
-exit codes and cache keys.
+Logs and status carry step names, counts, exit codes and cache keys, with one
+exception kept from 0.2.7: when the cohort's dates cannot be parsed, the
+``csv_to_parquet failed: ...`` log line and the ``input conversion failed: ...``
+status message quote the first date of the file, as 0.2.7's "Unrecognized date
+format" message does (and the upload check in ``task_manager.save_upload``).
+``CohortError.to_dict()["message"]`` is the same text without the date; using it
+here would change a status message, which is left for after the cutover.
 """
 from __future__ import annotations
 
@@ -341,7 +346,10 @@ def _run_locked(experiment: str, task_dir: Path, variables: Sequence[str] | None
         cohort.to_pipeline_parquet(task_dir / "input.csv", task_dir / "input.parquet",
                                    variant=recipe.cohort_variant, pid_as_str=False)
     except Exception as exc:  # noqa: BLE001 - the runner reports any conversion error
-        log.write("error", "runner", LOG_COHORT_FAILED.format(exc=exc))
+        # 0.2.7 raised app.cohort_dates' plain ValueError here; the package raises its
+        # ValueError subclass CohortError with the same message, so log the 0.2.7 repr.
+        shown = ValueError(*exc.args) if isinstance(exc, cohort.CohortError) else exc
+        log.write("error", "runner", LOG_COHORT_FAILED.format(exc=shown))
         status.error(f"input conversion failed: {exc}")
         return 1
 

@@ -327,6 +327,32 @@ def test_input_conversion_failure_is_reported(fake_cli):
     assert not (task_dir / "input.parquet").exists()
 
 
+@pytest.mark.parametrize("dates", [
+    "2017-13-45,2017-11-11",            # an impossible date
+    "2017-01-01,11/11/2017",            # two formats in one file
+    "2017-01-01 00:00:00,2017-11-11",   # a time component
+])
+def test_input_conversion_failure_logs_the_0_2_7_line(fake_cli, dates):
+    """Phase-C review F2: 0.2.7 logged app.cohort_dates' ValueError; the package raises
+    CohortError (a ValueError subclass, same message), whose repr named the subclass. The
+    line and the status message are 0.2.7's again."""
+    import pandas as pd
+    from app import cohort_dates
+    from spacescans.orchestrate import LOG_COHORT_FAILED
+
+    csv = f"pid,startDate,endDate,longitude,latitude\nP1,{dates},-93.0,45.0\n"
+    task_dir = _task(fake_cli, "task-baddate1", ["ndi"], csv=csv)
+    with pytest.raises(ValueError) as old:            # what 0.2.7's csv_to_parquet raised
+        cohort_dates.parse_date_columns(pd.read_csv(task_dir / "input.csv"))
+    assert type(old.value) is ValueError
+    assert bg_ndi_wi.run(task_dir, variables=["ndi"]) == 1
+    (line,) = _logs(task_dir)
+    assert line["msg"] == LOG_COHORT_FAILED.format(exc=old.value)
+    assert line["msg"].startswith("csv_to_parquet failed: ValueError(")
+    slot = _status(task_dir)["experiments"]["bg_ndi_wi"]
+    assert slot["message"] == f"input conversion failed: {old.value}"
+
+
 def _recorded_slots(monkeypatch) -> list[dict]:
     """Every status.json write of a dispatched run, as the slot fields it wrote."""
     import app.task_manager as tm
