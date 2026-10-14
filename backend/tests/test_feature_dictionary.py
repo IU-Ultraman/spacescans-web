@@ -7,7 +7,6 @@ description sends the analyst back to guessing from the raw name).
 """
 import csv
 import json
-from pathlib import Path
 
 import pytest
 
@@ -21,9 +20,9 @@ def _dict_json() -> dict:
 def test_every_catalog_value_col_has_an_entry():
     """The dictionary is generated from the same table that authors the
     ontology nodes; this catches a variable gaining a value_col without one."""
-    meta = json.loads(
-        (Path(fd.__file__).parent / "data" / "variable_metadata.json").read_text()
-    )["variables"]
+    from spacescans import catalog
+
+    meta = catalog.payload()["variables"]
     declared = {c for v in meta.values() for c in v["value_cols"]}
     described = set(_dict_json())
     assert not declared - described, f"no dictionary entry: {declared - described}"

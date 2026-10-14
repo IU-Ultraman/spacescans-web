@@ -35,19 +35,25 @@ USER $MAMBA_USER
 WORKDIR /app
 
 # 2) Python API deps first (layer caching). Strip the pipeline line — it is not
-#    on PyPI; it's installed from GitHub in the next step.
+#    on PyPI; it's installed from GitHub in the next step. requirements.txt
+#    pins pandas and pyarrow: the C3 weight-cache keys of the legacy format
+#    depend on the pandas patch version (tier-2 phase B, finding #12), so the
+#    image must keep the versions the goldens were made with.
 COPY --chown=$MAMBA_USER:$MAMBA_USER requirements.txt ./
 RUN grep -vi "spacescans-pipeline" requirements.txt > /tmp/req.txt \
     && python -m pip install --no-cache-dir -r /tmp/req.txt
 
 # 3) The pipeline package, installed straight from its public GitHub repo
-#    (IU-Ultraman/spacescans), pinned to a release tag, WITH its
-#    [geo,rda,hdf4] extras (geopandas / shapely / pyproj / duckdb / pyreadr /
+#    (IU-Ultraman/spacescans), pinned to a commit or release tag, WITH its
+#    [geo,rda,hdf4,nc] extras (geopandas / shapely / pyproj / duckdb / pyreadr /
 #    mercantile from pip; rasterio + exactextract + pyhdf already satisfied by
-#    conda-forge above). Provides `import spacescans` and the `spacescans`
-#    CLI. Bump SPACESCANS_REF to pull a newer release.
-ARG SPACESCANS_REF=v0.2.7
+#    conda-forge above). Provides `import spacescans` (catalog, custom, data,
+#    orchestrate) and the `spacescans` CLI the runners call. Bump
+#    SPACESCANS_REF to pull a newer release. The pandas / pyarrow pins are
+#    repeated so the resolver cannot move them while installing the extras.
+ARG SPACESCANS_REF=7e2aa88
 RUN python -m pip install --no-cache-dir \
+    "pandas==3.0.5" "pyarrow==26.0.0" \
     "spacescans-pipeline[geo,rda,hdf4,nc] @ git+https://github.com/IU-Ultraman/spacescans.git@${SPACESCANS_REF}"
 
 # 4) Backend source.

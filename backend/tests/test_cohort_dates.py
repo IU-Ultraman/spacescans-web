@@ -12,7 +12,9 @@ import pandas as pd
 import pytest
 
 from app.cohort_dates import detect_date_format, parse_date_columns
-from app.experiments.bg_ndi_wi import csv_to_parquet
+# The runners convert the cohort through the package since tier-2 phase C
+# (app.experiments._adapter -> spacescans.cohort); the same resolver rules apply.
+from spacescans.cohort import csv_to_parquet
 
 
 def _df(start, end):

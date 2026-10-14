@@ -57,7 +57,7 @@ the SQLite DB / tasks / cache volume).
 
 | Path | Kind | Purpose |
 | --- | --- | --- |
-| `./configs` → `/configs` | bind mount (ro) | C3/C4 config templates — versioned in this repo; `SPACESCANS_CONFIG_TEMPLATES_DIR=/configs` |
+| `./configs` → `/configs` | bind mount (ro) | C3/C4 config templates — a copy of the ones packaged in `spacescans.catalog`, which is what runs render; with `SPACESCANS_CONFIG_TEMPLATES_DIR=/configs` set, the backend refuses to start unless every packaged template hash-matches its file here (the variable is optional; the paper's scripts read `configs/`) |
 | `pipeline-data/` → `/project` | bind mount (host) | exposure data (one folder per dataset); override host path with `SPACESCANS_DATA_HOST`; `SPACESCANS_DATA_DIR=/project` |
 | `backend-data` → `/app/data` | named volume | SQLite DB, `tasks/`, `c3_cache/` — survives restarts |
 
@@ -75,3 +75,8 @@ the SQLite DB / tasks / cache volume).
 - **Two ports** (3000 / 8000). To serve everything under one URL with HTTPS,
   add a reverse proxy (e.g. Caddy) in front — not included here.
 - **Serial queue** is unchanged: the backend still runs one task at a time.
+- **Init process**: the backend service sets `init: true`, so Docker's init
+  runs as PID 1 (the Dockerfile's `CMD` runs under it). Cancelling a task kills
+  the pipeline step's whole process group, and the runner reaps only the step
+  itself; the init reaps the step's own children. Start the image by hand with
+  `docker run --init` for the same effect.

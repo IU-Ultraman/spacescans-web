@@ -127,16 +127,24 @@ def test_bare_rda_routes_to_its_dest(monkeypatch):
     assert (root / "FARA/C4" / name).read_bytes() == body
 
 
-def test_real_manifest_lists_the_eight_distribution_artifacts():
-    """The shipped manifest is the allowlist — keep it in sync with what the
-    deployer actually publishes (same hashes as SHA256SUMS.txt)."""
+def test_allowlist_is_the_package_data_manifest():
+    """The allowlist is the spacescans data manifest (same hashes as
+    SHA256SUMS.txt): every mirrored artifact, archive or bare file, so the web
+    and `spacescans data fetch` agree on what a distribution file is."""
     import app.routers.data_setup as ds
-    m = json.loads(ds._MANIFEST_PATH.read_text())["artifacts"]
-    assert len(m) == 8, sorted(m)
+    from spacescans.data import load_manifest
+
+    manifest = load_manifest()
+    assert ds._MANIFEST_PATH == manifest.path
+    m = ds._manifest()
+    assert set(m) == set(manifest.artifacts)
+    assert len(m) >= 8, sorted(m)
     assert "nhd_features_cache_v1.tar.gz" in m
     assert m["fara_nationwide_2010_2019_interpolated.Rda"]["kind"] == "bare"
+    assert m["bg_boundaries_v1.tar.gz"]["roots"] == ["BG/C3"]
     for name, spec in m.items():
         assert len(spec["sha256"]) == 64, name
+        assert spec["sha256"] == manifest.artifacts[name].sha256
         assert spec["bytes"] > 0, name
         assert spec["kind"] in ("tar", "bare"), name
         if spec["kind"] == "bare":
@@ -145,6 +153,21 @@ def test_real_manifest_lists_the_eight_distribution_artifacts():
             # Measured, so the free-space precheck is exact rather than a
             # compression-ratio guess that could refuse a large archive.
             assert spec["extracted_bytes"] > 0, name
+
+
+def test_member_outside_the_artifacts_declared_roots_is_rejected(monkeypatch):
+    """Defense in depth beyond the known top-level dirs: a bg_boundaries
+    archive may only write under BG/C3 (the manifest's roots)."""
+    client, headers, root = _get_client()
+    body = _tar_bytes({"BG/C4/stray.bin": b"x"})
+    import app.routers.data_setup as ds
+    spec = {"sha256": hashlib.sha256(body).hexdigest(), "bytes": len(body),
+            "kind": "tar", "extracted_bytes": 1, "roots": ["BG/C3"]}
+    monkeypatch.setattr(ds, "_manifest", lambda: {"bg_boundaries_v1.tar.gz": spec})
+    r = _post(client, headers, "bg_boundaries_v1.tar.gz", body)
+    assert r.status_code == 400, r.text
+    assert "declared roots" in r.json()["detail"]["message"]
+    assert not (root / "BG").exists()
 
 
 def test_no_artificial_size_ceiling_on_the_largest_archive():
