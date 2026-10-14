@@ -247,25 +247,31 @@ def test_fan_in_suffix_handling_on_column_collision(tmp_path):
     assert df["score_zcta5_cbp_dup"].tolist() == [10.0, 20.0, 30.0]
 
 
-def test_bg_ndi_wi_merge_results_delegates_to_write_partial(tmp_path):
-    from app.experiments import bg_ndi_wi as mod
+def test_bg_ndi_wi_merge_results_matches_write_partial(tmp_path):
+    """The runner adapter's merge (orchestrate.partial_from_dir with the catalog's
+    value_cols) writes the same partial as the web's _merge.write_partial."""
+    from app.experiments import _adapter, _merge
 
     task_dir = tmp_path / "task-t5-g"
     _write_input_csv(task_dir, n=4)
-    # bg_ndi_wi maps variable->parquet via _VARIABLE_TO_STEP: ndi -> c4_ndi.parquet,
-    # walkability -> c4_wi.parquet. Write fixtures at those names so the
-    # delegation's parquet_map={v: f"{_VARIABLE_TO_STEP[v].name}.parquet"} resolves.
+    # the catalog's merge table: ndi -> c4_ndi.parquet, walkability -> c4_wi.parquet
     _write_variable_parquet(task_dir / "output", "c4_ndi", n=4, value_cols=["ndi"])
     _write_variable_parquet(task_dir / "output", "c4_wi", n=4, value_cols=["NatWalkInd"])
+
+    out = _adapter.merge_results("bg_ndi_wi", task_dir, ["ndi", "walkability"])
+    assert out == task_dir / "output" / "result_bg_ndi_wi.csv"
+    ours = out.read_bytes()
+    df = pd.read_csv(out)
+    assert list(df.columns) == ["pid", "episode_id", "ndi", "NatWalkInd"]
 
     with patch("app.variable_registry.get_variable",
                side_effect=lambda k, **_kw: {"ndi": {"value_cols": ["ndi"]},
                                       "walkability": {"value_cols": ["NatWalkInd"]}}[k]):
-        mod.merge_results(task_dir=task_dir, variables=["ndi", "walkability"])
-
-    assert (task_dir / "output" / "result_bg_ndi_wi.csv").exists()
-    df = pd.read_csv(task_dir / "output" / "result_bg_ndi_wi.csv")
-    assert {"pid", "episode_id", "ndi", "NatWalkInd"}.issubset(df.columns)
+        theirs = _merge.write_partial(
+            task_dir=task_dir, experiment_key="bg_ndi_wi", variables=["ndi", "walkability"],
+            parquet_map={"ndi": "c4_ndi.parquet", "walkability": "c4_wi.parquet"},
+        ).read_bytes()
+    assert ours == theirs
 
 
 def test_fan_in_preserves_episode_pairs_with_partial_data(tmp_path):

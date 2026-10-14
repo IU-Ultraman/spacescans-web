@@ -1,816 +1,476 @@
-import pytest
-from app.experiments.bg_ndi_wi import plan, PipelineStep
+"""The runner adapter, through the bg_ndi_wi shim and the fake pipeline CLI.
 
-def test_plan_with_both_variables():
-    steps = plan({"variables": ["ndi", "walkability"], "buffer": {"size": 270, "raster_res_m": 25}})
-    assert [s.name for s in steps] == ["c3_bg", "c3_bg_2020", "c4_ndi", "c4_wi"]
-    assert [s.is_c3 for s in steps] == [True, True, False, False]
-    assert steps[0].template_relpath == "c3/bg_us_demo.yaml"
-    assert steps[1].template_relpath == "c3/bg_us_2020_demo.yaml"
-    assert steps[2].template_relpath == "c4/bg_ndi_demo.yaml"
-    assert steps[3].template_relpath == "c4/bg_wi_demo.yaml"
+What the web keeps around ``spacescans.orchestrate.run_source`` (tier-2 phase C,
+``app/experiments/_adapter.py``): the run lock and its message, the SIGTERM
+handler, status.json with the runners' progress formula and messages, the
+``logs.jsonl`` lines, the legacy C3 cache (keys, metas, hit/miss/corrupt/
+write-failure paths) and ``result_<exp>.csv`` with the variables in request
+order. ``tests/fixtures/fake_spacescans.py`` stands in for ``spacescans run``.
+"""
+from __future__ import annotations
 
-def test_plan_with_ndi_only():
-    steps = plan({"variables": ["ndi"], "buffer": {"size": 270, "raster_res_m": 25}})
-    # NDI is dual-vintage → 2010 + 2020 BG C3 both run before C4.
-    assert [s.name for s in steps] == ["c3_bg", "c3_bg_2020", "c4_ndi"]
-
-def test_plan_with_walkability_only():
-    steps = plan({"variables": ["walkability"], "buffer": {"size": 270, "raster_res_m": 25}})
-    assert [s.name for s in steps] == ["c3_bg", "c4_wi"]
-
-def test_plan_with_no_variables_raises():
-    with pytest.raises(ValueError, match="at least one variable"):
-        plan({"variables": [], "buffer": {"size": 270, "raster_res_m": 25}})
-
-def test_plan_with_unknown_variable_raises():
-    with pytest.raises(ValueError, match="unknown variable.*pm25"):
-        plan({"variables": ["ndi", "pm25"], "buffer": {"size": 270, "raster_res_m": 25}})
-
-
-from pathlib import Path
-import pandas as pd
-from app.experiments.bg_ndi_wi import csv_to_parquet
-
-def test_csv_to_parquet_preserves_fips(tmp_path):
-    src = tmp_path / "input.csv"
-    src.write_text(
-        "pid,startDate,endDate,longitude,latitude,state_fips,county_fips,tract_geoid,bg_geoid\n"
-        "PID0000001,2017-08-19,2017-11-11,-93.028635,45.088976,06,06037,06037263400,060372634001\n"
-        "PID0000002,2017-03-24,2017-06-21,-95.345115,29.738952,48,48201,48201451601,482014516012\n"
-    )
-    dst = tmp_path / "input.parquet"
-    csv_to_parquet(src, dst)
-
-    df = pd.read_parquet(dst)
-    # 9 original columns + episode_id added by Sprint 2 B1 invariant.
-    assert df.shape == (2, 10)
-    # pandas 2.x stores str as object; pandas 3.x infers `str` dtype by default.
-    # Either is acceptable as long as values round-trip as strings with leading zeros.
-    assert df["state_fips"].dtype == object or pd.api.types.is_string_dtype(df["state_fips"])
-    assert df["state_fips"].iloc[0] == "06"  # leading zero preserved
-    assert df["county_fips"].iloc[0] == "06037"
-    assert df["bg_geoid"].iloc[0] == "060372634001"
-    assert pd.api.types.is_datetime64_any_dtype(df["startDate"])
-    assert pd.api.types.is_datetime64_any_dtype(df["endDate"])
-
-def test_csv_to_parquet_works_without_optional_fips(tmp_path):
-    src = tmp_path / "input.csv"
-    src.write_text(
-        "pid,startDate,endDate,longitude,latitude\n"
-        "PID0000001,2017-08-19,2017-11-11,-93.028635,45.088976\n"
-    )
-    dst = tmp_path / "input.parquet"
-    csv_to_parquet(src, dst)
-    df = pd.read_parquet(dst)
-    # 5 original columns + episode_id added by Sprint 2 B1 invariant.
-    assert df.shape == (1, 6)
-    assert pd.api.types.is_datetime64_any_dtype(df["startDate"])
-
-def test_csv_to_parquet_rejects_malformed_dates(tmp_path):
-    src = tmp_path / "input.csv"
-    src.write_text(
-        "pid,startDate,endDate,longitude,latitude\n"
-        "PID0000001,not-a-date,2017-11-11,-93.0,45.0\n"
-    )
-    dst = tmp_path / "input.parquet"
-    import pytest
-    with pytest.raises((ValueError, pd.errors.ParserError)):
-        csv_to_parquet(src, dst)
-
-
-import yaml
-from app.experiments.bg_ndi_wi import render_yaml, _C3_STEP, _VARIABLE_TO_STEP
-
-@pytest.fixture
-def fake_template_dir(tmp_path, monkeypatch):
-    # Stub minimal C3 / C4 templates that mimic the real pipeline configs.
-    c3 = tmp_path / "c3" / "bg_us_demo.yaml"
-    c3.parent.mkdir(parents=True)
-    c3.write_text(
-        "name: bg_us_demo\n"
-        "linkage_pattern: boundary_overlap_fast\n"
-        "source:\n  file: BG/C3/...\n  join_col: GEOID10\n"
-        "buffer:\n"
-        "  patient_file: demo_patients_conus_fast_100000.parquet\n"
-        "  patient_adapter: demo_conus\n"
-        "  buffer_m: 270\n"
-        "  raster_res_m: 25\n"
-        "output:\n  path: output/bg_us_demo.parquet\n"
-    )
-    c3_2020 = tmp_path / "c3" / "bg_us_2020_demo.yaml"
-    c3_2020.write_text(
-        "name: bg_us_2020_demo\n"
-        "linkage_pattern: boundary_overlap_fast\n"
-        "source:\n  file: BG/C3/tiger2024_bg_states/...\n  join_col: GEOID\n"
-        "buffer:\n"
-        "  patient_file: demo_patients_conus_fast_100000.parquet\n"
-        "  patient_adapter: demo_conus\n"
-        "  buffer_m: 270\n"
-        "  raster_res_m: 25\n"
-        "output:\n  path: output/bg_us_2020_demo.parquet\n"
-    )
-    c4 = tmp_path / "c4" / "bg_ndi_demo.yaml"
-    c4.parent.mkdir(parents=True)
-    c4.write_text(
-        "name: bg_ndi_demo\n"
-        "linkage_pattern: yearly_areal_bg_vintage\n"
-        "source:\n  file: output/python_v2/270m/BG_US/C3/buffer270mBG25m_demo100k.parquet\n  join_col: GEOID10\n"
-        "source_2020:\n  file: output/python_v2/270m/BG_US_2020/C3/buffer270mBG25m_2020_demo100k.parquet\n  join_col: GEOID\n"
-        "buffer:\n"
-        "  patient_file: demo_patients_conus_fast_100000.parquet\n"
-        "  patient_adapter: demo_conus\n"
-        "  buffer_m: 270\n"
-        "time:\n"
-        "  years: [2017, 2018, 2019]\n"
-        "  temporal_resolution: yearly\n"
-        "output:\n  path: output/bg_ndi_demo.parquet\n"
-    )
-
-    import app.config
-    monkeypatch.setattr(app.config.settings, "SPACESCANS_CONFIG_TEMPLATES_DIR", tmp_path)
-    return tmp_path
-
-
-def test_render_yaml_c3_injects_all_five_keys(fake_template_dir, tmp_path):
-    task_dir = tmp_path / "task-12345678"
-    task_dir.mkdir()
-    user_config = {"buffer": {"size": 500, "raster_res_m": 50}}
-
-    out = render_yaml(_C3_STEP, task_dir, user_config)
-
-    assert out == task_dir / "pipeline_configs" / "c3_bg.yaml"
-    cfg = yaml.safe_load(out.read_text())
-    assert cfg["name"].startswith("bg_us_demo_task_")
-    assert cfg["buffer"]["patient_file"] == str(task_dir / "input.parquet")
-    assert cfg["buffer"]["patient_adapter"] == "demo_conus"  # preserved
-    assert cfg["buffer"]["buffer_m"] == 500
-    assert cfg["buffer"]["raster_res_m"] == 50
-    assert cfg["output"]["path"] == str(task_dir / "output" / "c3_bg.parquet")
-    # source.file is left alone — pipeline resolves it via --data-dir
-    assert cfg["source"]["file"] == "BG/C3/..."
-    # Preservation: keys not in the 5 injection points must round-trip unchanged.
-    assert cfg["linkage_pattern"] == "boundary_overlap_fast"
-    assert cfg["source"]["join_col"] == "GEOID10"
-
-
-def test_render_yaml_c4_skips_raster_res_m(fake_template_dir, tmp_path):
-    task_dir = tmp_path / "task-12345678"
-    task_dir.mkdir()
-    step = _VARIABLE_TO_STEP["ndi"]
-    user_config = {"buffer": {"size": 270, "raster_res_m": 25}}
-
-    out = render_yaml(step, task_dir, user_config)
-
-    cfg = yaml.safe_load(out.read_text())
-    # The fake C4 template does not have raster_res_m and rendering must not
-    # add it (C4 doesn't use rasterization).
-    assert "raster_res_m" not in cfg["buffer"]
-    # C4 source.file (the C3 weights table) must be rewritten to THIS task's
-    # C3 output — otherwise C4 would area-weight against the demo weights.
-    assert cfg["source"]["file"] == str(task_dir / "output" / "c3_bg.parquet")
-    # NDI dual-vintage: source_2020 (2020 BG weights) rewritten to the 2020 C3 output.
-    assert cfg["source_2020"]["file"] == str(task_dir / "output" / "c3_bg_2020.parquet")
-    assert cfg["linkage_pattern"] == "yearly_areal_bg_vintage"
-
-
-from app.experiments.bg_ndi_wi import parse_step_progress
-
-def test_parse_step_progress_overlap_fast():
-    line = "[overlap_fast] tile 7460/14938 ( 49.9%) elapsed=  1.64m  rate= 75.9/s  ETA= 1.64m  tiles_with_work=2807"
-    assert parse_step_progress(line) == pytest.approx(0.499, abs=0.005)
-
-def test_parse_step_progress_overlap_classic():
-    line = "[overlap]   1600/3221 ( 49.7%)  elapsed=   2.0m  rate=13.20/s"
-    assert parse_step_progress(line) == pytest.approx(0.497, abs=0.005)
-
-def test_parse_step_progress_nhd_proximity():
-    # nhd's slow cold C3 emits this; without it the progress bar sat at 0%.
-    line = "[nhd_proximity] tile 5/100 ( 5.0%) elapsed=0.50m"
-    assert parse_step_progress(line) == pytest.approx(0.05, abs=0.005)
-
-def test_parse_step_progress_ignores_nhd_non_progress_lines():
-    # nhd also prints summary/count lines with % or counts that must NOT be
-    # read as progress fractions.
-    assert parse_step_progress("[nhd_proximity] 100000 patients across 50 tiles") is None
-    assert parse_step_progress("[nhd_proximity]   layer_load     1.20m ( 45.0%)") is None
-
-def test_parse_step_progress_non_progress_returns_none():
-    assert parse_step_progress("[overlap_fast] === SUMMARY ===") is None
-    assert parse_step_progress("random log line") is None
-    assert parse_step_progress("") is None
-
-
-def test_cache_key_distinguishes_bg_vintages(tmp_path):
-    import pandas as pd
-    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP, _C3_STEP_2020
-    inp = tmp_path / "input.parquet"
-    pd.DataFrame({"episode_id": [0, 1]}).to_parquet(inp)
-    uc = {"buffer": {"size": 270, "raster_res_m": 25}}
-    k2010 = _cache_key(inp, _C3_STEP, uc)
-    k2020 = _cache_key(inp, _C3_STEP_2020, uc)
-    # The two vintages must not collide in the C3 cache.
-    assert "__BG__" in k2010 and "__BG2020__" in k2020
-    assert k2010 != k2020
-
-
+import fcntl
 import json
+import os
+import shutil
+import signal
 import sys
-from app.experiments.bg_ndi_wi import run_pipeline_step
+from pathlib import Path
+
+import pandas as pd
+import pytest
+
+from app.experiments import _adapter, bg_ndi_wi
+
+FIXTURES = Path(__file__).parent / "fixtures"
+CSV_2 = ("pid,startDate,endDate,longitude,latitude\n"
+         "P1,2017-01-01,2017-12-31,-93.0,45.0\n"
+         "P2,2017-01-01,2017-12-31,-94.0,44.0\n")
+
 
 @pytest.fixture
-def fake_cli_settings(monkeypatch, tmp_path):
-    """Point SPACESCANS_PIPELINE_CLI at the fake_spacescans.py fixture so the
-    subprocess test does not need the real conda env."""
-    fixture = Path(__file__).parent / "fixtures" / "fake_spacescans.py"
+def fake_cli(monkeypatch, tmp_path):
+    """Settings for a run with the fake CLI: data, lock and cache under tmp_path."""
     import app.config
-    monkeypatch.setattr(app.config.settings, "SPACESCANS_PIPELINE_CLI", fixture)
+
+    data = tmp_path / "data"
+    data.mkdir()
+    monkeypatch.setattr(app.config.settings, "SPACESCANS_PIPELINE_CLI",
+                        FIXTURES / "fake_spacescans.py")
     monkeypatch.setattr(app.config.settings, "SPACESCANS_PIPELINE_PYTHON", Path(sys.executable))
-    monkeypatch.setattr(app.config.settings, "SPACESCANS_DATA_DIR", tmp_path)
-    # Redirect the C3 weights cache into the test's tmp_path so cache-aware
-    # runs don't pollute the real on-disk cache or pick up state across tests.
-    cache_dir = tmp_path / "c3_cache"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(app.config.settings, "C3_CACHE_DIR", cache_dir)
+    monkeypatch.setattr(app.config.settings, "SPACESCANS_DATA_DIR", data)
+    monkeypatch.setattr(app.config.settings, "DATA_DIR", tmp_path / "appdata")
+    monkeypatch.setattr(app.config.settings, "C3_CACHE_DIR", tmp_path / "appdata" / "c3_cache")
     return tmp_path
 
 
-def _make_task(tmp_path, name="step.yaml") -> tuple[Path, Path]:
-    task_dir = tmp_path / "task-deadbeef"
-    task_dir.mkdir()
-    (task_dir / "logs.jsonl").touch()
-    yaml_path = task_dir / "pipeline_configs" / name
-    yaml_path.parent.mkdir()
-    yaml_path.write_text(yaml.safe_dump({
-        "name": "fake",
-        "output": {"path": str(task_dir / "output" / "step.parquet")},
-    }))
-    return task_dir, yaml_path
-
-
-def test_run_pipeline_step_success(fake_cli_settings):
-    task_dir, yaml_path = _make_task(fake_cli_settings)
-    rc = run_pipeline_step(yaml_path, task_dir, step_name="c3_bg")
-    assert rc == 0
-    assert (task_dir / "output" / "step.parquet").exists()
-    log_lines = (task_dir / "logs.jsonl").read_text().strip().split("\n")
-    progress_lines = [json.loads(l) for l in log_lines if "tile" in l]
-    assert len(progress_lines) >= 3
-    # logs.jsonl rows are tagged with source = step name
-    assert all(j["source"] == "c3_bg" for j in progress_lines)
-
-
-def test_run_pipeline_step_nonzero_exit(fake_cli_settings):
-    task_dir, yaml_path = _make_task(fake_cli_settings, name="fail_step.yaml")
-    rc = run_pipeline_step(yaml_path, task_dir, step_name="c3_bg")
-    assert rc != 0
-    log_text = (task_dir / "logs.jsonl").read_text()
-    assert "ERROR" in log_text or "exit code" in log_text
-
-
-def test_run_pipeline_step_invokes_on_progress(fake_cli_settings):
-    """fake_spacescans emits 3 progress lines; on_progress must be called for each."""
-    task_dir, yaml_path = _make_task(fake_cli_settings)
-    fractions: list[float] = []
-    rc = run_pipeline_step(yaml_path, task_dir, step_name="c3_bg",
-                            on_progress=fractions.append)
-    assert rc == 0
-    # 3 progress lines: 1/3, 2/3, 3/3
-    assert fractions == pytest.approx([1/3, 2/3, 1.0], abs=0.01)
-
-
-from app.experiments.bg_ndi_wi import merge_results
-
-def _seed_task_for_merge(tmp_path, n_input=5, n_ndi=4, n_wi=3) -> Path:
-    """Create a task_dir with input.csv + ndi/walkability parquets at common
-    paths, so merge_results can be exercised without running the pipeline.
-
-    Sprint 2 pipeline contract: each pipeline parquet is one row per
-    (PATID, episode_id) with the per-episode key carried in the ``geoid``
-    column. The test fixtures mirror that — input CSV carries an episode_id
-    (one episode per pid here for simplicity), pipeline parquets carry a
-    matching ``geoid`` column.
-    """
-    task_dir = tmp_path / "task-abcdef12"
+def _task(root: Path, name: str, variables: list[str], *, csv: str = CSV_2,
+          buffer: dict | None = None) -> Path:
+    task_dir = root / name
     task_dir.mkdir()
     (task_dir / "output").mkdir()
-    (task_dir / "logs.jsonl").touch()
-
-    pids = [f"PID{i:07d}" for i in range(n_input)]
-    episode_ids = list(range(n_input))
-    pd.DataFrame({
-        "pid": pids,
-        "startDate": ["2017-01-01"] * n_input,
-        "endDate": ["2017-12-31"] * n_input,
-        "longitude": [-93.0] * n_input,
-        "latitude": [45.0] * n_input,
-        "episode_id": episode_ids,
-    }).to_csv(task_dir / "input.csv", index=False)
-
-    pd.DataFrame({
-        "PATID": pids[:n_ndi],
-        "geoid": episode_ids[:n_ndi],
-        "ndi": [0.1 * i for i in range(n_ndi)],
-    }).to_parquet(task_dir / "output" / "c4_ndi.parquet", index=False)
-
-    pd.DataFrame({
-        "PATID": pids[:n_wi],
-        "geoid": episode_ids[:n_wi],
-        "NatWalkInd": [1.0 + i for i in range(n_wi)],
-    }).to_parquet(task_dir / "output" / "c4_wi.parquet", index=False)
-
+    (task_dir / "input.csv").write_text(csv)
+    (task_dir / "config.json").write_text(json.dumps({
+        "experiment": "auto", "version": 1, "input_file": "input.csv",
+        "variables": variables,
+        "buffer": buffer or {"shape": "circle", "size": 270, "raster_res_m": 25},
+    }))
     return task_dir
 
 
-def test_merge_results_both_variables(tmp_path):
-    task_dir = _seed_task_for_merge(tmp_path, n_input=5, n_ndi=4, n_wi=3)
-    out = merge_results(task_dir, variables=["ndi", "walkability"])
-
-    # Sprint 4 F6: merge_results returns the partial result_bg_ndi_wi.csv
-    # (outer-merge of per-variable pipeline parquets on (pid, episode_id)).
-    # The dispatcher's post-experiment fan_in left-joins this partial against
-    # input.csv to produce result.csv — so input-anchored row count + NaN
-    # semantics are exercised end-to-end in the integration suite, not here.
-    assert out == task_dir / "output" / "result_bg_ndi_wi.csv"
-    df = pd.read_csv(out)
-    assert "pid" in df.columns
-    assert "ndi" in df.columns
-    assert "NatWalkInd" in df.columns
-    # Outer-merge of NDI's 4 rows with WI's 3 rows (WI is a subset of NDI's
-    # keys): 4 rows total, all 4 have NDI, 1 row is missing NatWalkInd.
-    assert len(df) == 4
-    assert df["ndi"].isna().sum() == 0
-    assert df["NatWalkInd"].isna().sum() == 1
+def _status(task_dir: Path) -> dict:
+    return json.loads((task_dir / "status.json").read_text())
 
 
-def test_merge_results_ndi_only(tmp_path):
-    task_dir = _seed_task_for_merge(tmp_path, n_input=3, n_ndi=3, n_wi=0)
-    out = merge_results(task_dir, variables=["ndi"])
-    df = pd.read_csv(out)
-    assert "ndi" in df.columns
-    assert "NatWalkInd" not in df.columns
+def _logs(task_dir: Path) -> list[dict]:
+    return [json.loads(line) for line in (task_dir / "logs.jsonl").read_text().splitlines()
+            if line.strip()]
 
 
-def test_merge_results_warns_on_low_match(tmp_path):
-    """When only a small fraction of input patients have NDI values, a
-    structured ``merge_partial_low_match_pct`` warning should be appended to
-    logs.jsonl. Format updated in Sprint 3 T5: emit JSON events instead of a
-    human-readable substring (see app/experiments/_merge.py:_emit_log_warning)."""
-    task_dir = _seed_task_for_merge(tmp_path, n_input=100, n_ndi=5, n_wi=0)
-    merge_results(task_dir, variables=["ndi"])
-
-    log_lines = (task_dir / "logs.jsonl").read_text().splitlines()
-    events = [json.loads(line) for line in log_lines if line.strip()]
-    low = [e for e in events if e.get("event") == "merge_partial_low_match_pct"]
-    assert len(low) == 1
-    # 5 / 100 = 5% match rate
-    assert low[0]["match_pct"] == 5.0
-    assert low[0]["cohort_n"] == 100
-    assert low[0]["matched_n"] == 5
+def _runner_lines(task_dir: Path) -> list[str]:
+    return [e["msg"] for e in _logs(task_dir) if e.get("source") == "runner"]
 
 
-from app.experiments.bg_ndi_wi import run
+# ---------------------------------------------------------------------------
+# a whole run
+# ---------------------------------------------------------------------------
 
-def test_run_writes_status_file_on_completion(fake_template_dir, fake_cli_settings, tmp_path):
-    # Re-stub templates dir to wherever fake_cli_settings put SPACESCANS_DATA_DIR;
-    # both fixtures use the same tmp_path so they coexist.
-    # The fake_template_dir fixture created c3/ and c4/ under tmp_path.
-    # fake_cli_settings already monkeypatched CLI/PYTHON/DATA_DIR to tmp_path.
-    # Now also monkeypatch templates dir to the same tmp_path.
-    import app.config
-    # (fake_template_dir already did this monkeypatch)
+def test_standalone_run_finishes_and_writes_the_partial(fake_cli):
+    task_dir = _task(fake_cli, "task-runtest1", ["ndi"])
+    assert bg_ndi_wi.run(task_dir) == 0
 
-    task_dir = tmp_path / "task-runtest1"
-    task_dir.mkdir()
-    (task_dir / "output").mkdir()
-    (task_dir / "input.csv").write_text(
-        "pid,startDate,endDate,longitude,latitude\n"
-        "P1,2017-01-01,2017-12-31,-93.0,45.0\n"
-        "P2,2017-01-01,2017-12-31,-94.0,44.0\n"
-    )
-    (task_dir / "config.json").write_text(json.dumps({
-        "experiment": "bg_ndi_wi",
-        "variables": ["ndi"],
-        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
-    }))
-
-    rc = run(task_dir)
-
-    assert rc == 0
-    status = json.loads((task_dir / "status.json").read_text())
+    status = _status(task_dir)
     assert status["status"] == "finished"
-    assert status["total_steps"] == 3  # c3_bg + c3_bg_2020 + c4_ndi
-    # Sprint 4 F6: standalone run() emits only the per-runner partial
-    # result_bg_ndi_wi.csv (symmetric with zcta5_cbp.run()). The dispatcher's
-    # post-experiment fan_in is the sole producer of the consolidated
-    # result.csv — exercised end-to-end in the integration suite.
+    assert status["progress"] == 1.0
+    assert status["total_steps"] == 3                    # c3_bg + c3_bg_2020 + c4_ndi
+    assert status["steps"] == ["c3_bg", "c3_bg_2020", "c4_ndi"]
+    assert status["current_step"] is None
+    assert status["message"] == "Completed 3 pipeline steps"
+    assert status["experiments"]["bg_ndi_wi"] == {
+        "status": "finished", "progress": 1.0, "current_step": None,
+        "steps": ["c3_bg", "c3_bg_2020", "c4_ndi"]}
+    assert "started_at" in status and status["pid"] == os.getpid()
+
     partial = task_dir / "output" / "result_bg_ndi_wi.csv"
     assert partial.exists()
     df = pd.read_csv(partial)
-    assert len(df) == 2  # one row per input patient (both matched in fake pipeline)
+    assert list(df.columns) == ["pid", "episode_id"]      # the fake CLI emits no catalog column
+    assert len(df) == 2
+    assert not (task_dir / "output" / "result.csv").exists()   # fan-in is the dispatcher's
+    assert sorted(p.name for p in (task_dir / "pipeline_configs").glob("*.yaml")) == [
+        "c3_bg.yaml", "c3_bg_2020.yaml", "c4_ndi.yaml"]
+    assert (task_dir / "input.parquet").exists()
 
 
-def test_hash_input_parquet_is_deterministic(tmp_path):
-    """Same bytes → same hash; one byte change → different hash."""
-    from app.experiments.bg_ndi_wi import _hash_input_parquet
+def test_dispatched_run_writes_only_its_slot(fake_cli):
+    task_dir = _task(fake_cli, "task-slot0001", ["ndi", "cbp_zcta5"])
+    assert bg_ndi_wi.run(task_dir, variables=["walkability", "ndi"]) == 0
 
-    p = tmp_path / "in.parquet"
-    p.write_bytes(b"hello world" * 1000)
-    h1 = _hash_input_parquet(p)
-    h2 = _hash_input_parquet(p)
-    assert h1 == h2
-    assert len(h1) == 64  # sha256 hex digest
-
-    p.write_bytes(b"hello WORLD" * 1000)  # one byte case change
-    h3 = _hash_input_parquet(p)
-    assert h3 != h1
-
-
-def test_cache_key_stable_same_inputs(tmp_path):
-    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
-
-    p = tmp_path / "in.parquet"
-    p.write_bytes(b"\x00" * 4096)
-    cfg = {"buffer": {"size": 270, "raster_res_m": 25}}
-    k1 = _cache_key(p, _C3_STEP, cfg)
-    k2 = _cache_key(p, _C3_STEP, cfg)
-    assert k1 == k2
+    status = _status(task_dir)
+    assert "status" not in status                        # the dispatcher owns the task status
+    slot = status["experiments"]["bg_ndi_wi"]
+    assert slot["status"] == "running"                   # the dispatcher marks it finished
+    assert slot["progress"] == 1.0 and slot["current_step"] is None
+    assert slot["steps"] == ["c3_bg", "c3_bg_2020", "c4_ndi", "c4_wi"]
+    assert slot["message"] == "Completed 4 pipeline steps"
+    assert slot["pid"] == os.getpid()
+    assert status["steps"] == slot["steps"] and status["total_steps"] == 4
+    assert status["progress"] == 1.0
 
 
-def test_cache_key_changes_on_input(tmp_path):
-    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
-
-    p = tmp_path / "in.parquet"
-    p.write_bytes(b"\x00" * 4096)
-    cfg = {"buffer": {"size": 270, "raster_res_m": 25}}
-    k1 = _cache_key(p, _C3_STEP, cfg)
-    p.write_bytes(b"\x01" * 4096)
-    k2 = _cache_key(p, _C3_STEP, cfg)
-    assert k1 != k2
-
-
-def test_cache_key_changes_on_buffer(tmp_path):
-    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
-
-    p = tmp_path / "in.parquet"
-    p.write_bytes(b"\x00" * 4096)
-    k1 = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 25}})
-    k2 = _cache_key(p, _C3_STEP, {"buffer": {"size": 500, "raster_res_m": 25}})
-    assert k1 != k2
-
-
-def test_cache_key_changes_on_raster(tmp_path):
-    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
-
-    p = tmp_path / "in.parquet"
-    p.write_bytes(b"\x00" * 4096)
-    k1 = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 25}})
-    k2 = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 50}})
-    assert k1 != k2
-
-
-def test_cache_key_format_human_readable(tmp_path):
-    """Sanity-check the filename grammar so devs can identify cache entries."""
-    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP
-
-    p = tmp_path / "in.parquet"
-    p.write_bytes(b"\x00" * 4096)
-    k = _cache_key(p, _C3_STEP, {"buffer": {"size": 270, "raster_res_m": 25}})
-    assert "__BG__" in k
-    assert "__b270m__" in k
-    assert "__r25m" in k
-
-
-def test_is_valid_cached_parquet_rejects_short_file(tmp_path):
-    from app.experiments.bg_ndi_wi import _is_valid_cached_parquet
-
-    p = tmp_path / "fake.parquet"
-    p.write_bytes(b"too short")
-    assert not _is_valid_cached_parquet(p)
-
-
-def test_is_valid_cached_parquet_rejects_missing(tmp_path):
-    from app.experiments.bg_ndi_wi import _is_valid_cached_parquet
-
-    assert not _is_valid_cached_parquet(tmp_path / "does-not-exist.parquet")
-
-
-def test_is_valid_cached_parquet_accepts_real_parquet(tmp_path):
-    import pandas as pd
-    from app.experiments.bg_ndi_wi import _is_valid_cached_parquet
-
-    p = tmp_path / "real.parquet"
-    pd.DataFrame({"a": [1, 2, 3]}).to_parquet(p, index=False)
-    assert _is_valid_cached_parquet(p)
-
-
-import shutil
-
-
-def test_cache_miss_creates_artifact_and_meta(fake_template_dir, fake_cli_settings, tmp_path):
-    """First run with no cache → cache dir gets <key>.parquet + <key>.meta.json."""
+def test_log_lines_are_the_runners(fake_cli):
+    """Spawn/exit lines from the runner, pipeline output and cache lines from the step."""
     import app.config
 
-    task_dir = tmp_path / "task-cache-01"
-    task_dir.mkdir()
-    (task_dir / "input.csv").write_text(
-        "pid,startDate,endDate,longitude,latitude\n"
-        "P1,2017-01-01,2017-12-31,-93.0,45.0\n"
-    )
-    (task_dir / "config.json").write_text(json.dumps({
-        "experiment": "bg_ndi_wi",
-        "variables": ["ndi"],
-        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
-    }))
+    task_dir = _task(fake_cli, "task-logs0001", ["walkability"])
+    assert bg_ndi_wi.run(task_dir, variables=["walkability"]) == 0
+    cli = f"{sys.executable} {app.config.settings.SPACESCANS_PIPELINE_CLI}"
+    data = app.config.settings.SPACESCANS_DATA_DIR
+    cfg = task_dir / "pipeline_configs"
+    assert _runner_lines(task_dir) == [
+        f"spawning c3_bg: {cli} run --data-dir {data} {cfg / 'c3_bg.yaml'}",
+        "step c3_bg exit code 0",
+        f"spawning c4_wi: {cli} run --data-dir {data} {cfg / 'c4_wi.yaml'}",
+        "step c4_wi exit code 0",
+    ]
+    by_source = {}
+    for e in _logs(task_dir):
+        by_source.setdefault(e["source"], []).append(e)
+    assert [e["msg"] for e in by_source["c3_bg"]][:3] == [
+        "[overlap_fast] tile 1/3 ( 33.3%)", "[overlap_fast] tile 2/3 ( 66.7%)",
+        "[overlap_fast] tile 3/3 (100.0%)"]
+    assert by_source["c3_bg"][-1]["msg"].startswith("cache write: ") and \
+        by_source["c3_bg"][-1]["msg"].endswith("__BG__b270m__r25m.parquet")
+    assert all(set(e) == {"ts", "level", "source", "msg"} and e["level"] == "info"
+               for e in _logs(task_dir))
 
-    from app.experiments.bg_ndi_wi import run
-    rc = run(task_dir)
-    assert rc == 0
 
+def test_status_progress_follows_the_runners_formula(fake_cli, monkeypatch):
+    """start idx/total, running (idx+frac)/total, merge (total-0.1)/total, end 1.0."""
+    import app.task_manager as tm
+
+    writes: list[dict] = []
+    real = tm._write_status
+
+    def recording(task_dir, **kwargs):
+        writes.append(json.loads(json.dumps(kwargs)))
+        return real(task_dir, **kwargs)
+
+    monkeypatch.setattr(tm, "_write_status", recording)
+    task_dir = _task(fake_cli, "task-progress1", ["ndi"])
+    assert bg_ndi_wi.run(task_dir, variables=["ndi"]) == 0
+
+    slots = [w["experiments"]["bg_ndi_wi"] for w in writes]
+    total = 3
+    expected = [(0.0, "Preparing input data")]
+    for idx, step in enumerate(["c3_bg", "c3_bg_2020", "c4_ndi"]):
+        expected.append((idx / total, f"Running {step} ({idx + 1}/{total})"))
+        for frac, pct in ((1 / 3, 33), (2 / 3, 66), (1.0, 100)):
+            expected.append(((idx + frac) / total, f"Running {step} ({idx + 1}/{total}) — {pct}%"))
+    expected.append(((total - 0.1) / total, "Merging variable outputs"))
+    expected.append((1.0, "Completed 3 pipeline steps"))
+    got = [(s["progress"], s["message"]) for s in slots]
+    assert [m for _p, m in got] == [m for _p, m in expected]
+    assert [p for p, _m in got] == pytest.approx([p for p, _m in expected])
+    assert slots[0]["current_step"] == "csv_to_parquet" and slots[0]["status"] == "running"
+    assert [s["current_step"] for s in slots if "current_step" in s] == [
+        "csv_to_parquet", "c3_bg", "c3_bg_2020", "c4_ndi", "merge", None]
+    assert all(key in slots[0] for key in ("steps", "pid"))
+
+
+# ---------------------------------------------------------------------------
+# the legacy C3 cache
+# ---------------------------------------------------------------------------
+
+def test_cache_miss_writes_the_legacy_entries_and_metas(fake_cli):
+    import app.config
+
+    task_dir = _task(fake_cli, "task-cache-01", ["ndi"])
+    assert bg_ndi_wi.run(task_dir) == 0
     cache_dir = app.config.settings.C3_CACHE_DIR
-    parquets = list(cache_dir.glob("*.parquet"))
-    metas = list(cache_dir.glob("*.meta.json"))
-    # NDI builds both vintages → 2010 (BG) + 2020 (BG2020) cache entries.
-    assert len(parquets) == 2
-    assert len(metas) == 2
-    names = " ".join(p.name for p in parquets)
-    assert "__BG__b270m__r25m" in names
-    assert "__BG2020__b270m__r25m" in names
+    from spacescans.orchestrate.cache import sha256_file
+    sha8 = sha256_file(task_dir / "input.parquet")[:8]
+    assert sorted(p.name for p in cache_dir.glob("*.parquet")) == [
+        f"{sha8}__BG2020__b270m__r25m.parquet", f"{sha8}__BG__b270m__r25m.parquet"]
+    for tag in ("BG", "BG2020"):
+        meta = json.loads((cache_dir / f"{sha8}__{tag}__b270m__r25m.meta.json").read_text())
+        assert list(meta) == ["sha_full", "boundary", "buffer_m", "raster_res_m",
+                              "input_row_count", "wall_clock_seconds", "file_size_bytes",
+                              "created_at"]
+        assert meta["boundary"] == "BG"                  # bg_ndi_wi labels both vintages "BG"
+        assert meta["sha_full"] == sha256_file(task_dir / "input.parquet")
+        assert meta["buffer_m"] == 270 and meta["raster_res_m"] == 25
+        assert meta["input_row_count"] == 2
+        assert meta["file_size_bytes"] == (cache_dir / f"{sha8}__{tag}__b270m__r25m.parquet").stat().st_size
+    (cache_dir / f"{sha8}__BG__b270m__r25m.parquet").read_bytes() == \
+        (task_dir / "output" / "c3_bg.parquet").read_bytes()
 
 
-def test_cache_hit_skips_subprocess(fake_template_dir, fake_cli_settings, tmp_path, monkeypatch):
-    """Second run with same inputs → Popen called 0 times for c3_bg."""
+def test_cache_hit_skips_the_c3_spawns_and_renders_no_c3_yaml(fake_cli):
+    task_a = _task(fake_cli, "task-cache-A", ["ndi"])
+    assert bg_ndi_wi.run(task_a) == 0
+    task_b = _task(fake_cli, "task-cache-B", ["ndi"])
+    assert bg_ndi_wi.run(task_b, variables=["ndi"]) == 0
+
+    spawned = [m.split(":")[0] for m in _runner_lines(task_b) if m.startswith("spawning ")]
+    assert spawned == ["spawning c4_ndi"]
+    hits = [e for e in _logs(task_b) if e["msg"].startswith("cache hit: ")]
+    assert [(e["source"], e["level"]) for e in hits] == [("c3_bg", "info"), ("c3_bg_2020", "info")]
+    assert hits[0]["msg"].endswith("__BG__b270m__r25m — skipping pipeline run")
+    assert sorted(p.name for p in (task_b / "pipeline_configs").glob("*.yaml")) == ["c4_ndi.yaml"]
+    assert (task_b / "output" / "c3_bg.parquet").read_bytes() == \
+        (task_a / "output" / "c3_bg.parquet").read_bytes()
+    slot = _status(task_b)["experiments"]["bg_ndi_wi"]
+    assert slot["progress"] == 1.0 and slot["message"] == "Completed 3 pipeline steps"
+
+
+def test_cache_hit_progress_jumps_to_the_end_of_the_step(fake_cli, monkeypatch):
+    import app.task_manager as tm
+
+    task_a = _task(fake_cli, "task-cache-P1", ["walkability"])
+    assert bg_ndi_wi.run(task_a) == 0
+    writes: list[dict] = []
+    real = tm._write_status
+    monkeypatch.setattr(tm, "_write_status",
+                        lambda td, **kw: (writes.append(json.loads(json.dumps(kw))), real(td, **kw))[1])
+    task_b = _task(fake_cli, "task-cache-P2", ["walkability"])
+    assert bg_ndi_wi.run(task_b, variables=["walkability"]) == 0
+    slots = [w["experiments"]["bg_ndi_wi"] for w in writes]
+    assert (slots[2]["progress"], slots[2]["message"], slots[2]["current_step"]) == (
+        (0 + 1) / 2, "Reused cached c3_bg", "c3_bg")
+
+
+def test_corrupted_cache_entry_is_recomputed(fake_cli):
     import app.config
 
-    # Run 1: populates cache.
-    task_dir = tmp_path / "task-cache-A"
-    task_dir.mkdir()
-    (task_dir / "input.csv").write_text(
-        "pid,startDate,endDate,longitude,latitude\n"
-        "P1,2017-01-01,2017-12-31,-93.0,45.0\n"
-    )
-    (task_dir / "config.json").write_text(json.dumps({
-        "experiment": "bg_ndi_wi",
-        "variables": ["ndi"],
-        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
-    }))
-    from app.experiments.bg_ndi_wi import run
-    assert run(task_dir) == 0
-
-    # Run 2: byte-identical input + same config. Should hit cache for c3_bg.
-    task_dir_2 = tmp_path / "task-cache-B"
-    task_dir_2.mkdir()
-    shutil.copy(task_dir / "input.csv", task_dir_2 / "input.csv")
-    shutil.copy(task_dir / "config.json", task_dir_2 / "config.json")
-
-    # Monkeypatch run_pipeline_step to count invocations BY STEP NAME.
-    from app.experiments import bg_ndi_wi
-    calls: list[str] = []
-    real_run_step = bg_ndi_wi.run_pipeline_step
-
-    def counting_run_step(yaml_path, task_dir, step_name, on_progress=None):
-        calls.append(step_name)
-        return real_run_step(yaml_path, task_dir, step_name, on_progress)
-
-    monkeypatch.setattr(bg_ndi_wi, "run_pipeline_step", counting_run_step)
-    assert run(task_dir_2) == 0
-
-    # c3_bg should be a cache hit (not in calls); c4_ndi must still run.
-    assert "c3_bg" not in calls, f"c3_bg should have hit cache; calls={calls}"
-    assert "c4_ndi" in calls
-
-
-def test_cache_corrupted_falls_through(fake_template_dir, fake_cli_settings, tmp_path):
-    """Pre-existing 10-byte fake cache entry → ignored, fresh run, cache overwritten."""
-    import app.config
-
-    task_dir = tmp_path / "task-cache-C"
-    task_dir.mkdir()
-    (task_dir / "input.csv").write_text(
-        "pid,startDate,endDate,longitude,latitude\n"
-        "P1,2017-01-01,2017-12-31,-93.0,45.0\n"
-    )
-    (task_dir / "config.json").write_text(json.dumps({
-        "experiment": "bg_ndi_wi",
-        "variables": ["ndi"],
-        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
-    }))
-
-    # Pre-populate the cache with a corrupted file at the EXACT key the run will compute.
-    # Easiest: do one real run first to learn the key, then truncate the file.
-    from app.experiments.bg_ndi_wi import run
-    run(task_dir)  # populates cache
+    task_a = _task(fake_cli, "task-cache-C", ["ndi"])
+    assert bg_ndi_wi.run(task_a) == 0
     cache_dir = app.config.settings.C3_CACHE_DIR
-    parquets = list(cache_dir.glob("*.parquet"))
-    assert len(parquets) == 2  # 2010 + 2020 vintages
-    parquets[0].write_bytes(b"truncated!")  # corrupt one
+    bg = next(cache_dir.glob("*__BG__*.parquet"))
+    bg.write_bytes(b"truncated!")
 
-    # Now run again — should detect corruption and rebuild.
-    task_dir_2 = tmp_path / "task-cache-D"
-    task_dir_2.mkdir()
-    shutil.copy(task_dir / "input.csv", task_dir_2 / "input.csv")
-    shutil.copy(task_dir / "config.json", task_dir_2 / "config.json")
-    assert run(task_dir_2) == 0
-    # Cache should be rewritten with valid content.
-    assert parquets[0].stat().st_size > 100
+    task_b = _task(fake_cli, "task-cache-D", ["ndi"])
+    assert bg_ndi_wi.run(task_b) == 0
+    spawned = [m.split(":")[0] for m in _runner_lines(task_b) if m.startswith("spawning ")]
+    assert spawned == ["spawning c3_bg", "spawning c4_ndi"]       # BG2020 still hits
+    assert bg.stat().st_size > 100
 
 
-def test_cache_write_failure_does_not_break_task(
-    fake_template_dir, fake_cli_settings, tmp_path, monkeypatch
-):
-    """shutil.copy raising OSError on cache write → task still finishes."""
+def test_cache_write_failure_does_not_fail_the_run(fake_cli, monkeypatch):
     import shutil as real_shutil
-    from app.experiments import bg_ndi_wi
 
-    task_dir = tmp_path / "task-cache-E"
-    task_dir.mkdir()
-    (task_dir / "input.csv").write_text(
-        "pid,startDate,endDate,longitude,latitude\n"
-        "P1,2017-01-01,2017-12-31,-93.0,45.0\n"
-    )
-    (task_dir / "config.json").write_text(json.dumps({
-        "experiment": "bg_ndi_wi",
-        "variables": ["ndi"],
-        "buffer": {"shape": "circle", "size": 270, "raster_res_m": 25},
-    }))
+    from spacescans.orchestrate import cache as cache_mod
 
-    # Sabotage cache writes only — keep other copies working.
     real_copy = real_shutil.copy
 
     def failing_copy(src, dst, *a, **kw):
-        # Identify cache-write copies by destination containing /c3_cache/.
         if "c3_cache" in str(dst):
             raise OSError(28, "No space left on device")
         return real_copy(src, dst, *a, **kw)
 
-    monkeypatch.setattr(bg_ndi_wi.shutil, "copy", failing_copy)
-
-    rc = bg_ndi_wi.run(task_dir)
-    assert rc == 0  # task still finishes
-    status = json.loads((task_dir / "status.json").read_text())
-    assert status["status"] == "finished"
-
-
-def test_csv_to_parquet_adds_episode_id(tmp_path):
-    """Every row gets episode_id = its row index, regardless of pid."""
-    from app.experiments.bg_ndi_wi import csv_to_parquet
-
-    src = tmp_path / "input.csv"
-    src.write_text(
-        "pid,startDate,endDate,longitude,latitude\n"
-        "PID0000001,2017-01-01,2017-12-31,-93.0,45.0\n"
-        "PID0000002,2017-01-01,2017-12-31,-95.0,30.0\n"
-        "PID0000001,2018-01-01,2018-12-31,-87.0,42.0\n"  # same pid as row 0
-    )
-    dst = tmp_path / "input.parquet"
-    csv_to_parquet(src, dst)
-
-    df = pd.read_parquet(dst)
-    assert "episode_id" in df.columns
-    assert df["episode_id"].tolist() == [0, 1, 2]
+    monkeypatch.setattr(cache_mod.shutil, "copy", failing_copy)
+    task_dir = _task(fake_cli, "task-cache-E", ["ndi"])
+    assert bg_ndi_wi.run(task_dir) == 0
+    assert _status(task_dir)["status"] == "finished"
+    warnings = [e for e in _logs(task_dir) if e["level"] == "warning"]
+    assert [(e["source"], e["msg"][:len("cache write failed: OSError")]) for e in warnings] == [
+        ("c3_bg", "cache write failed: OSError"), ("c3_bg_2020", "cache write failed: OSError")]
+    assert all(m.endswith(" — continuing") for m in (e["msg"] for e in warnings))
 
 
-def test_csv_to_parquet_overrides_user_episode_id_with_warn(tmp_path, caplog):
-    """If the input CSV already has an episode_id column, it's overwritten
-    deterministically and a warning is logged via standard logging."""
-    from app.experiments.bg_ndi_wi import csv_to_parquet
+# ---------------------------------------------------------------------------
+# failures, the lock and SIGTERM
+# ---------------------------------------------------------------------------
 
-    src = tmp_path / "input.csv"
-    src.write_text(
-        "pid,startDate,endDate,longitude,latitude,episode_id\n"
-        "PID0000001,2017-01-01,2017-12-31,-93.0,45.0,999\n"
-        "PID0000002,2017-01-01,2017-12-31,-95.0,30.0,888\n"
-    )
-    dst = tmp_path / "input.parquet"
-
-    import logging
-    with caplog.at_level(logging.WARNING, logger="app.experiments.bg_ndi_wi"):
-        csv_to_parquet(src, dst)
-
-    df = pd.read_parquet(dst)
-    # User values overwritten to deterministic row-index series
-    assert df["episode_id"].tolist() == [0, 1]
-    # Warning emitted
-    assert any("episode_id" in r.message for r in caplog.records)
+def _cli_script(root: Path, body: str) -> Path:
+    script = root / "cli.py"
+    script.write_text(body)
+    return script
 
 
-def test_render_yaml_emits_episode_grouping(fake_template_dir, tmp_path):
-    """The emitted YAML must set time.output_grouping = 'episode' so the
-    pipeline keeps one output row per (PATID, episode) instead of collapsing
-    to one row per PATID."""
-    task_dir = tmp_path / "task-ep000001"
+def test_step_failure_reports_the_exit_code(fake_cli, monkeypatch):
+    import app.config
+
+    monkeypatch.setattr(app.config.settings, "SPACESCANS_PIPELINE_CLI", _cli_script(
+        fake_cli, "import sys\nprint('ERROR: something broke', file=sys.stderr)\nsys.exit(3)\n"))
+    task_dir = _task(fake_cli, "task-fail0001", ["ndi"])
+    assert bg_ndi_wi.run(task_dir, variables=["ndi"]) == 3
+    slot = _status(task_dir)["experiments"]["bg_ndi_wi"]
+    assert slot["status"] == "error"
+    assert slot["message"] == "step c3_bg failed with exit code 3"
+    exit_line = [e for e in _logs(task_dir) if e["msg"] == "step c3_bg exit code 3"]
+    assert [(e["level"], e["source"]) for e in exit_line] == [("error", "runner")]
+    assert not (task_dir / "output" / "result_bg_ndi_wi.csv").exists()
+
+
+def test_missing_output_parquet_is_an_error(fake_cli, monkeypatch):
+    import app.config
+
+    monkeypatch.setattr(app.config.settings, "SPACESCANS_PIPELINE_CLI",
+                        _cli_script(fake_cli, "print('nothing written')\n"))
+    task_dir = _task(fake_cli, "task-noout001", ["ndi"])
+    assert bg_ndi_wi.run(task_dir) == 1
+    status = _status(task_dir)
+    assert status["status"] == "error"
+    assert status["message"] == "step c3_bg produced no output parquet"
+
+
+def test_input_conversion_failure_is_reported(fake_cli):
+    task_dir = _task(fake_cli, "task-badcsv01", ["ndi"],
+                     csv="pid,startDate,endDate,longitude,latitude\nP1,not-a-date,2017-11-11,-93.0,45.0\n")
+    assert bg_ndi_wi.run(task_dir, variables=["ndi"]) == 1
+    slot = _status(task_dir)["experiments"]["bg_ndi_wi"]
+    assert slot["status"] == "error" and slot["message"].startswith("input conversion failed: ")
+    lines = _logs(task_dir)
+    assert len(lines) == 1 and lines[0]["source"] == "runner" and lines[0]["level"] == "error"
+    assert lines[0]["msg"].startswith("csv_to_parquet failed: ")
+    assert not (task_dir / "input.parquet").exists()
+
+
+def test_missing_raster_res_m_fails_an_areal_runner_at_render(fake_cli):
+    task_dir = _task(fake_cli, "task-nores001", ["ndi"], buffer={"size": 270})
+    assert bg_ndi_wi.run(task_dir) == 1
+    assert _status(task_dir)["message"] == "render failed at c3_bg"
+    assert [e["msg"] for e in _logs(task_dir) if e["source"] == "runner"] == [
+        "render_yaml(c3_bg) failed: KeyError('raster_res_m')"]
+
+
+def test_a_held_run_lock_refuses_the_run(fake_cli):
+    import app.config
+
+    lock_path = app.config.settings.DATA_DIR / ".run_lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.touch()
+    fd = os.open(str(lock_path), os.O_RDWR)
+    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    try:
+        task_dir = _task(fake_cli, "task-locked01", ["ndi"])
+        assert bg_ndi_wi.run(task_dir, variables=["ndi"]) == 1
+    finally:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
+    status = _status(task_dir)
+    assert status["status"] == "error"
+    assert status["message"] == "another task acquired the run lock first; retry shortly"
+    assert status["experiments"] == {}                   # refused before the slot was seeded
+    assert not (task_dir / "input.parquet").exists()
+    # the lock is free again afterwards
+    assert bg_ndi_wi.run(task_dir, variables=["ndi"]) == 0
+
+
+def test_the_lock_is_released_after_a_run(fake_cli):
+    task_dir = _task(fake_cli, "task-relock01", ["walkability"])
+    assert bg_ndi_wi.run(task_dir) == 0
+    from spacescans.orchestrate import RunLock
+    import app.config
+    assert RunLock(app.config.settings.DATA_DIR).is_free()
+
+
+def test_sigterm_writes_cancelled_and_exits_143(tmp_path):
+    task_dir = tmp_path / "task-cancel01"
     task_dir.mkdir()
-    step = _VARIABLE_TO_STEP["ndi"]
-    user_config = {"buffer": {"size": 270, "raster_res_m": 25}}
+    previous = signal.getsignal(signal.SIGTERM)
+    try:
+        _adapter.install_cancel_handler(task_dir)
+        with pytest.raises(SystemExit) as exc:
+            os.kill(os.getpid(), signal.SIGTERM)
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+    assert exc.value.code == 143
+    status = _status(task_dir)
+    assert status["status"] == "cancelled" and status["message"] == "Task cancelled by user"
+    assert _logs(task_dir) == [{"ts": _logs(task_dir)[0]["ts"], "level": "info",
+                                "source": "runner", "msg": "received SIGTERM — task cancelled"}]
 
-    out = render_yaml(step, task_dir, user_config)
-    cfg = yaml.safe_load(out.read_text())
-    assert cfg["time"]["output_grouping"] == "episode"
 
+# ---------------------------------------------------------------------------
+# the partial (merge_results)
+# ---------------------------------------------------------------------------
 
-def test_render_yaml_preserves_other_time_fields(fake_template_dir, tmp_path):
-    """output_grouping is additive; existing time fields keep working."""
-    task_dir = tmp_path / "task-ep000002"
+def _seed_merge_task(root: Path, n_input=5, n_ndi=4, n_wi=3) -> Path:
+    task_dir = root / "task-abcdef12"
     task_dir.mkdir()
-    step = _VARIABLE_TO_STEP["ndi"]
-    user_config = {"buffer": {"size": 270, "raster_res_m": 25}}
+    (task_dir / "output").mkdir()
+    pids = [f"PID{i:07d}" for i in range(n_input)]
+    pd.DataFrame({"pid": pids, "startDate": ["2017-01-01"] * n_input,
+                  "endDate": ["2017-12-31"] * n_input, "longitude": [-93.0] * n_input,
+                  "latitude": [45.0] * n_input}).to_csv(task_dir / "input.csv", index=False)
+    pd.DataFrame({"PATID": pids[:n_ndi], "geoid": list(range(n_ndi)),
+                  "ndi": [0.1 * i for i in range(n_ndi)]}).to_parquet(
+        task_dir / "output" / "c4_ndi.parquet", index=False)
+    pd.DataFrame({"PATID": pids[:n_wi], "geoid": list(range(n_wi)),
+                  "NatWalkInd": [1.0 + i for i in range(n_wi)]}).to_parquet(
+        task_dir / "output" / "c4_wi.parquet", index=False)
+    return task_dir
 
-    out = render_yaml(step, task_dir, user_config)
-    cfg = yaml.safe_load(out.read_text())
-    # whatever existing keys were already populated should still be there
-    assert "years" in cfg["time"] or "start_date" in cfg["time"]
+
+def test_merge_results_outer_merges_in_request_order(tmp_path):
+    task_dir = _seed_merge_task(tmp_path)
+    out = _adapter.merge_results("bg_ndi_wi", task_dir, ["walkability", "ndi"])
+    assert out == task_dir / "output" / "result_bg_ndi_wi.csv"
+    df = pd.read_csv(out)
+    assert list(df.columns) == ["pid", "episode_id", "NatWalkInd", "ndi"]
+    assert len(df) == 4                                   # outer merge of 3 WI with 4 NDI rows
+    assert df["ndi"].isna().sum() == 0 and df["NatWalkInd"].isna().sum() == 1
+    df2 = pd.read_csv(_adapter.merge_results("bg_ndi_wi", task_dir, ["ndi", "walkability"]))
+    assert list(df2.columns) == ["pid", "episode_id", "ndi", "NatWalkInd"]
+    # 4 of 5 episodes got a value: 80% is under the web's 90% threshold, one record per merge
+    assert [e["match_pct"] for e in _logs(task_dir)] == [80.0, 80.0]
+
+
+def test_merge_results_keeps_catalog_value_columns_only(tmp_path):
+    task_dir = _seed_merge_task(tmp_path, n_input=3, n_ndi=3, n_wi=0)
+    pd.DataFrame({"PATID": ["PID0000000"], "geoid": [0], "ndi": [1.0], "extra": [9.0]}).to_parquet(
+        task_dir / "output" / "c4_ndi.parquet", index=False)
+    df = pd.read_csv(_adapter.merge_results("bg_ndi_wi", task_dir, ["ndi"]))
+    assert list(df.columns) == ["pid", "episode_id", "ndi"]
+
+
+def test_merge_results_warns_on_low_match(tmp_path):
+    task_dir = _seed_merge_task(tmp_path, n_input=100, n_ndi=5, n_wi=0)
+    _adapter.merge_results("bg_ndi_wi", task_dir, ["ndi"])
+    events = _logs(task_dir)
+    assert len(events) == 1
+    rec = events[0]
+    assert list(rec) == ["ts", "level", "experiment_key", "event", "match_pct", "cohort_n",
+                         "matched_n"]
+    assert isinstance(rec["ts"], float) and rec["level"] == "warning"
+    assert rec["experiment_key"] == "bg_ndi_wi" and rec["event"] == "merge_partial_low_match_pct"
+    assert (rec["match_pct"], rec["cohort_n"], rec["matched_n"]) == (5.0, 100, 5)
 
 
 def test_merge_results_joins_on_pid_and_episode_id(tmp_path):
-    """When pipeline emits one row per (PATID, episode_id), merge_results must
-    join on BOTH so a patient with 2 episodes gets 2 result rows, not 1."""
     task_dir = tmp_path / "task-ep-merge1"
-    task_dir.mkdir()
-    (task_dir / "output").mkdir()
-    (task_dir / "logs.jsonl").touch()
-
-    # Input: pid=A has 2 episodes (episode_id 0 and 1), pid=B has 1 (episode_id 2)
-    input_df = pd.DataFrame({
-        "pid": ["A", "A", "B"],
-        "startDate": pd.to_datetime(["2017-01-01", "2018-01-01", "2017-01-01"]),
-        "endDate": pd.to_datetime(["2017-12-31", "2018-12-31", "2017-12-31"]),
-        "longitude": [-93.0, -94.0, -95.0],
-        "latitude": [45.0, 41.0, 30.0],
-        "episode_id": [0, 1, 2],
-    })
-    input_df.to_csv(task_dir / "input.csv", index=False)
-
-    # Pipeline output: PATID + geoid (= episode_id), one row per (PATID, geoid)
-    pipeline_df = pd.DataFrame({
-        "PATID": ["A", "A", "B"],
-        "geoid": [0, 1, 2],
-        "ndi": [3, 1, 5],
-    })
-    pipeline_df.to_parquet(task_dir / "output" / "c4_ndi.parquet", index=False)
-
-    merge_results(task_dir, variables=["ndi"])
-
-    # Sprint 4 F6: assert against the partial (merge_results' output).
-    out = pd.read_csv(task_dir / "output" / "result_bg_ndi_wi.csv")
-    # 3 rows out (one per residential episode), not 2 (one per patient)
-    assert len(out) == 3
-    assert out["pid"].tolist() == ["A", "A", "B"]
-    # Each row got its OWN exposure value, distinguishable per episode
+    (task_dir / "output").mkdir(parents=True)
+    pd.DataFrame({"pid": ["A", "A", "B"], "startDate": ["2017-01-01", "2018-01-01", "2017-01-01"],
+                  "endDate": ["2017-12-31", "2018-12-31", "2017-12-31"],
+                  "longitude": [-93.0, -94.0, -95.0], "latitude": [45.0, 41.0, 30.0]}).to_csv(
+        task_dir / "input.csv", index=False)
+    pd.DataFrame({"PATID": ["A", "A", "B"], "geoid": [0, 1, 2], "ndi": [3, 1, 5]}).to_parquet(
+        task_dir / "output" / "c4_ndi.parquet", index=False)
+    out = pd.read_csv(_adapter.merge_results("bg_ndi_wi", task_dir, ["ndi"]))
+    assert len(out) == 3 and out["pid"].tolist() == ["A", "A", "B"]
     assert out["ndi"].tolist() == [3, 1, 5]
 
 
-def test_merge_results_missing_pipeline_row_fills_na(tmp_path):
-    """Left-join semantics: an input episode with no matching pipeline row
-    keeps its input columns + NaN exposures."""
-    task_dir = tmp_path / "task-ep-merge2"
-    task_dir.mkdir()
-    (task_dir / "output").mkdir()
-    (task_dir / "logs.jsonl").touch()
+# ---------------------------------------------------------------------------
+# the cohort conversion
+# ---------------------------------------------------------------------------
 
-    input_df = pd.DataFrame({
-        "pid": ["A", "A"],
-        "startDate": pd.to_datetime(["2017-01-01", "2018-01-01"]),
-        "endDate": pd.to_datetime(["2017-12-31", "2018-12-31"]),
-        "longitude": [-93.0, -94.0],
-        "latitude": [45.0, 41.0],
-        "episode_id": [0, 1],
-    })
-    input_df.to_csv(task_dir / "input.csv", index=False)
-
-    # Pipeline only has episode_id=0; episode_id=1 (maybe geocode failed) is missing.
-    pipeline_df = pd.DataFrame({
-        "PATID": ["A"],
-        "geoid": [0],
-        "ndi": [3],
-    })
-    pipeline_df.to_parquet(task_dir / "output" / "c4_ndi.parquet", index=False)
-
-    merge_results(task_dir, variables=["ndi"])
-
-    # Sprint 4 F6: merge_results' partial only contains rows present in the
-    # pipeline parquet (no left-join against input.csv at this layer). The
-    # missing-row NaN semantics are exercised end-to-end in integration tests
-    # where the dispatcher's fan_in does the input-anchored left-join.
-    out = pd.read_csv(task_dir / "output" / "result_bg_ndi_wi.csv")
-    assert len(out) == 1  # only episode_id=0 present in pipeline parquet
-    assert out["pid"].tolist() == ["A"]
-    assert out["ndi"].tolist() == [3]
-
-
-def test_boundary_constant_is_BG():
-    """Sprint 3 B15: the per-runner boundary literal must be a module constant."""
-    from app.experiments import bg_ndi_wi
-    assert bg_ndi_wi._BOUNDARY == "BG"
-
-
-def test_cache_key_byte_identical_after_boundary_refactor(tmp_path):
-    """Refactoring 'BG' into _BOUNDARY must NOT change the emitted key bytes."""
-    from app.experiments.bg_ndi_wi import _cache_key, _C3_STEP, _hash_input_parquet
-
-    p = tmp_path / "in.parquet"
-    p.write_bytes(b"\x00" * 4096)
-    cfg = {"buffer": {"size": 270, "raster_res_m": 25}}
-
-    sha8 = _hash_input_parquet(p)[:8]
-    expected = f"{sha8}__BG__b270m__r25m"
-    assert _cache_key(p, _C3_STEP, cfg) == expected
+def test_cohort_conversion_is_the_runners(fake_cli):
+    """input.parquet: FIPS columns as text, dates parsed, episode_id = row number."""
+    task_dir = _task(fake_cli, "task-cohort01", ["walkability"], csv=(
+        "pid,startDate,endDate,longitude,latitude,state_fips,bg_geoid,episode_id\n"
+        "PID0000001,8/19/2017,11/11/2017,-93.028635,45.088976,06,060372634001,999\n"
+        "PID0000002,3/24/2017,6/21/2017,-95.345115,29.738952,48,482014516012,888\n"))
+    assert bg_ndi_wi.run(task_dir) == 0
+    df = pd.read_parquet(task_dir / "input.parquet")
+    assert df["episode_id"].tolist() == [0, 1]
+    assert df["state_fips"].tolist() == ["06", "48"]
+    assert df["bg_geoid"].tolist() == ["060372634001", "482014516012"]
+    assert pd.api.types.is_datetime64_any_dtype(df["startDate"])
+    assert df["startDate"].iloc[0] == pd.Timestamp("2017-08-19")
+    from spacescans import cohort
+    again = fake_cli / "again.parquet"
+    cohort.csv_to_parquet(task_dir / "input.csv", again, variant="bg_ndi_wi")
+    assert again.read_bytes() == (task_dir / "input.parquet").read_bytes()

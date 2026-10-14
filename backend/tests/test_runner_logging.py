@@ -1,9 +1,10 @@
-"""Sprint 6 H3 Phase B: cache-event log source must equal step.name.
+"""Cache-event log lines carry source == step.name, and the log strings are the runners'.
 
-Parametrized over the 3 C3-aware runners x 4 cache events (hit, check-fail,
-write, write-fail). Each scenario drives the relevant code path with
-monkeypatched filesystem / cache helpers, then asserts every cache-tagged
-line in logs.jsonl carries source == step.name (never the legacy "runner").
+Since tier-2 phase C the runners log through ``spacescans.orchestrate.LogWriter``;
+these tests hold the web side of that contract: every cache event (hit, check
+failure, write, write failure) is tagged with the step, never "runner", and the
+strings the paper's timing tools and ``independent_impl_chain.sh`` grep for are
+unchanged byte for byte.
 """
 from __future__ import annotations
 
@@ -13,11 +14,22 @@ from pathlib import Path
 
 import pytest
 
+from spacescans.orchestrate import (
+    LOG_CACHE_CHECK_FAILED,
+    LOG_CACHE_HIT,
+    LOG_CACHE_WRITE,
+    LOG_CACHE_WRITE_FAILED,
+    LOG_EXIT,
+    LOG_SIGTERM,
+    LOG_SPAWN,
+    Event,
+    LogWriter,
+)
 
 _RUNNERS = {
-    "bg_ndi_wi": ("app.experiments.bg_ndi_wi", "c3_bg"),
-    "zcta5_cbp": ("app.experiments.zcta5_cbp", "c3_zcta5"),
-    "tiger_proximity": ("app.experiments.tiger_proximity", "c3_tiger_roads"),
+    "bg_ndi_wi": ("ndi", "c3_bg"),
+    "zcta5_cbp": ("cbp_zcta5", "c3_zcta5"),
+    "tiger_proximity": ("tiger_proximity", "c3_tiger_roads"),
 }
 
 
@@ -26,41 +38,33 @@ def _read_log_lines(task_dir: Path) -> list[dict]:
     return [json.loads(line) for line in raw if line.strip()]
 
 
+def _event(kind: str, runner_key: str, step: str, text: str) -> Event:
+    return Event(kind, runner_key, step=step, index=0, total=2, text=text)
+
+
 @pytest.mark.parametrize("runner_key", list(_RUNNERS.keys()))
 @pytest.mark.parametrize("event", ["hit", "check_fail", "write", "write_fail"])
-def test_cache_log_source_consistency(tmp_path, monkeypatch, runner_key, event):
+def test_cache_log_source_consistency(tmp_path, runner_key, event):
     """Every cache-event log line MUST be tagged with source == step.name."""
-    module_path, expected_step_name = _RUNNERS[runner_key]
-    mod = importlib.import_module(module_path)
-
-    task_dir = tmp_path / "task"
-    task_dir.mkdir()
-    (task_dir / "logs.jsonl").touch()
-
-    # Locate the C3 step the runner publishes.
-    step = mod._C3_STEP
+    variable, expected_step_name = _RUNNERS[runner_key]
+    mod = importlib.import_module(f"app.experiments.{runner_key}")
+    step = mod.plan({"variables": [variable], "buffer": {"size": 270, "raster_res_m": 25}})[0]
     assert step.name == expected_step_name
     assert step.is_c3 is True
 
-    if event == "hit":
-        mod._append_log(
-            task_dir, "info", step.name,
-            f"cache hit: deadbeef — skipping pipeline run",
-        )
-    elif event == "check_fail":
-        mod._append_log(
-            task_dir, "warning", step.name,
-            f"cache check failed for {step.name}: OSError(...) — running fresh",
-        )
-    elif event == "write":
-        mod._append_log(
-            task_dir, "info", step.name, "cache write: deadbeef.parquet",
-        )
-    elif event == "write_fail":
-        mod._append_log(
-            task_dir, "warning", step.name,
-            "cache write failed: OSError(...) — continuing",
-        )
+    task_dir = tmp_path / "task"
+    task_dir.mkdir()
+    log = LogWriter.for_run_dir(task_dir)
+    ev = {
+        "hit": _event("cache_hit", runner_key, step.name, LOG_CACHE_HIT.format(key="deadbeef")),
+        "check_fail": _event("cache_warning", runner_key, step.name,
+                             LOG_CACHE_CHECK_FAILED.format(step=step.name, exc=OSError("...")),),
+        "write": _event("cache_write", runner_key, step.name,
+                        LOG_CACHE_WRITE.format(file="deadbeef.parquet")),
+        "write_fail": _event("cache_warning", runner_key, step.name,
+                             LOG_CACHE_WRITE_FAILED.format(exc=OSError("..."))),
+    }[event]
+    log(ev)
 
     entries = _read_log_lines(task_dir)
     assert len(entries) == 1
@@ -70,67 +74,38 @@ def test_cache_log_source_consistency(tmp_path, monkeypatch, runner_key, event):
         f"got source={entry['source']!r}"
     )
     assert entry["source"] != "runner"
+    assert entry["level"] == ("warning" if event.endswith("fail") else "info")
+    assert entry["msg"].startswith({"hit": "cache hit: deadbeef — skipping pipeline run",
+                                    "check_fail": f"cache check failed for {step.name}: OSError",
+                                    "write": "cache write: deadbeef.parquet",
+                                    "write_fail": "cache write failed: OSError"}[event])
 
 
-@pytest.mark.parametrize("runner_key", list(_RUNNERS.keys()))
-def test_no_runner_sourced_cache_lines_remain(runner_key):
-    """Static sweep: cache-event _append_log call sites must NOT pass "runner".
+def test_runner_log_strings_are_unchanged():
+    """The 0.2.7 runners' literal strings (runtime.py and independent_impl_chain.sh read them)."""
+    from spacescans.orchestrate.locks import RUN_LOCK_BUSY
 
-    For each runner module, parse the source with ast and walk every Call
-    node whose .func is `_append_log`. When the FOURTH positional arg
-    (message) is a string-or-fstring whose static text starts with a cache
-    keyword (cache hit / cache check failed / cache write), the THIRD
-    positional arg (source) must NOT be the literal "runner". This catches
-    future copy-paste regressions without the false-positive risk of a
-    line-window grep (where the cache-check at e.g. tiger_proximity.py:322
-    sits 7 lines above the render-yaml-error _append_log at :329).
-    """
-    import ast
+    assert LOG_SPAWN == "spawning {step}: {cmd}"
+    assert LOG_EXIT == "step {step} exit code {rc}"
+    assert LOG_CACHE_HIT == "cache hit: {key} — skipping pipeline run"
+    assert LOG_CACHE_WRITE == "cache write: {file}"
+    assert LOG_CACHE_CHECK_FAILED == "cache check failed for {step}: {exc!r} — running fresh"
+    assert LOG_CACHE_WRITE_FAILED == "cache write failed: {exc!r} — continuing"
+    assert LOG_SIGTERM == "received SIGTERM — task cancelled"
+    assert RUN_LOCK_BUSY == "another task acquired the run lock first; retry shortly"
 
-    module_path, _ = _RUNNERS[runner_key]
-    mod = importlib.import_module(module_path)
-    source_path = Path(mod.__file__)
-    tree = ast.parse(source_path.read_text())
 
-    def _static_text(node: ast.AST) -> str | None:
-        """Return the leading static text of a Constant str or JoinedStr."""
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            return node.value
-        if isinstance(node, ast.JoinedStr):
-            # Concatenate leading Constant pieces until the first FormattedValue.
-            parts: list[str] = []
-            for value in node.values:
-                if isinstance(value, ast.Constant) and isinstance(value.value, str):
-                    parts.append(value.value)
-                else:
-                    break
-            return "".join(parts) if parts else None
-        return None
-
-    cache_keywords = ("cache hit", "cache check failed", "cache write")
-    offenders: list[str] = []
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        func = node.func
-        func_name = func.id if isinstance(func, ast.Name) else (
-            func.attr if isinstance(func, ast.Attribute) else None
-        )
-        if func_name != "_append_log":
-            continue
-        if len(node.args) < 4:
-            continue
-        msg_text = _static_text(node.args[3]) or ""
-        if not any(msg_text.startswith(kw) for kw in cache_keywords):
-            continue
-        source_arg = node.args[2]
-        if isinstance(source_arg, ast.Constant) and source_arg.value == "runner":
-            offenders.append(
-                f"{source_path.name}:{node.lineno}: cache-event _append_log "
-                f"with source=\"runner\""
-            )
-
-    assert not offenders, (
-        f"{runner_key}: cache-event _append_log lines still using "
-        f'source="runner": {offenders}'
-    )
+def test_spawn_and_exit_lines_come_from_the_runner(tmp_path):
+    """The step's own output is tagged with the step; spawn and exit with "runner"."""
+    task_dir = tmp_path / "task"
+    task_dir.mkdir()
+    log = LogWriter.for_run_dir(task_dir)
+    log(_event("spawn", "noise", "c3_noise", LOG_SPAWN.format(step="c3_noise", cmd="py cli run x")))
+    log(_event("line", "noise", "c3_noise", "[grid_weights] 1/1 (100.0%)"))
+    log(Event("step_end", "noise", step="c3_noise", index=0, total=2,
+              text=LOG_EXIT.format(step="c3_noise", rc=1), data={"rc": 1}))
+    assert [(e["level"], e["source"], e["msg"]) for e in _read_log_lines(task_dir)] == [
+        ("info", "runner", "spawning c3_noise: py cli run x"),
+        ("info", "c3_noise", "[grid_weights] 1/1 (100.0%)"),
+        ("error", "runner", "step c3_noise exit code 1"),
+    ]
