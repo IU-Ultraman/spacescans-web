@@ -5,19 +5,19 @@
       "name": "Census County boundaries (2010)",
       "usedBy": "TIGER road-proximity clip base; CBP county fallback",
       "variableKeys": [
-        "tiger_proximity",
-        "cbp_zcta5"
+        "cbp_zcta5",
+        "tiger_proximity"
       ],
       "role": "Boundary geometry",
       "sourceName": "Deployer-distributed archive (OneDrive)",
       "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
-      "license": "Repackaged US Census Bureau TIGER/Line 2010 — US federal public domain (CC0); credit the Census Bureau.",
+      "license": "US federal public domain; redistribution allowed. Credit the US Census Bureau (TIGER/Line Shapefiles).",
       "access": "public",
-      "size": "~70 MB archive (116 MB extracted)",
+      "size": "74 MB archive (122 MB extracted)",
       "files": [
         {
           "name": "county_boundaries_v1.tar.gz",
-          "note": "MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
+          "note": "MANIFEST.txt inside; sha256 and size in the spacescans data manifest (SHA256SUMS.txt in the OneDrive folder)"
         }
       ],
       "placeDir": [
@@ -34,24 +34,25 @@
     {
       "key": "tract-boundaries",
       "name": "Census Tract boundaries (2010)",
-      "usedBy": "Tract areal linkage (FARA food access)",
+      "usedBy": "Tract areal linkage (FARA food access, EPA FAQSD)",
       "variableKeys": [
-        "fara_tract"
+        "fara_tract",
+        "faqsd"
       ],
       "role": "Boundary geometry",
       "sourceName": "Deployer-distributed archive (OneDrive)",
       "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
-      "license": "US Census Bureau TIGER/Line 2010 — US federal public domain; free to use and redistribute.",
+      "license": "US federal public domain; redistribution allowed. Credit the US Census Bureau (TIGER/Line Shapefiles).",
       "access": "public",
-      "size": "~580 MB extracted (51 statewide sets)",
+      "size": "356 MB archive (610 MB extracted)",
       "files": [
         {
           "name": "tract_boundaries_v1.tar.gz",
-          "note": "51 statewide 2010 tract sets; MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
+          "note": "51 statewide 2010 tract sets; MANIFEST.txt inside; sha256 and size in the spacescans data manifest (SHA256SUMS.txt in the OneDrive folder)"
         }
       ],
       "placeDir": [
-        "TRACT/C3/tl_2010_{ss}_tract10/  (one subfolder per state)"
+        "TRACT/C3/tl_2010_{state}_tract10/"
       ],
       "notes": [
         "Prefer the original source? Grab the 51 STATEWIDE tl_2010_{ss}_tract10.zip (2-digit FIPS) from https://www2.census.gov/geo/tiger/TIGER2010/TRACT/2010/ and unzip each into TRACT/C3/.",
@@ -70,13 +71,13 @@
       "role": "Boundary geometry",
       "sourceName": "Deployer-distributed archive (OneDrive)",
       "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
-      "license": "Repackaged US Census Bureau TIGER/Line 2010 — US federal public domain (CC0); credit the Census Bureau.",
+      "license": "US federal public domain; redistribution allowed. Credit the US Census Bureau (TIGER/Line Shapefiles).",
       "access": "public",
-      "size": "~0.5 GB archive (801 MB extracted)",
+      "size": "524 MB archive (840 MB extracted)",
       "files": [
         {
           "name": "zcta5_boundaries_v1.tar.gz",
-          "note": "MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
+          "note": "MANIFEST.txt inside; sha256 and size in the spacescans data manifest (SHA256SUMS.txt in the OneDrive folder)"
         }
       ],
       "placeDir": [
@@ -99,17 +100,17 @@
       "role": "Road geometry",
       "sourceName": "Deployer-distributed archive (OneDrive)",
       "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
-      "license": "Derived from US Census Bureau TIGER/Line ROADS — US federal public domain; free to use and redistribute (credit the Census Bureau).",
+      "license": "US federal public domain (derived); redistribution allowed. Credit the US Census Bureau (TIGER/Line Shapefiles).",
       "access": "public",
-      "size": "1.72 GB archive (2.8 GB extracted)",
+      "size": "1.85 GB archive (2.98 GB extracted)",
       "files": [
         {
           "name": "tiger_roads_filtered_cache_v1.tar.gz",
-          "note": "S1100/S1200 roads, one parquet per (county, year), all 22,618 county-years 2013–2019; MANIFEST.txt inside.; verify with SHA256SUMS.txt in the OneDrive folder"
+          "note": "S1100/S1200 roads, one parquet per (county, year), all 22,618 county-years 2013–2019; MANIFEST.txt inside; sha256 and size in the spacescans data manifest (SHA256SUMS.txt in the OneDrive folder)"
         }
       ],
       "placeDir": [
-        "cache/C3/tiger_roads_filtered/"
+        "cache/C3/tiger_roads_filtered/{year}/"
       ],
       "notes": [
         "That's it — no raw Census downloads and no first-run filtering; runs read the parquet cache directly.",
@@ -130,17 +131,17 @@
       "role": "Boundary geometry",
       "sourceName": "Deployer-distributed archive (OneDrive)",
       "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
-      "license": "US Census Bureau TIGER/Line — US federal public domain; free to use and redistribute (credit the Census Bureau).",
+      "license": "US federal public domain; redistribution allowed. Credit the US Census Bureau (TIGER/Line Shapefiles).",
       "access": "public",
-      "size": "one archive covers both BG vintages (~2.1 GB extracted)",
+      "size": "1.34 GB archive (2.26 GB extracted)",
       "files": [
         {
           "name": "bg_boundaries_v1.tar.gz",
-          "note": "51 statewide 2010-vintage sets AND the 51 2020-vintage sets in one archive; MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
+          "note": "51 statewide 2010-vintage sets AND the 51 2020-vintage sets in one archive; MANIFEST.txt inside; sha256 and size in the spacescans data manifest (SHA256SUMS.txt in the OneDrive folder)"
         }
       ],
       "placeDir": [
-        "BG/C3/tiger2010_bg10_states/tl_2010_{ss}_bg10/"
+        "BG/C3/tiger2010_bg10_states/tl_2010_{state}_bg10/"
       ],
       "notes": [
         "One download covers this card AND the 2020-vintage card below.",
@@ -160,17 +161,17 @@
       "role": "Boundary geometry",
       "sourceName": "Deployer-distributed archive (OneDrive)",
       "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
-      "license": "US Census Bureau TIGER/Line 2024 (2020 BG vintage) — US federal public domain; free to use and redistribute.",
+      "license": "US federal public domain; redistribution allowed. Credit the US Census Bureau (TIGER/Line Shapefiles).",
       "access": "public",
       "size": "included in bg_boundaries_v1.tar.gz (see the 2010 card)",
       "files": [
         {
           "name": "bg_boundaries_v1.tar.gz",
-          "note": "same archive as the 2010-vintage card — one download covers both; MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
+          "note": "same archive as the 2010-vintage card — one download covers both; MANIFEST.txt inside; sha256 and size in the spacescans data manifest (SHA256SUMS.txt in the OneDrive folder)"
         }
       ],
       "placeDir": [
-        "BG/C3/tiger2024_bg_states/tl_2024_{ss}_bg/"
+        "BG/C3/tiger2024_bg_states/tl_2024_{state}_bg/"
       ],
       "notes": [
         "Prefer the original source? Grab the 51 statewide tl_2024_{ss}_bg.zip from https://www2.census.gov/geo/tiger/TIGER2024/BG/ and unzip each into BG/C3/tiger2024_bg_states/.",
@@ -191,13 +192,13 @@
       "role": "Gridded values",
       "sourceName": "Deployer-distributed archive (OneDrive)",
       "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
-      "license": "US National Park Service geospatial sound model — US federal work, freely available; credit NPS (Mennitt, Sherrill & Fristrup).",
+      "license": "US federal work, freely available; redistribution allowed. Credit the US National Park Service natural sounds program (Mennitt, Sherrill and Fristrup).",
       "access": "public",
-      "size": "~1.1 GB archive (1.2 GB extracted)",
+      "size": "1.19 GB archive (1.25 GB extracted)",
       "files": [
         {
           "name": "noise_v1.tar.gz",
-          "note": "MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
+          "note": "MANIFEST.txt inside; sha256 and size in the spacescans data manifest (SHA256SUMS.txt in the OneDrive folder)"
         }
       ],
       "placeDir": [
@@ -224,13 +225,13 @@
       "role": "Water geometry",
       "sourceName": "Deployer-distributed archive (OneDrive)",
       "sourceUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
-      "license": "Derived from USGS NHDPlus High Resolution (National Release 2) — US federal public domain; free to use and redistribute (credit USGS).",
+      "license": "US federal public domain (derived); redistribution allowed. Credit the US Geological Survey (NHDPlus HR).",
       "access": "public",
-      "size": "35.8 GB archive (47 GB extracted)",
+      "size": "38.47 GB archive (50.35 GB extracted)",
       "files": [
         {
           "name": "nhd_features_cache_v1.tar.gz",
-          "note": "flow/water/area/coast features per 0.5° tile, full CONUS (14,856 parquets); MANIFEST.txt inside; verify with SHA256SUMS.txt in the OneDrive folder"
+          "note": "flow/water/area/coast features per 0.5° tile, full CONUS (14,856 parquets); MANIFEST.txt inside; sha256 and size in the spacescans data manifest (SHA256SUMS.txt in the OneDrive folder)"
         }
       ],
       "placeDir": [
@@ -252,11 +253,11 @@
         "vnl"
       ],
       "role": "Gridded values",
-      "sourceName": "NOAA / Colorado School of Mines — Earth Observation Group (EOG)",
+      "sourceName": "Earth Observation Group (EOG), Payne Institute for Public Policy, Colorado School of Mines",
       "sourceUrl": "https://eogdata.mines.edu/products/vnl/",
-      "license": "Free for research/education; redistributable with attribution.",
+      "license": "CC BY 4.0, per EOG's licence document; redistribution allowed with attribution (CC BY 4.0). Credit the Earth Observation Group, Payne Institute for Public Policy, Colorado School of Mines, as the EOG licence requires, and cite Elvidge et al. 2021, Remote Sensing 13(5):922, for annual VNL v2.",
       "access": "account-required",
-      "size": "~11 GB each × 7 years (uncompressed)",
+      "size": "about 81.29 GB on disk",
       "files": [
         {
           "name": "VNL_v21_npp_{year}_global_*.average_masked.dat.tif.gz",
@@ -280,11 +281,11 @@
         "temis"
       ],
       "role": "Gridded values",
-      "sourceName": "KNMI — TEMIS",
+      "sourceName": "KNMI / ESA, Tropospheric Emission Monitoring Internet Service (TEMIS)",
       "sourceUrl": "https://www.temis.nl/uvradiation/UVarchive.php",
-      "license": "Publicly available (attribute KNMI/TEMIS).",
+      "license": "Free use with credits; redistribution not granted: neither the raw HDF files nor the converted parquet may be redistributed. Credit KNMI/ESA TEMIS (https://www.temis.nl/).",
       "access": "public",
-      "size": "~10,000 files, ~29 GB",
+      "size": "about 31.58 GB on disk",
       "files": [
         {
           "name": "{var}YYYYMMDD.hdf",
@@ -297,7 +298,7 @@
       "notes": [
         "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
         "Native HDF-4 — install pyhdf (+ the system HDF4 library) to read it.",
-        "Scriptable from the CloudFront mirror: d1qb6yzwaaq4he.cloudfront.net/uvradiation/v2.0/{year}/{mm}/{var}YYYYMMDD.hdf",
+        "Scriptable: `spacescans data fetch --dataset temis_uv_raw --accept-terms knmi-temis` downloads every day from the CloudFront mirror d1qb6yzwaaq4he.cloudfront.net/uvradiation/v2.0/{year}/{mm}/{var}YYYYMMDD.hdf",
         "Layout: one subfolder per variable, then per year.",
         "The first run auto-converts the HDF archive to compact parquet (one-time, ~2 min); every later run reads parquet in seconds. No manual step needed.",
         "Data © KNMI/ESA (https://www.temis.nl/), used with credits; neither the raw HDFs nor the converted parquet are redistributed with this repo — each deployment downloads its own copy and converts locally."
@@ -311,11 +312,11 @@
         "acag"
       ],
       "role": "Gridded values",
-      "sourceName": "Washington University — Atmospheric Composition Analysis Group (ACAG)",
+      "sourceName": "Atmospheric Composition Analysis Group (ACAG), Washington University in St. Louis",
       "sourceUrl": "https://sites.wustl.edu/acag/datasets/surface-pm2-5/",
-      "license": "CC BY 4.0 (cite van Donkelaar et al.).",
+      "license": "Not stated for the North American V5.NA.05 product; ACAG states CC BY 4.0 for its global product only; redistribution not confirmed for this product: do not redistribute until ACAG confirms the licence. Cite the van Donkelaar et al. paper that the ACAG dataset page lists for V5.NA.05 / V5.NA.05.02.",
       "access": "public",
-      "size": "2,912 NetCDF files, ~26 GB for 2013–2019 (both variants)",
+      "size": "about 27.36 GB on disk",
       "files": [
         {
           "name": "V5NA05.HybridPM25[.FromBiomass].xNorthAmerica.YYYYDDD-YYYYDDD.nc",
@@ -327,13 +328,13 @@
         }
       ],
       "placeDir": [
-        "ACAG/C4/xNorthAmerica/{SPECIES}/BiWeekly/",
-        "ACAG/C4/xNorthAmerica/{SPECIES}_bm/BiWeekly/"
+        "ACAG/C4/xNorthAmerica/{dir}/BiWeekly/"
       ],
       "notes": [
         "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto the 0.01° grid (grid_weights); the template raster ACAG/C3/acag_template.tif ships with the repo.",
         "Both variants are required: the linkage derives each species' non-biomass share as plain minus FromBiomass.",
-        "Four Box shared folders on the ACAG site (plain total, plain components, FromBiomass total, FromBiomass components); the folder API rejects anonymous calls and 'download folder' is disabled, so files are fetched one by one. pipeline-data/ACAG/README.md documents the folder IDs and the enumerate-and-fetch approach.",
+        "Scriptable: `spacescans data fetch --dataset acag --accept-terms acag-v5na05` fetches the files one by one from the four WashU Box shares (the folder API rejects anonymous calls and 'download folder' is disabled); pipeline-data/ACAG/README.md documents the folder IDs.",
+        "{dir} is PM25, BC, DUST, NH4, NO3, OM, SO4, SS for the plain surfaces and the same names with _bm for the FromBiomass ones.",
         "Years 2000–2023 are available upstream; 2013–2019 matches the app's other gridded sources."
       ]
     },
@@ -345,11 +346,11 @@
         "faqsd"
       ],
       "role": "Exposure values",
-      "sourceName": "US EPA — Fused Air Quality Surface Using Downscaling (RSIG)",
+      "sourceName": "US EPA, Fused Air Quality Surfaces Using Downscaling (FAQSD), via RSIG",
       "sourceUrl": "https://www.epa.gov/hesc/rsig-related-downloadable-data-files#faqsd",
-      "license": "US federal public domain.",
+      "license": "US federal public domain; redistribution allowed. Credit the US EPA (FAQSD downscaler outputs, RSIG).",
       "access": "public",
-      "size": "14 text files, ~1.5 GB each uncompressed (~21 GB for 2013–2019)",
+      "size": "about 6.50 GB to download, 23.33 GB on disk",
       "files": [
         {
           "name": "{year}_ozone_daily_8hour_maximum.txt",
@@ -365,7 +366,7 @@
       ],
       "notes": [
         "Needs the 2010 Census Tract boundaries (TRACT/C3) — the same tract weight table Food Access uses, and a cohort that has run either gets the other's rasterization from cache.",
-        "Scriptable: https://ofmpub.epa.gov/rsig/rsigserver?data/FAQSD/outputs/{year}_{pm25_daily_average|ozone_daily_8hour_maximum}.txt.gz",
+        "Scriptable: `spacescans data fetch --dataset faqsd --accept-terms epa-faqsd`, or by hand from https://ofmpub.epa.gov/rsig/rsigserver?data/FAQSD/outputs/{year}_{pm25_daily_average|ozone_daily_8hour_maximum}.txt.gz",
         "EPA switched header styles between years (FIPS/value vs Loc_Label1/Prediction, and two date formats); the reader takes columns by position and parses both date styles, so keep the files exactly as published."
       ]
     }
@@ -426,7 +427,7 @@
         "FARA/C4/"
       ],
       "downloadUrl": "https://indiana-my.sharepoint.com/:f:/g/personal/xai_iu_edu/IgDZCqTyHu9yQLgJdoSpy3SoAbF0Yw5qXC8DuHuDamBnhwI?e=22P4ck",
-      "downloadNote": "fara_nationwide_2010_2019_interpolated.Rda (427 MB) from the same OneDrive folder as the TIGER cache; drop it in FARA/C4/. Derived from USDA ERS FARA (US federal public domain).",
+      "downloadNote": "fara_nationwide_2010_2019_interpolated.Rda (448 MB) from the project's OneDrive folder (the same one as the boundary archives); drop it in FARA/C4/. US federal public domain (derived). Credit the USDA Economic Research Service (Food Access Research Atlas).",
       "fetchCmd": "scripts/fetch_distribution.sh fara_nationwide_2010_2019_interpolated.Rda"
     }
   ]
