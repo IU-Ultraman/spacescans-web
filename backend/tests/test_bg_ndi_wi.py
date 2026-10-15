@@ -335,7 +335,7 @@ def test_input_conversion_failure_is_reported(fake_cli):
 def test_input_conversion_failure_logs_the_0_2_7_line(fake_cli, dates):
     """Phase-C review F2: 0.2.7 logged app.cohort_dates' ValueError; the package raises
     CohortError (a ValueError subclass, same message), whose repr named the subclass. The
-    line and the status message are 0.2.7's again."""
+    line and the status message have 0.2.7's form again (and, since PRIV-2, no date)."""
     import pandas as pd
     from app import cohort_dates
     from spacescans.orchestrate import LOG_COHORT_FAILED
@@ -351,6 +351,20 @@ def test_input_conversion_failure_logs_the_0_2_7_line(fake_cli, dates):
     assert line["msg"].startswith("csv_to_parquet failed: ValueError(")
     slot = _status(task_dir)["experiments"]["bg_ndi_wi"]
     assert slot["message"] == f"input conversion failed: {old.value}"
+
+
+def test_input_conversion_failure_quotes_no_cohort_date(fake_cli):
+    """PRIV-2: 0.2.7's message began with the file's first date, so a patient's date went
+    into status.json and logs.jsonl. Neither file holds a date of the cohort now."""
+    dates = ("1985-03-17", "1999-12-31", "1985-13-45", "2020-01-01")  # row 2 starts impossibly
+    csv = ("pid,startDate,endDate,longitude,latitude\n"
+           f"P1,{dates[0]},{dates[1]},-86.1,39.7\nP2,{dates[2]},{dates[3]},-86.2,39.8\n")
+    task_dir = _task(fake_cli, "task-priv2001", ["ndi"], csv=csv)
+    assert bg_ndi_wi.run(task_dir, variables=["ndi"]) == 1
+    for name in ("status.json", "logs.jsonl"):
+        text = (task_dir / name).read_text()
+        assert "Unrecognized date format" in text
+        assert not any(d in text for d in dates), name
 
 
 def _recorded_slots(monkeypatch) -> list[dict]:

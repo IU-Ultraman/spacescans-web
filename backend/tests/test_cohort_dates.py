@@ -81,9 +81,11 @@ def test_mixed_formats_within_a_column_are_rejected():
         parse_date_columns(_df(["8/19/2017", "2017-09-20"], ["9/1/2017", "9/2/2017"]))
 
 
-def test_unparseable_dates_raise_with_the_offending_value():
-    with pytest.raises(ValueError, match="not-a-date"):
+def test_unparseable_dates_raise_without_quoting_them():
+    """PRIV-2: the message names the accepted formats, not the cohort's values."""
+    with pytest.raises(ValueError, match=r"^Unrecognized date format\. ") as e:
         parse_date_columns(_df(["not-a-date"], ["also-bad"]))
+    assert "not-a-date" not in str(e.value) and "also-bad" not in str(e.value)
 
 
 def test_blank_cells_become_nat_not_errors():
@@ -133,6 +135,21 @@ def _upload(tmp, csv_bytes):
     task_dir.mkdir(parents=True)
     (task_dir / "meta.json").write_text(json.dumps({"id": "x"}))
     return tm.save_upload("x", csv_bytes, "c.csv"), task_dir / "input.csv"
+
+
+def test_an_unrecognised_format_quotes_no_cohort_date(tmp_path):
+    """PRIV-2: 0.2.7's message began with the file's first date. The upload check sends
+    the message to the browser and the runners write it to status.json and logs.jsonl."""
+    dates = ("1985-03-17", "1999-12-31", "1985-13-45", "2020-01-01")  # row 2 starts impossibly
+    with pytest.raises(ValueError) as parsed:
+        parse_date_columns(_df([dates[0], dates[2]], [dates[1], dates[3]]))
+    body = ("pid,startDate,endDate,longitude,latitude\n"
+            f"P1,{dates[0]},{dates[1]},-86.1,39.7\nP2,{dates[2]},{dates[3]},-86.2,39.8\n").encode()
+    with pytest.raises(ValueError) as uploaded:
+        _upload(tmp_path, body)
+    for message in (str(parsed.value), str(uploaded.value)):
+        assert message.startswith("Unrecognized date format. ")
+        assert not any(d in message for d in dates)
 
 
 def test_patid_is_accepted_as_the_identifier(tmp_path):

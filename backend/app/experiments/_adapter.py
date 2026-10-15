@@ -30,13 +30,11 @@ paper's ``independent_impl_chain.sh`` greps for), the SIGTERM handler (status
 and exit codes, and the order of variables (as received: ``walkability,ndi``
 still works and still orders the partial's columns).
 
-Logs and status carry step names, counts, exit codes and cache keys, with one
-exception kept from 0.2.7: when the cohort's dates cannot be parsed, the
-``csv_to_parquet failed: ...`` log line and the ``input conversion failed: ...``
-status message quote the first date of the file, as 0.2.7's "Unrecognized date
-format" message does (and the upload check in ``task_manager.save_upload``).
-``CohortError.to_dict()["message"]`` is the same text without the date; using it
-here would change a status message, which is left for after the cutover.
+Logs and status carry step names, counts, exit codes and cache keys, never a
+cohort value. When the cohort's dates cannot be parsed, the ``csv_to_parquet
+failed: ...`` log line and the ``input conversion failed: ...`` status message keep
+0.2.7's form, but the "Unrecognized date format" message in them no longer quotes
+the file's first date (PRIV-2, 2026-10-14; likewise the upload check's).
 """
 from __future__ import annotations
 

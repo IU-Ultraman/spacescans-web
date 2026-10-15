@@ -62,7 +62,7 @@ def _clean(values: pd.Series) -> pd.Series:
 def detect_date_format(columns: Iterable[pd.Series]) -> str:
     """Return the one format that parses every non-empty value in `columns`.
 
-    Raises ValueError naming a failing sample and the accepted formats.
+    Raises ValueError naming the accepted formats; the message quotes no value.
     """
     non_null = [c.dropna() for c in (_clean(col) for col in columns)]
     non_null = [c for c in non_null if not c.empty]
@@ -77,9 +77,11 @@ def detect_date_format(columns: Iterable[pd.Series]) -> str:
             continue
         return fmt
 
-    sample = str(non_null[0].iloc[0])
+    # 0.2.7 began this message with the file's first date, which then reached the
+    # browser, status.json and logs.jsonl; it quotes no cohort value since PRIV-2
+    # (2026-10-14), the same text as spacescans.cohort's.
     raise ValueError(
-        f"Unrecognized date format: {sample!r}. Dates must use one consistent "
+        "Unrecognized date format. Dates must use one consistent "
         f"format across startDate and endDate. Accepted: "
         f"{ACCEPTED_DATE_EXAMPLES}"
     )
