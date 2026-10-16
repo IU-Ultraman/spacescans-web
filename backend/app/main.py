@@ -63,6 +63,17 @@ def create_app() -> FastAPI:
             variable_registry._assert_pipeline_version_compatible()
         except Exception as exc:  # pragma: no cover - defensive
             _log.error("pipeline version probe failed at startup: %r", exc)
+        # Phase D: participant-level output is every new task's default; say so
+        # at boot when the installed pipeline cannot render it (each such task
+        # then fails with this reason; episode-level tasks run as before).
+        try:
+            from app import output_level
+
+            if not output_level.supports_participant():
+                _log.warning("participant-level output unavailable: %s",
+                             output_level.unsupported_message())
+        except Exception:  # pragma: no cover - defensive
+            _log.exception("output level probe failed at startup")
 
         # #1 serial queue: a background promoter starts the earliest-queued
         # task as soon as the run-lock frees, so the queue advances even when
