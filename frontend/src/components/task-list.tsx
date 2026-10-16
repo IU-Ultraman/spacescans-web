@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api, type Task } from "@/lib/api";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
+import { OUTPUT_LEVEL_INFO, isOutputLevel } from "@/lib/output-level";
 import { StatusBadge } from "@/components/status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -115,6 +116,11 @@ export function TaskList() {
 
   function variableLabel(key: string): string {
     return catalog?.variables[key]?.label ?? key;
+  }
+
+  /** Registered datasets the task links, when the server reports them. */
+  function datasetCount(task: Task): number {
+    return Array.isArray(task.custom_datasets) ? task.custom_datasets.length : 0;
   }
 
   async function handleRename() {
@@ -401,18 +407,28 @@ export function TaskList() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  {task.variables && task.variables.length > 0 ? (
+                  {(task.variables?.length ?? 0) + datasetCount(task) > 0 ? (
                     <div className="flex flex-wrap gap-1">
-                      {task.variables.map((v) => (
+                      {(task.variables ?? []).map((v) => (
                         <Chip key={v} className="text-[10px]">
                           {variableLabel(v)}
                         </Chip>
                       ))}
+                      {datasetCount(task) > 0 && (
+                        <Chip variant="outline" className="text-[10px]">
+                          {datasetCount(task)} own dataset{datasetCount(task) === 1 ? "" : "s"}
+                        </Chip>
+                      )}
                     </div>
                   ) : (
                     <span className="text-xs text-muted-foreground italic">
                       not configured
                     </span>
+                  )}
+                  {isOutputLevel(task.output_level) && (
+                    <div className="mt-1 text-[10px] text-muted-foreground">
+                      {OUTPUT_LEVEL_INFO[task.output_level].short}
+                    </div>
                   )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">

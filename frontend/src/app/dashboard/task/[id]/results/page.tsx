@@ -13,6 +13,14 @@ import {
 import { INPUT_COLUMNS } from "@/lib/result-columns";
 import { useColumnMeta } from "@/lib/use-column-meta";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
+import {
+  OUTPUT_LEVEL_INFO,
+  countLabel,
+  isOutputLevel,
+  linkageRate,
+  resultLevel,
+  unitNoun,
+} from "@/lib/output-level";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { StateMapCard } from "@/components/results/state-map-card";
@@ -50,11 +58,11 @@ const ALL_INTERMEDIATES: Record<string, IntermediateFile> = {
   c3_bg: { file: "c3_bg.parquet", label: "c3_bg.parquet (BG weights)" },
   c4_ndi: {
     file: "c4_ndi.parquet",
-    label: "c4_ndi.parquet (raw NDI per patient)",
+    label: "c4_ndi.parquet (raw NDI values)",
   },
   c4_wi: {
     file: "c4_wi.parquet",
-    label: "c4_wi.parquet (raw Walkability per patient)",
+    label: "c4_wi.parquet (raw Walkability values)",
   },
 };
 
@@ -88,6 +96,9 @@ export default function TaskResultsPage() {
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Names of the registered datasets the task linked (ids → names), if the
+  // server reports which ones it used.
+  const [datasetNames, setDatasetNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -128,6 +139,26 @@ export default function TaskResultsPage() {
       cancelled = true;
     };
   }, [id]);
+
+  const datasetIds = (task?.custom_datasets ?? []).filter(
+    (d): d is string => typeof d === "string",
+  );
+  const hasDatasets = datasetIds.length > 0;
+  useEffect(() => {
+    if (!hasDatasets) return;
+    let cancelled = false;
+    api
+      .listDatasets()
+      .then((list) => {
+        if (!cancelled) setDatasetNames(Object.fromEntries(list.map((d) => [d.id, d.name])));
+      })
+      .catch(() => {
+        /* names are a nicety; the ids still show */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hasDatasets]);
 
   function formatCell(value: string | number | null): string {
     if (value === null || value === undefined) return "—";
@@ -194,6 +225,13 @@ export default function TaskResultsPage() {
     : "Unknown";
 
   const intermediates = intermediatesForStatus(taskStatus);
+  // What one row of result.csv stands for: the results say; an older task's
+  // results (no level) were computed per location episode.
+  const level = resultLevel(preview?.level, task.output_level);
+  const levelInfo = OUTPUT_LEVEL_INFO[level];
+  // Known from the results (a preview without a level is an older,
+  // episode-level result) or from the task; otherwise not claimed.
+  const levelKnown = preview !== null || isOutputLevel(task.output_level);
   const exposureSummary =
     preview?.summary?.filter((c) => !INPUT_COLUMNS.has(c.name)) ?? [];
   const hasExposureCols = exposureSummary.length > 0;
@@ -249,10 +287,16 @@ export default function TaskResultsPage() {
           </div>
           {task.data_summary && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Cohort size</span>
+              <span className="text-muted-foreground">Uploaded</span>
               <span className="font-medium">
-                {task.data_summary.row_count.toLocaleString()} rows
+                {countLabel("episode", task.data_summary.row_count)}
               </span>
+            </div>
+          )}
+          {levelKnown && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Output</span>
+              <span className="font-medium">{levelInfo.label}</span>
             </div>
           )}
           {task.data_summary?.date_range && (
@@ -280,6 +324,14 @@ export default function TaskResultsPage() {
               </span>
             </div>
           )}
+          {hasDatasets && (
+            <div className="flex justify-between gap-4">
+              <span className="shrink-0 text-muted-foreground">Your datasets</span>
+              <span className="text-right font-medium">
+                {datasetIds.map((d) => datasetNames[d] ?? d).join(", ")}
+              </span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Task ID</span>
             <span className="font-mono text-xs">{task.id}</span>
@@ -302,7 +354,7 @@ export default function TaskResultsPage() {
           <p className="mt-2 text-xs text-muted-foreground">
             Showing first {preview.rows.length} of{" "}
             <span className="font-medium">{preview.total_rows.toLocaleString()}</span>{" "}
-            rows · {preview.columns.length} columns
+            {unitNoun(level, preview.total_rows)} (one row each) · {preview.columns.length} columns
             {preview.has_more && (
               <span className="text-muted-foreground">
                 {" "}
@@ -367,7 +419,9 @@ export default function TaskResultsPage() {
           <p className="mt-2 text-xs text-muted-foreground">
             Stats for {exposureCols.length} exposure column
             {exposureCols.length === 1 ? "" : "s"} (input cohort columns
-            hidden), computed over all {preview.total_rows.toLocaleString()} rows.
+            hidden), computed over all {countLabel(level, preview.total_rows)}.
+            Linked is the share of {unitNoun(level, 2)} with a value (the
+            linkage rate).
           </p>
           <div className="mt-3 overflow-x-auto rounded-md border">
             <Table>
@@ -375,7 +429,12 @@ export default function TaskResultsPage() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="text-xs font-medium">Column</TableHead>
                   <TableHead className="text-xs font-medium">Type</TableHead>
-                  <TableHead className="text-xs font-medium">Coverage</TableHead>
+                  <TableHead
+                    className="text-xs font-medium"
+                    title={`Share of ${unitNoun(level, 2)} with a value`}
+                  >
+                    Linked
+                  </TableHead>
                   <TableHead className="text-xs font-medium text-right">Nulls</TableHead>
                   <TableHead className="text-xs font-medium text-right">Min</TableHead>
                   <TableHead className="text-xs font-medium text-right">Mean</TableHead>
@@ -384,8 +443,7 @@ export default function TaskResultsPage() {
               </TableHeader>
               <TableBody>
                 {exposureCols.map((col) => {
-                  const total = col.non_null + col.null_count;
-                  const pct = total > 0 ? (col.non_null / total) * 100 : 0;
+                  const pct = (linkageRate(col) ?? 0) * 100;
                   return (
                     <TableRow key={col.name}>
                       <TableCell className="text-xs">
@@ -460,7 +518,12 @@ export default function TaskResultsPage() {
       {/* US state choropleth */}
       {task.status === "finished" && (
         <VizErrorBoundary label="Geographic Distribution">
-          <StateMapCard taskId={id} preview={preview} />
+          <StateMapCard
+            taskId={id}
+            preview={preview}
+            level={level}
+            cohortColumns={task.data_summary?.columns ?? null}
+          />
         </VizErrorBoundary>
       )}
 
@@ -488,10 +551,22 @@ export default function TaskResultsPage() {
           Download the output files from your completed linkage task.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
-          <span className="font-medium">Result shape:</span> one row per
-          residential episode. A patient with multiple residences during the
-          study window gets one row per residence; exposure values reflect
-          that specific residence.
+          <span className="font-medium">Result shape:</span>{" "}
+          {level === "participant" ? (
+            <>
+              one row per participant id in your upload, in order of first
+              appearance: <code className="rounded bg-muted px-1 py-0.5">pid</code>{" "}
+              and the exposures. Each value is the average over the
+              participant&apos;s location episodes, weighted by the days that
+              contribute a value; it is empty when no day does.
+            </>
+          ) : (
+            <>
+              one row per location episode (each row of your upload, your
+              columns kept). A participant with several location episodes gets
+              one row per episode; each value reflects that episode alone.
+            </>
+          )}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Button onClick={() => handleDownload()} className="gap-2">

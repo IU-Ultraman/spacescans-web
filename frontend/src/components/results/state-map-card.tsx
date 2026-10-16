@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import * as topojson from "topojson-client";
 import { api, type ResultsPreview, type StateGeoBucket } from "@/lib/api";
+import { hasStateColumn, unitNoun, type OutputLevel } from "@/lib/output-level";
 import { isInputColumn } from "@/lib/result-columns";
 import { useColumnMeta } from "@/lib/use-column-meta";
 import { Map as MapIcon, Info } from "lucide-react";
@@ -17,6 +18,10 @@ import statesGeo from "us-atlas/states-10m.json";
 interface StateMapCardProps {
   taskId: string;
   preview: ResultsPreview | null;
+  /** What one result row stands for. */
+  level: OutputLevel;
+  /** The uploaded cohort's columns (task.data_summary.columns), if known. */
+  cohortColumns?: string[] | null;
 }
 
 interface StateBucketMap {
@@ -34,7 +39,7 @@ function interpolateColor(t: number): string {
   return `hsl(160 ${saturation}% ${lightness}%)`;
 }
 
-export function StateMapCard({ taskId, preview }: StateMapCardProps) {
+export function StateMapCard({ taskId, preview, level, cohortColumns = null }: StateMapCardProps) {
   const colMeta = useColumnMeta();
   // Pick the first numeric exposure column as default.
   const numericExposureCols = useMemo(() => {
@@ -118,9 +123,12 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
   // The API groups by state_fips, which is an optional cohort column that is
   // passed through rather than filled in. Without it the endpoint returns an
   // empty set and the map renders blank — say so instead of showing a grey US.
-  // Default to true while the preview is still loading, so the map isn't
-  // replaced by this message on every refresh.
-  const hasStateFips = preview ? preview.columns.includes("state_fips") : true;
+  // At participant level result.csv has no state_fips (the server places each
+  // participant in the state of their longest location episode), so the
+  // cohort's own columns decide. Unknown counts as present, so the map isn't
+  // replaced by this message while the preview is still loading.
+  const hasStateFips = hasStateColumn(level, preview?.columns ?? null, cohortColumns);
+  const units = unitNoun(level, 2);
   if (!hasStateFips) {
     return (
       <div className="rounded-lg border bg-card p-6 shadow-sm">
@@ -168,8 +176,10 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
         Geographic Distribution
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        Per-state mean of the selected exposure across the cohort. Hover a
-        state for its mean and sample size.
+        {level === "participant"
+          ? "Per-state mean of the selected exposure across participants; each participant counts once, in the state of their longest location episode (ties: the most recent start)."
+          : "Per-state mean of the selected exposure across location episodes."}{" "}
+        Hover a state for its mean and number of {units}.
       </p>
 
       {/* Toolbar */}
@@ -251,7 +261,7 @@ export function StateMapCard({ taskId, preview }: StateMapCardProps) {
             {hoveredBucket ? (
               <>
                 <div className="font-mono text-[10px]">
-                  count: {hoveredBucket.count.toLocaleString()}
+                  {units}: {hoveredBucket.count.toLocaleString()}
                 </div>
                 <div className="font-mono text-[10px]">
                   mean:{" "}
