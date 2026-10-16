@@ -99,3 +99,13 @@ docker compose down              # stop
 docker compose down -v           # stop + also delete accounts/tasks/cache
 docker compose logs -f backend   # follow backend logs
 ```
+
+---
+
+## License
+
+spacescans-web is released under the MIT License ([LICENSE](LICENSE)), like the spacescans
+package it runs. The license covers the software only: each catalog source keeps its
+provider's terms (the Data Setup page lists them), and a dataset a user registers keeps the
+terms of its source, which its owner is responsible for before sharing it with the
+deployment.
