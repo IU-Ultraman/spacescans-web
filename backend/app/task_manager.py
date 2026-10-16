@@ -135,7 +135,7 @@ def compute_coverage(task_id: str, variable_keys: list[str],
                     "patients_in_region": 0,
                     "patients_covered": 0,
                     "coverage_pct": 0.0,
-                    "warnings": ["Cohort is empty — no patients to evaluate"],
+                    "warnings": ["Cohort is empty — no location episodes to evaluate"],
                     "boundary": resolved[var]["boundary"],
                     "display_unit": resolved[var]["display_unit"],
                     "temporal": resolved[var].get("temporal", "yearly"),
@@ -175,13 +175,13 @@ def compute_coverage(task_id: str, variable_keys: list[str],
             time_out_pct = (~in_time).sum() / n_total * 100
             if time_out_pct > 5:
                 warnings.append(
-                    f"{time_out_pct:.0f}% of patients have episodes entirely outside "
+                    f"{time_out_pct:.0f}% of location episodes fall entirely outside "
                     f"{y0}-{y1}"
                 )
         region_out_pct = (~in_region).sum() / n_total * 100
         if region_out_pct > 5:
             warnings.append(
-                f"{region_out_pct:.0f}% of patients fall outside the "
+                f"{region_out_pct:.0f}% of location episodes fall outside the "
                 f"{m['coverage_region']} coverage region"
             )
 
@@ -440,7 +440,7 @@ def save_upload(task_id: str, file_content: bytes, filename: str) -> dict:
         input_path.unlink()
         raise ValueError(
             f"Missing required columns: {', '.join(sorted(missing))}"
-            + (" (the patient id may be named pid or PATID)"
+            + (" (the participant id may be named pid or PATID)"
                if "pid" in missing else "")
         )
     # Validate + range the dates through the shared resolver. Two fixes here:
