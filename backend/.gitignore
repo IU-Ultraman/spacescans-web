@@ -4,3 +4,4 @@ __pycache__/
 /data/
 .env
 /data/c3_cache/
+.venv/

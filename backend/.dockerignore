@@ -17,3 +17,6 @@ __pycache__/
 .git/
 .gitignore
 *.md
+
+# A local virtualenv (backend/.venv) must never enter the image.
+.venv/
