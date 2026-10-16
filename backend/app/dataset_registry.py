@@ -210,3 +210,17 @@ def remove(record_id: str, root: Path) -> None:
 def definition(record_id: str, root: Path) -> dict[str, Any]:
     """The linkable definition a task snapshots (``custom_variables[variable_key]``)."""
     return dict(_api().dataset_definition(record_id, os.fspath(root)))
+
+
+def definition_from_record(record: Mapping[str, Any], root: Path) -> dict[str, Any]:
+    """:func:`definition` from a record already read (no second listing of the root).
+
+    Uses the package's ``DatasetRecord.from_dict`` when it has one, else looks the
+    record up by id.
+    """
+    api = _api()
+    record_cls = getattr(api, "DatasetRecord", None)
+    from_dict = getattr(record_cls, "from_dict", None)
+    if callable(from_dict):
+        return dict(api.dataset_definition(from_dict(dict(record), root=os.fspath(root))))
+    return definition(str(record["id"]), root)

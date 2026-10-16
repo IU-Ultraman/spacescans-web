@@ -170,7 +170,7 @@ class Dataset:
             raise Unavailable(
                 f"dataset {self.name!r} was registered with a spacescans that has a dataset "
                 "registry; the installed one has none")
-        return dataset_registry.definition(self.id, self.directory.parent)
+        return dataset_registry.definition_from_record(self.record, self.directory.parent)
 
     def missing_files(self) -> list[str]:
         """Names of the dataset's data files that are not on disk (empty when complete)."""
