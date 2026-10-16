@@ -229,11 +229,14 @@ def _read_result(result_path):
     return pd.read_csv(result_path, dtype=_TEXT_DTYPES)
 
 
-def _exposure_columns(task_id: str, columns: list[str]) -> list[str]:
-    """result.csv columns that are linked values: not the cohort's own columns
-    (input.csv's header, at episode level) and not an id/geocode column."""
+def _exposure_columns(task_id: str, columns: list[str], level: str) -> list[str]:
+    """result.csv columns that are linked values: at participant level every column
+    but pid; at episode level not the cohort's own columns (input.csv's header) and
+    not an id/geocode column."""
     import pandas as pd  # noqa: PLC0415
 
+    if level == output_level.PARTICIPANT:
+        return [c for c in columns if c != "pid"]
     input_csv = task_manager._task_dir(task_id) / "input.csv"
     cohort_cols: set[str] = set()
     if input_csv.exists():
@@ -331,7 +334,7 @@ def preview_results(
         "has_more": total_rows > len(rows),
         "summary": summary,
         "linkage": output_level.linkage_rates(
-            df_full, _exposure_columns(task_id, list(df_full.columns))),
+            df_full, _exposure_columns(task_id, list(df_full.columns), level)),
     }
 
 @router.get("/{task_id}/results/histogram")

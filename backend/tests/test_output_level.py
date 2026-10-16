@@ -612,6 +612,14 @@ def test_preview_reports_the_level_and_linkage_per_participant(api, tmp_path):
     }
 
 
+def test_participant_linkage_counts_a_column_named_like_a_cohort_column(api, tmp_path):
+    csv = "pid,startDate,endDate,longitude,latitude,ndi\nA,2017-01-01,2017-03-31,-93,45,x\n"
+    task_id, _ = _finished_task(tmp_path, level="participant", result="pid,ndi\nA,1.5\n",
+                                csv=csv)
+    body = api.get(f"/api/tasks/{task_id}/results/preview").json()
+    assert body["linkage"] == {"ndi": {"linked": 1, "total": 1, "rate_pct": 100.0}}
+
+
 def test_preview_of_a_pre_phase_d_result_is_per_episode(api, tmp_path):
     result = ("pid,startDate,endDate,longitude,latitude,state_fips,ndi\n"
               "007,2017-01-01,2017-03-31,-93.0,45.0,27,1\n"
