@@ -38,6 +38,9 @@ Participant ids
     number (such as ``007`` and ``7``) are one participant to the pipeline: the merge refuses
     that cohort at participant level rather than give both the pooled value.
 
+Rows without a participant id (a blank ``pid``) belong to no participant: the participant
+table leaves them out, and the merge logs how many (:func:`blank_id_rows`).
+
 Nothing here logs or returns a cohort value (an id, a date, a coordinate): messages carry
 counts, step names and file names only.
 """
@@ -329,12 +332,25 @@ def _cohort_ids(task_dir: Path) -> "Any":
     return pd.read_csv(path, dtype=str, usecols=[id_col])[id_col]
 
 
+def _has_id(ids: "Any") -> "Any":
+    return ids.notna() & (ids.astype("string").str.strip() != "")
+
+
 def participants(task_dir: Path) -> "Any":
-    """``DataFrame[pid]``: every participant id of the cohort once, in first-appearance order."""
+    """``DataFrame[pid]``: every participant id of the cohort once, in first-appearance order.
+
+    A blank id is no participant's: those rows are not in the table (:func:`blank_id_rows`).
+    """
     import pandas as pd
 
     ids = _cohort_ids(task_dir)
+    ids = ids[_has_id(ids)]
     return pd.DataFrame({"pid": ids}).drop_duplicates(keep="first").reset_index(drop=True)
+
+
+def blank_id_rows(task_dir: Path) -> int:
+    """How many rows of ``input.csv`` have no participant id."""
+    return int((~_has_id(_cohort_ids(task_dir))).sum())
 
 
 def id_lookup(task_dir: Path) -> dict[str, Any]:
@@ -364,7 +380,8 @@ def id_lookup(task_dir: Path) -> dict[str, Any]:
     collisions = 0
     for value, text in zip(read, texts):
         key = _canon(value)
-        if key is None:
+        if key is None or text is None or (isinstance(text, float) and math.isnan(text)) \
+                or not str(text).strip():
             continue
         if key in lookup and lookup[key] != text:
             collisions += 1
@@ -443,7 +460,10 @@ def participant_partial(task_dir: Path, experiment: str, variables: Sequence[str
             )
         keep = [c for c in value_cols[var_key] if c in df.columns]
         part = df[[id_col] + keep].rename(columns={id_col: "pid"})
-        part["pid"] = [lookup.get(_canon(v)) for v in part["pid"].tolist()]
+        canon = [_canon(v) for v in part["pid"].tolist()]
+        # The pipeline's group of rows without an id is no participant's.
+        part = part[[c is not None and c.strip() != "" for c in canon]]
+        part["pid"] = [lookup.get(c) for c in canon if c is not None and c.strip() != ""]
         if part["pid"].isna().any():
             raise OutputLevelError(
                 f"participant-level output: {path.name} names participant(s) that are not in "
@@ -528,6 +548,7 @@ def participant_states(task_dir: Path) -> Any:
     cols = [id_col, "state_fips"] + [c for c in ("startDate", "endDate") if c in header]
     df = pd.read_csv(path, dtype=str, usecols=cols)
     df = df.rename(columns={id_col: "pid"})
+    df = df[_has_id(df["pid"])]
     try:
         cohort_dates.parse_date_columns(df)
     except ValueError:

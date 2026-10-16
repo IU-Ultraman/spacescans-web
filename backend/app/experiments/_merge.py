@@ -90,6 +90,12 @@ def fan_in(task_dir: Path, experiment_keys: list[str]) -> Path:
     output_level.clear_result_meta(task_dir)
     if level == output_level.PARTICIPANT:
         df = output_level.participant_fan_in(task_dir, experiment_keys)
+        blank = output_level.blank_id_rows(task_dir)
+        if blank:
+            _emit_log_warning(
+                task_dir, source="merge", event="participant_rows_without_id", rows=blank,
+                msg=(f"{blank} input row(s) have no participant id (pid); the "
+                     "participant-level result leaves them out"))
     else:
         df = _merge.fan_in_from_dir(task_dir, experiment_keys)
 

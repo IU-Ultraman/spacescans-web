@@ -300,6 +300,22 @@ def test_ids_map_back_to_the_cohorts_spelling(tmp_path):
     assert output_level.participants(task_dir)["pid"].tolist() == ["007", "12", "0450"]
 
 
+def test_rows_without_an_id_are_left_out_of_the_participant_table(fake_cli,
+                                                                    participant_package):
+    csv = ("pid,startDate,endDate,longitude,latitude\n"
+           "A7,2017-01-01,2017-12-31,-93.0,45.0\n"
+           ",2017-01-01,2017-12-31,-94.0,44.0\n"
+           " ,2017-01-01,2017-12-31,-94.0,44.0\n"
+           "B12,2017-01-01,2017-12-31,-90.0,40.0\n")
+    task_dir = _task(fake_cli, "task-blank001", ["ndi"], csv=csv)
+    assert bg_ndi_wi.run(task_dir) == 0, _status(task_dir)
+    result = pd.read_csv(_merge.fan_in(task_dir, ["bg_ndi_wi"]), dtype={"pid": str})
+    assert result["pid"].tolist() == ["A7", "B12"]
+    records = [json.loads(line) for line in (task_dir / "logs.jsonl").read_text().splitlines()]
+    blank = [r for r in records if r.get("event") == "participant_rows_without_id"]
+    assert blank and blank[0]["rows"] == 2 and blank[0]["level"] == "warning"
+
+
 def test_two_spellings_of_one_number_are_refused(tmp_path):
     csv = ("pid,startDate,endDate,longitude,latitude\n"
            "007,2017-01-01,2017-12-31,-93.0,45.0\n"
