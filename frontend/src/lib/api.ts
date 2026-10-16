@@ -134,28 +134,11 @@ async function downloadFile(path: string, filename: string): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-/** POST a FormData body. Content-Type is deliberately NOT set: the browser has
- *  to add it itself so the multipart boundary is correct. */
-async function requestMultipart<T>(path: string, body: FormData): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body,
-  });
-  if (res.status === 401) {
-    handleUnauthorized();
-    throw new ApiError(401, "Unauthorized");
-  }
-  if (!res.ok) {
-    const d = describeError(await readJson(res), res.statusText || "Upload failed");
-    throw new ApiError(res.status, d.message, d.issues);
-  }
-  return (await readJson(res)) as T;
-}
-
 /**
  * Send a FormData body with XMLHttpRequest rather than fetch, so the caller
  * can show upload progress (rasters and daily tables can be large).
+ * Content-Type is deliberately NOT set: the browser adds it with the
+ * multipart boundary.
  */
 function xhrMultipart<T>(
   method: string,
@@ -312,77 +295,8 @@ export interface VarCoverage {
   temporal?: 'static' | 'yearly';
 }
 
-/** A custom exposome: a user's own area-level values, uploaded as a CSV and
- *  attached to a boundary layer the deployment already provisions. Shaped like
- *  a catalog entry so it renders next to the shipped variables, plus the fields
- *  the library UI needs. It never carries an ontology_id — custom exposomes
- *  have no ontology node, which is why they get their own block in the wizard
- *  rather than appearing in the tree. */
-export interface CustomRasterFile {
-  year: number | null;
-  uploaded_filename: string;
-  sha256: string;
-  bytes: number;
-}
-
-export interface CustomRasterGrid {
-  width: number;
-  height: number;
-  crs: string;
-  resolution: [number, number];
-  resolution_label: string;
-  nodata: number | null;
-  bounds_wgs84: [number, number, number, number];
-}
-
-export interface CustomExposome extends VariableMetadata {
-  /** polygon: a CSV on a Census geography; raster: the user's own GeoTIFF grid. */
-  geometry: 'polygon' | 'raster';
-  dataset_id: string;
-  variable_key: string;
-  /** The user's own geography column in their CSV. */
-  key_col: string;
-  /** The weights-table column it joins to, e.g. GEOID10. */
-  join_col: string;
-  year_col: string | null;
-  value_labels: Record<string, string>;
-  /** Per value column; the dataset-level display_unit is a derived summary. */
-  value_units: Record<string, string>;
-  row_count: number;
-  distinct_keys: number;
-  uploaded_filename: string;
-  created_at: string;
-  /** raster only */
-  rasters?: CustomRasterFile[];
-  /** Parallel to value_cols: the band each result column is read from. */
-  bands?: number[];
-  /** First band; the only band field on datasets saved before multi-band. */
-  band?: number;
-  grid?: CustomRasterGrid;
-}
-
-export interface CustomRasterPreview extends CustomRasterGrid {
-  cells: number;
-  band_count: number;
-  bands: { index: number; description: string; dtype: string; nodata: number | null }[];
-  grid_hash: string;
-  filename: string;
-  bytes: number;
-}
-
-export interface CreateCustomRasterInput {
-  /** One file with year null = time-invariant; several, each with a year. */
-  files: { file: File; year: number | null }[];
-  name: string;
-  /** One result column per band; value_cols is parallel to bands. */
-  bands: number[];
-  value_cols: string[];
-  description?: string;
-  /** Keyed by column name. */
-  value_labels?: Record<string, string>;
-  value_units?: Record<string, string>;
-}
-
+/** A boundary layer an area-table dataset can be keyed on, and whether this
+ *  deployment provisions it (GET /api/custom-exposomes/boundaries). */
 export interface CustomBoundary {
   boundary: 'BG' | 'ZCTA5' | 'Tract' | 'County';
   label: string;
@@ -391,33 +305,6 @@ export interface CustomBoundary {
   /** False when this deployment has no boundary data, so a dataset on it could
    *  never run — the dialog hides those. */
   available: boolean;
-}
-
-export interface CustomPreviewColumn {
-  name: string;
-  numeric: boolean;
-  distinct_sample: string[];
-  /** [min, max] of the parsed values; present only when numeric. */
-  range?: [number, number];
-}
-
-export interface CustomPreview {
-  columns: CustomPreviewColumn[];
-  row_count: number;
-  sample_rows: Record<string, string>[];
-  filename: string;
-}
-
-export interface CreateCustomExposomeInput {
-  file: File;
-  name: string;
-  boundary: string;
-  key_col: string;
-  value_cols: string[];
-  description?: string;
-  year_col?: string | null;
-  value_labels?: Record<string, string>;
-  value_units?: Record<string, string>;
 }
 
 export interface VariableMetadata {
@@ -656,60 +543,11 @@ export const api = {
 
   listVariables: () => request<VariableCatalog>("/api/variables"),
 
-  // --- custom exposomes (per-user library) ---------------------------------
-  // Deliberately separate from /api/variables: that endpoint is unauthenticated
-  // with a pinned schema_version, so per-user rows must not appear in it. The
-  // wizard fetches both and merges them.
-
+  // Which boundary layers this deployment provisions, so the dataset form can
+  // hide area tables that could never run. Served under the pre-phase-D
+  // custom-exposome path; callers treat a failure as "unknown".
   listCustomBoundaries: () =>
     request<{ boundaries: CustomBoundary[] }>("/api/custom-exposomes/boundaries"),
-
-  listCustomExposomes: () =>
-    request<{ variables: Record<string, CustomExposome> }>("/api/custom-exposomes"),
-
-  previewCustomExposome: (file: File) => {
-    const form = new FormData();
-    form.append("file", file);
-    return requestMultipart<CustomPreview>("/api/custom-exposomes/preview", form);
-  },
-
-  createCustomExposome: (input: CreateCustomExposomeInput) => {
-    const form = new FormData();
-    form.append("file", input.file);
-    form.append("name", input.name);
-    form.append("boundary", input.boundary);
-    form.append("key_col", input.key_col);
-    form.append("value_cols", JSON.stringify(input.value_cols));
-    form.append("description", input.description ?? "");
-    form.append("value_labels", JSON.stringify(input.value_labels ?? {}));
-    form.append("value_units", JSON.stringify(input.value_units ?? {}));
-    if (input.year_col) form.append("year_col", input.year_col);
-    return requestMultipart<CustomExposome>("/api/custom-exposomes", form);
-  },
-
-  previewCustomRaster: (file: File) => {
-    const form = new FormData();
-    form.append("file", file);
-    return requestMultipart<CustomRasterPreview>("/api/custom-exposomes/preview-raster", form);
-  },
-
-  createCustomRaster: (input: CreateCustomRasterInput) => {
-    const form = new FormData();
-    for (const f of input.files) form.append("files", f.file);
-    form.append("years", JSON.stringify(input.files.map((f) => f.year)));
-    form.append("name", input.name);
-    form.append("bands", JSON.stringify(input.bands));
-    form.append("value_cols", JSON.stringify(input.value_cols));
-    form.append("description", input.description ?? "");
-    form.append("value_labels", JSON.stringify(input.value_labels ?? {}));
-    form.append("value_units", JSON.stringify(input.value_units ?? {}));
-    return requestMultipart<CustomExposome>("/api/custom-exposomes/raster", form);
-  },
-
-  deleteCustomExposome: (datasetId: string) =>
-    request<{ status: string }>(`/api/custom-exposomes/${datasetId}`, {
-      method: "DELETE",
-    }),
 
   // --- registered datasets ("My datasets", PHASE_D §2.2) -------------------
   // The caller's own datasets plus every dataset another user shared with the

@@ -7,11 +7,11 @@ import {
 } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
-import type { CustomExposome } from "@/lib/api";
+import type { RegisteredDataset } from "@/lib/datasets";
 import { OntologyTree } from "@/components/ontology-tree";
 import { OntologyNodeDetail } from "@/components/ontology/ontology-node-detail";
-import { CustomExposomesBlock } from "./custom-exposomes-block";
-import { CustomExposomeDetail } from "./custom-exposome-detail";
+import { DatasetDetail } from "@/components/datasets/dataset-detail";
+import { DatasetsBlock } from "./datasets-block";
 import { EXPOSOME_ROOT } from "@/lib/ontology";
 import { ErrorCard } from "./error-card";
 import { LoadingCard } from "./loading-card";
@@ -20,22 +20,31 @@ import { SchemaMismatchBanner } from "./schema-mismatch-banner";
 const EXPECTED_VARIABLE_SCHEMA_VERSION = 1;
 
 interface VariablesStepProps {
-  onComplete: (selectedVariables: string[]) => void;
+  /** Catalog variable keys, and the registered datasets chosen next to them. */
+  onComplete: (selectedVariables: string[], selectedDatasets: RegisteredDataset[]) => void;
   /** Optional — the first wizard step has no "Back" target. */
   onBack?: () => void;
   initialSelection?: string[];
+  initialDatasets?: RegisteredDataset[];
 }
 
 export function VariablesStep({
-  onComplete, onBack, initialSelection = [],
+  onComplete, onBack, initialSelection = [], initialDatasets = [],
 }: VariablesStepProps) {
   const { catalog, error: loadError } = useVariableCatalog();
+  // Catalog variable keys only; the user's datasets are selected by id.
   const [selected, setSelected] = useState<string[]>(initialSelection);
+  const [selectedDatasets, setSelectedDatasets] = useState<string[]>(() =>
+    initialDatasets.map((d) => d.id),
+  );
+  const [datasetIndex, setDatasetIndex] = useState<Record<string, RegisteredDataset>>(() =>
+    Object.fromEntries(initialDatasets.map((d) => [d.id, d])),
+  );
   // ontology node id currently shown in the right-hand detail panel.
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
-  // A custom exposome shown in that panel instead — it has no ontology node,
-  // so the two are mutually exclusive: focusing one clears the other.
-  const [focusedCustom, setFocusedCustom] = useState<CustomExposome | null>(null);
+  // A registered dataset shown in that panel instead — it has no ontology
+  // node, so the two are mutually exclusive: focusing one clears the other.
+  const [focusedDataset, setFocusedDataset] = useState<RegisteredDataset | null>(null);
 
   // Map between ontology node ids and variable keys (only variables with an
   // ontology_id are selectable in the tree).
@@ -57,12 +66,7 @@ export function VariablesStep({
   useEffect(() => {
     if (!catalog) return;
     const known = new Set(Object.keys(catalog.variables));
-    // Custom exposomes are deliberately absent from /api/variables (it is
-    // unauthenticated), so they must survive this prune — the block below owns
-    // their validity and drops a key when its dataset is deleted.
-    setSelected((prev) =>
-      prev.filter((k) => known.has(k) || k.startsWith("custom_")),
-    );
+    setSelected((prev) => prev.filter((k) => known.has(k)));
   }, [catalog]);
 
   if (loadError) return <ErrorCard message={loadError} />;
@@ -79,7 +83,8 @@ export function VariablesStep({
     );
   }
 
-  const canContinue = selected.length >= 1;
+  const totalSelected = selected.length + selectedDatasets.length;
+  const canContinue = totalSelected >= 1;
 
   // Selected variable keys -> their ontology node ids (for the tree's checkboxes).
   const selectedNodeIds = selected
@@ -92,8 +97,8 @@ export function VariablesStep({
         <CardTitle className="text-lg">Select Exposures</CardTitle>
         <CardDescription>
           Check the exposures to compute for your cohort — from the catalog this
-          deployment provides, or from values you upload yourself. Click any item
-          to read its definition on the right.
+          deployment provides, or from your own datasets (and those shared with
+          you). Click any item to read its definition on the right.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -116,29 +121,30 @@ export function VariablesStep({
                 autoExpandTo={selectableIds}
                 selected={selectedNodeIds}
                 onSelectionChange={(ids) =>
-                  // The tree only knows catalog variables; keep the user's custom
-                  // selections, which live outside it, or ticking any catalog
-                  // box would silently untick them.
-                  setSelected((prev) => [
-                    ...ids
+                  setSelected(
+                    ids
                       .map((id) => nodeIdToVarKey[id])
                       .filter((k): k is string => Boolean(k)),
-                    ...prev.filter((k) => k.startsWith("custom_")),
-                  ])
+                  )
                 }
                 onNodeClick={(id) => {
                   setFocusedNodeId(id);
-                  setFocusedCustom(null);
+                  setFocusedDataset(null);
                 }}
               />
               </div>
             </div>
-            <CustomExposomesBlock
-              selected={selected}
-              onSelectionChange={setSelected}
-              focusedKey={focusedCustom?.variable_key ?? null}
+            <DatasetsBlock
+              selected={selectedDatasets}
+              onSelectionChange={setSelectedDatasets}
+              onLoaded={(list) => {
+                setDatasetIndex(Object.fromEntries(list.map((d) => [d.id, d])));
+                // Keep the panel in step with a renamed or deleted dataset.
+                setFocusedDataset((cur) => (cur ? list.find((d) => d.id === cur.id) ?? null : cur));
+              }}
+              focusedId={focusedDataset?.id ?? null}
               onFocus={(dataset) => {
-                setFocusedCustom(dataset);
+                setFocusedDataset(dataset);
                 if (dataset) setFocusedNodeId(null);
               }}
             />
@@ -146,8 +152,8 @@ export function VariablesStep({
 
           {/* Right: detail — shared read-only ontology node panel. */}
           <div className="min-w-0 flex-1">
-            {focusedCustom ? (
-              <CustomExposomeDetail dataset={focusedCustom} />
+            {focusedDataset ? (
+              <DatasetDetail dataset={focusedDataset} />
             ) : (
               <OntologyNodeDetail
                 nodeId={focusedNodeId}
@@ -167,10 +173,17 @@ export function VariablesStep({
           )}
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground">
-              {selected.length} selected
+              {totalSelected} selected
             </span>
             <Button
-              onClick={() => onComplete(selected)}
+              onClick={() =>
+                onComplete(
+                  selected,
+                  selectedDatasets
+                    .map((id) => datasetIndex[id])
+                    .filter((d): d is RegisteredDataset => Boolean(d)),
+                )
+              }
               disabled={!canContinue}
               size="lg"
             >

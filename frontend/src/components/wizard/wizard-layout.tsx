@@ -7,7 +7,7 @@ import { ArrowLeft, Check } from "lucide-react";
 const STEPS = [
   { label: "Select Exposures", description: "Pick exposures" },
   { label: "Upload Data", description: "CSV file" },
-  { label: "Buffer Settings", description: "Shape & size" },
+  { label: "Settings", description: "Buffer & output" },
   { label: "Review & Run", description: "Confirm & start" },
 ];
 

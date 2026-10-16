@@ -14,13 +14,16 @@ import { Pill } from "@/components/ui/chip";
 import { api, ApiError } from "@/lib/api";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import { groupByExperiment } from "@/lib/variable-grouping";
-import { DEFAULT_OUTPUT_LEVEL } from "@/lib/output-level";
+import { OUTPUT_LEVEL_INFO, type OutputLevel } from "@/lib/output-level";
+import type { RegisteredDataset } from "@/lib/datasets";
+import { DatasetBadges } from "@/components/datasets/dataset-badges";
 import {
   ArrowLeft,
   Clock,
   FileSpreadsheet,
   Loader2,
   Play,
+  Rows3,
   Shapes,
   Tags,
   Target,
@@ -48,7 +51,11 @@ interface ReviewStepProps {
   taskId: string;
   dataSummary: DataSummary;
   bufferConfig: BufferConfig;
+  outputLevel: OutputLevel;
+  /** Catalog variable keys. */
   selectedVariables: string[];
+  /** The user's registered datasets (sent by id). */
+  selectedDatasets?: RegisteredDataset[];
   onBack: () => void;
 }
 
@@ -56,13 +63,16 @@ export function ReviewStep({
   taskId,
   dataSummary,
   bufferConfig,
+  outputLevel,
   selectedVariables,
+  selectedDatasets = [],
   onBack,
 }: ReviewStepProps) {
   const router = useRouter();
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { catalog } = useVariableCatalog();
+  const exposureCount = selectedVariables.length + selectedDatasets.length;
 
   const handleStart = async () => {
     setStarting(true);
@@ -72,8 +82,8 @@ export function ReviewStep({
       await api.saveConfig(taskId, {
         buffer: bufferConfig,
         variables: selectedVariables,
-        output_level: DEFAULT_OUTPUT_LEVEL,
-        custom_datasets: [],
+        output_level: outputLevel,
+        custom_datasets: selectedDatasets.map((d) => d.id),
       });
       await api.startTask(taskId);
       router.push(`/dashboard/task/${taskId}`);
@@ -104,7 +114,7 @@ export function ReviewStep({
           <div className="grid gap-2 sm:grid-cols-2">
             <InfoItem label="File" value={dataSummary.filename} />
             <InfoItem
-              label="Rows"
+              label="Rows (location episodes)"
               value={dataSummary.row_count.toLocaleString()}
             />
             <InfoItem
@@ -137,22 +147,30 @@ export function ReviewStep({
           </div>
         </SummarySection>
 
+        {/* Output level */}
+        <SummarySection icon={<Rows3 className="size-4" />} title="Output">
+          <p className="text-sm font-medium">{OUTPUT_LEVEL_INFO[outputLevel].label}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {OUTPUT_LEVEL_INFO[outputLevel].explain} Change it in Settings.
+          </p>
+        </SummarySection>
+
         {/* Estimated Runtime */}
         <SummarySection icon={<Clock className="size-4" />} title="Estimated Runtime">
           <p className="text-sm">
-            {estimateRuntime(dataSummary.row_count, bufferConfig.size, selectedVariables.length)}
+            {estimateRuntime(dataSummary.row_count, bufferConfig.size, exposureCount)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Based on {dataSummary.row_count.toLocaleString()} patients × {bufferConfig.size} m buffer × {selectedVariables.length} variable{selectedVariables.length !== 1 ? "s" : ""}. Actual runtime varies.
+            Based on {dataSummary.row_count.toLocaleString()} location episodes × {bufferConfig.size} m buffer × {exposureCount} exposure{exposureCount !== 1 ? "s" : ""}. Actual runtime varies.
           </p>
         </SummarySection>
 
         {/* Variables */}
         <SummarySection
           icon={<Tags className="size-4" />}
-          title={`Selected Variables (${selectedVariables.length})`}
+          title={`Selected Exposures (${exposureCount})`}
         >
-          {catalog ? (
+          {selectedVariables.length === 0 ? null : catalog ? (
             <div className="space-y-3">
               {Object.entries(
                 groupByExperiment(selectedVariables, catalog),
@@ -178,6 +196,21 @@ export function ReviewStep({
               ))}
             </div>
           )}
+          {selectedDatasets.length > 0 && (
+            <div className={selectedVariables.length > 0 ? "mt-3" : undefined}>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">
+                Your datasets
+              </div>
+              <div className="space-y-1.5">
+                {selectedDatasets.map((d) => (
+                  <div key={d.id} className="flex flex-wrap items-center gap-2">
+                    <Pill>{d.name}</Pill>
+                    <DatasetBadges dataset={d} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </SummarySection>
 
         {/* Cohort coverage — pre-flight against the uploaded data */}
@@ -187,8 +220,11 @@ export function ReviewStep({
             title="Cohort Coverage"
           >
             <p className="mb-3 text-xs text-muted-foreground">
-              How much of your uploaded cohort each exposure can cover. If a
-              value looks low, go back to step 1 and adjust your selection.
+              How many of your uploaded location episodes each catalog exposure
+              can cover, from their dates and locations. If a value looks low, go
+              back to step 1 and adjust your selection.
+              {selectedDatasets.length > 0 &&
+                " Your own datasets are not checked here; their linkage rates show on the results page."}
             </p>
             <div className="space-y-3">
               {selectedVariables.map((key) => (

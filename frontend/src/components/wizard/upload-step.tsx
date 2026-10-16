@@ -27,9 +27,9 @@ import {
 } from "lucide-react";
 
 const REQUIRED_COLUMNS: { name: string; type: string; desc: string }[] = [
-  { name: "pid", type: "string", desc: "Patient identifier — or PATID; unique per row" },
-  { name: "startDate", type: "YYYY-MM-DD", desc: "Episode start — or M/D/YYYY, see below" },
-  { name: "endDate", type: "YYYY-MM-DD", desc: "Episode end — or M/D/YYYY, see below" },
+  { name: "pid", type: "string", desc: "Participant identifier — or PATID; repeat it on each of the participant's location episodes" },
+  { name: "startDate", type: "YYYY-MM-DD", desc: "Location episode start — or M/D/YYYY, see below" },
+  { name: "endDate", type: "YYYY-MM-DD", desc: "Location episode end — or M/D/YYYY, see below" },
   { name: "longitude", type: "float", desc: "WGS84 (EPSG:4326), e.g. -82.35" },
   { name: "latitude", type: "float", desc: "WGS84 (EPSG:4326), e.g. 29.65" },
 ];
@@ -212,8 +212,9 @@ export function UploadStep({
       <CardHeader>
         <CardTitle className="text-lg">Upload Your Data</CardTitle>
         <CardDescription>
-          Provide a task name and upload a CSV cohort file. See the required
-          column schema below before uploading.
+          Provide a task name and upload your time-referenced geolocation data
+          as a CSV: one row per location episode (a participant may have
+          several). See the required column schema below before uploading.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -222,7 +223,7 @@ export function UploadStep({
           <Info className="mt-0.5 size-4 shrink-0" />
           <p>
             Exposures cover the <strong>contiguous US (CONUS)</strong> only, each
-            for specific years. Residences outside CONUS (or outside an
+            for specific years. Locations outside CONUS (or outside an
             exposure&apos;s years) won&apos;t be linked — you&apos;ll see a
             coverage check after uploading.
           </p>
@@ -397,7 +398,7 @@ export function UploadStep({
               size="lg"
             >
               <FileSpreadsheet className="size-4" />
-              Try with a demo cohort (100 patients)
+              Try with a demo cohort (100 participants)
             </Button>
             <p className="text-center text-[11px] text-muted-foreground/70">
               Real coordinates across 30 states — no file needed.
