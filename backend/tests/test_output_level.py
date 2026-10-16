@@ -436,6 +436,15 @@ def test_participant_run_on_a_package_without_levels_fails_with_a_message(
     assert not (task_dir / "pipeline_configs").exists()           # no step ran
 
 
+def test_runner_refuses_an_unknown_level_in_its_slot(fake_cli):
+    task_dir = _task(fake_cli, "task-badlvl01", ["ndi"], level="persons")
+    assert bg_ndi_wi.run(task_dir, variables=["ndi"]) == 1          # dispatched: slot only
+    status = _status(task_dir)
+    assert "status" not in status
+    assert status["experiments"]["bg_ndi_wi"]["status"] == "error"
+    assert "output_level must be" in status["experiments"]["bg_ndi_wi"]["message"]
+
+
 def test_dispatcher_refuses_a_participant_task_up_front_without_levels(
         fake_cli, no_level_package, monkeypatch):
     from app import dispatcher

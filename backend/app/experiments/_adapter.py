@@ -350,11 +350,6 @@ def _run_locked(experiment: str, task_dir: Path, variables: Sequence[str] | None
     if dispatcher_driven:
         config = {**config, "variables": list(variables)}
     steps = plan(experiment, config)          # ValueError for no or foreign variables, as before
-    try:
-        level = output_level.of_config(config)
-    except output_level.OutputLevelError as exc:
-        _write_status(task_dir, status="error", message=str(exc))
-        return 1
     keys = list(config["variables"])
     total = len(steps)
     recipe = catalog.recipe(experiment)
@@ -362,6 +357,11 @@ def _run_locked(experiment: str, task_dir: Path, variables: Sequence[str] | None
     status = StatusSink(task_dir, experiment, dispatcher_driven=dispatcher_driven)
     log = LogWriter.for_run_dir(task_dir)
     emit = tee(log, status)
+    try:
+        level = output_level.of_config(config)
+    except output_level.OutputLevelError as exc:
+        status.error(str(exc))
+        return 1
 
     status.begin([s.name for s in steps])
 
