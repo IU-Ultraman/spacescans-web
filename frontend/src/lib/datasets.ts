@@ -186,18 +186,26 @@ export function variableNameProblem(name: string, others: readonly string[], str
   return null;
 }
 
-/** `<name>_dist_m`, the default result column of a features dataset. */
-export function defaultDistanceName(datasetName: string): string {
-  let s = datasetName
+/**
+ * A result-column name made from free text: lower case, runs of other
+ * characters as one underscore, starting with a letter, at most `max`
+ * characters; `fallback` when nothing usable is left.
+ */
+export function columnSlug(text: string, fallback: string, max = MAX_VARIABLE_NAME): string {
+  let s = text
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, MAX_VARIABLE_NAME - "_dist_m".length);
-  s = s.replace(/_+$/g, "");
-  if (!s) return "feature_dist_m";
-  if (!/^[a-z]/.test(s)) s = `f_${s}`.slice(0, MAX_VARIABLE_NAME - "_dist_m".length).replace(/_+$/g, "");
-  return `${s}_dist_m`;
+    .replace(/^_+|_+$/g, "");
+  if (s && !/^[a-z]/.test(s)) s = `f_${s}`;
+  s = s.slice(0, max).replace(/_+$/g, "");
+  return s || fallback;
+}
+
+/** `<name>_dist_m`, the default result column of a features dataset. */
+export function defaultDistanceName(datasetName: string): string {
+  const suffix = "_dist_m";
+  return `${columnSlug(datasetName, "feature", MAX_VARIABLE_NAME - suffix.length)}${suffix}`;
 }
 
 // --------------------------------------------------- dates in file names ---

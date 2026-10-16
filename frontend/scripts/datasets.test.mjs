@@ -19,6 +19,7 @@ import {
   nameProblem,
   variableNameProblem,
   defaultDistanceName,
+  columnSlug,
   normalizeDatasetList,
   unwrapDataset,
   isSelectable,
@@ -234,6 +235,10 @@ test("names", () => {
   assert.match(variableNameProblem("ndvi", ["NDVI"], true), /ignoring case/);
   assert.match(variableNameProblem("a".repeat(41), [], true), /40/);
 
+  assert.equal(columnSlug("Tree canopy (%)", "value"), "tree_canopy");
+  assert.equal(columnSlug("2019 NDVI", "value"), "f_2019_ndvi");
+  assert.equal(columnSlug("!!", "value"), "value");
+  assert.equal(columnSlug("abc_def_ghi", "x", 4), "abc");
   assert.equal(defaultDistanceName("City parks"), "city_parks_dist_m");
   assert.equal(defaultDistanceName("123 sites!"), "f_123_sites_dist_m");
   assert.equal(defaultDistanceName("   "), "feature_dist_m");
