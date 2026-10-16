@@ -38,7 +38,7 @@ import sqlite3
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 import app.config
@@ -407,13 +407,27 @@ def find_owned(uid: int | str, dataset_id: str) -> Dataset:
 _PATH_KEYS = frozenset({"values_path", "root", "path", "paths", "directory"})
 
 
+def _is_server_path(value: str) -> bool:
+    return len(value) > 1 and (value.startswith("/") or re.match(r"^[A-Za-z]:[\\/]", value)
+                               is not None) and "\n" not in value
+
+
 def public_definition(definition: Mapping[str, Any]) -> dict:
-    """A definition without server paths (for responses)."""
+    """A definition without server paths (for responses).
+
+    Keys that hold paths (``values_path``, ``root``, ``path``...) are dropped, and any
+    other absolute path, under whatever key or in a list, becomes its file name, so a
+    definition format this module does not know (a newer registry's) cannot leak one.
+    """
     def scrub(value: Any) -> Any:
         if isinstance(value, Mapping):
             return {k: scrub(v) for k, v in value.items() if k not in _PATH_KEYS}
-        if isinstance(value, list):
+        if isinstance(value, (list, tuple)):
             return [scrub(v) for v in value]
+        if isinstance(value, str) and _is_server_path(value):
+            if re.match(r"^[A-Za-z]:", value):
+                return PureWindowsPath(value).name
+            return Path(value).name
         return value
 
     return scrub(copy.deepcopy(dict(definition)))
@@ -457,7 +471,7 @@ def _variables(ds: Dataset) -> list[dict]:
 def _entry(ds: Dataset) -> dict | None:
     """The dataset's catalog-shaped entry (label, unit, coverage...), or None if unreadable."""
     try:
-        return custom_exposomes.catalog_entry(ds.definition())
+        return public_definition(custom_exposomes.catalog_entry(ds.definition()))
     except Exception:  # noqa: BLE001 - a broken dataset still lists, with status "error"
         return None
 

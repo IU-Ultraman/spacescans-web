@@ -251,6 +251,10 @@ def test_unknown_metadata_field_and_bad_json_are_refused(env, no_registry, users
     r = users[1].post("/api/datasets", data={"metadata": "{not json"},
                       files=[("files", ("values.csv", CSV, "text/csv"))])
     assert r.status_code == 400
+    r = users[1].post("/api/datasets", json=_table_meta())          # not multipart
+    assert r.status_code == 400 and r.json()["issues"][0]["field"] == "metadata"
+    r = users[1].post("/api/datasets", data={"metadata": json.dumps(_table_meta())})
+    assert r.status_code == 400 and r.json()["issues"][0]["field"] == "files"
 
 
 @pytest.mark.parametrize("files,status,needle", [
@@ -590,6 +594,20 @@ def test_no_response_carries_a_server_path(env, no_registry, users):
         _no_server_paths(client.get("/api/datasets").json(), env)
         _no_server_paths(client.get(f"/api/datasets/{ds['id']}").json(), env)
         _no_server_paths(client.get("/api/custom-exposomes").json(), env)
+
+
+def test_paths_under_unknown_keys_are_reduced_to_file_names():
+    definition = {"label": "x", "values_path": "/srv/data/u/1/values.csv",
+                  "registered": {"id": "a" * 32, "root": "/srv/data/u/1"},
+                  "rasters": [{"year": 2016, "path": "/srv/data/r/2016.tif", "sha256": "f"}],
+                  "features_file": "/srv/data/u/1/f/clinics.parquet",
+                  "periods": [["/srv/data/u/1/p/a.tif", "2017-01-01"]],
+                  "windows_copy": "C:\\data\\v.csv", "note": "a / b"}
+    out = datasets.public_definition(definition)
+    assert out == {"label": "x", "registered": {"id": "a" * 32},
+                   "rasters": [{"year": 2016, "sha256": "f"}],
+                   "features_file": "clinics.parquet", "periods": [["a.tif", "2017-01-01"]],
+                   "windows_copy": "v.csv", "note": "a / b"}
 
 
 def test_every_route_needs_a_login(env, no_registry):
