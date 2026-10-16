@@ -1,9 +1,11 @@
 # backend/app/routers/tasks.py
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from app.auth import get_current_user
-from app import custom_exposomes, task_manager
+from app import custom_exposomes, output_level, task_manager
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -19,6 +21,8 @@ class ConfigRequest(BaseModel):
     buffer: dict
     variables: list[str]
     execution: dict | None = None
+    # Phase D: one row per participant (default) or per location episode.
+    output_level: Literal["participant", "episode"] = output_level.DEFAULT_LEVEL
 
 def _verify_ownership(task_id: str, user: dict):
     task = task_manager.get_task(task_id)
@@ -183,7 +187,39 @@ def download_results(
             raise HTTPException(status_code=404, detail="Results not ready")
     if not result_path.exists() or not result_path.is_file():
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(result_path, filename=result_path.name)
+    headers = None
+    if file is None:
+        # Phase D: what one row of result.csv is (participant or episode).
+        headers = {"X-Output-Level": output_level.result_level(result_path.parent.parent)}
+    return FileResponse(result_path, filename=result_path.name, headers=headers)
+
+# result.csv columns read as text: ids (a zero-padded numeric pid is still an id)
+# and the geography codes.
+_TEXT_DTYPES = {"pid": "string", "state_fips": "string", "county_fips": "string",
+                "tract_geoid": "string", "bg_geoid": "string"}
+
+
+def _read_result(result_path):
+    import pandas as pd  # noqa: PLC0415 - pandas is heavy; defer until needed
+
+    return pd.read_csv(result_path, dtype=_TEXT_DTYPES)
+
+
+def _exposure_columns(task_id: str, columns: list[str]) -> list[str]:
+    """result.csv columns that are linked values: not the cohort's own columns
+    (input.csv's header, at episode level) and not an id/geocode column."""
+    import pandas as pd  # noqa: PLC0415
+
+    input_csv = task_manager._task_dir(task_id) / "input.csv"
+    cohort_cols: set[str] = set()
+    if input_csv.exists():
+        try:
+            cohort_cols = set(pd.read_csv(input_csv, nrows=0).columns)
+        except Exception:  # noqa: BLE001 - an unreadable cohort only widens the list
+            cohort_cols = set()
+    return [c for c in columns
+            if c not in task_manager.INPUT_COLS and c not in cohort_cols]
+
 
 @router.get("/{task_id}/results/preview")
 def preview_results(
@@ -195,6 +231,10 @@ def preview_results(
 
     Response shape:
       {
+        level: "participant" | "episode",   # what one row is (phase D)
+        row_unit: "participants" | "episodes",
+        linkage: {column: {linked, total, rate_pct}},   # exposure columns, at the
+                                                       # level of the table
         columns: [str, ...],
         rows: [[...], ...],          # first N rows; NaN serialized as null
         total_rows: int,
@@ -220,7 +260,8 @@ def preview_results(
     import math
     import pandas as pd  # local import — pandas is heavy; defer until needed
 
-    df_full = pd.read_csv(result_path)
+    level = output_level.result_level(result_path.parent.parent)
+    df_full = _read_result(result_path)
     total_rows = len(df_full)
     df = df_full.head(limit)
     # Cast to object dtype before substituting None, otherwise float columns
@@ -258,11 +299,15 @@ def preview_results(
         summary.append(entry)
 
     return {
+        "level": level,
+        "row_unit": output_level.ROW_UNIT[level],
         "columns": list(df.columns),
         "rows": rows,
         "total_rows": max(total_rows, 0),
         "has_more": total_rows > len(rows),
         "summary": summary,
+        "linkage": output_level.linkage_rates(
+            df_full, _exposure_columns(task_id, list(df_full.columns))),
     }
 
 @router.get("/{task_id}/results/histogram")
@@ -289,11 +334,8 @@ def results_histogram(
     import numpy as np  # noqa: PLC0415
     import pandas as pd  # noqa: PLC0415
 
-    df = pd.read_csv(
-        result_path,
-        dtype={"state_fips": "string", "county_fips": "string",
-               "tract_geoid": "string", "bg_geoid": "string"},
-    )
+    level = output_level.result_level(result_path.parent.parent)
+    df = _read_result(result_path)
 
     def _finite(v: float) -> float | None:
         if v is None or (isinstance(v, float) and not math.isfinite(v)):
@@ -320,7 +362,8 @@ def results_histogram(
             "sample_size": int(len(clean)),
         })
 
-    return {"histograms": histograms}
+    return {"histograms": histograms, "level": level,
+            "row_unit": output_level.ROW_UNIT[level]}
 
 
 @router.get("/{task_id}/results/geo")
@@ -331,8 +374,12 @@ def results_geo(
 ):
     """Per-state count + mean of one numeric exposure column.
 
-    Groups rows of result.csv by `state_fips` (cast to 2-digit zero-padded
-    string) and returns count of non-null `value_col` rows + their mean.
+    Episode level: groups rows of result.csv by `state_fips` (cast to 2-digit
+    zero-padded string) and returns count of non-null `value_col` rows + their
+    mean. Participant level (phase D): each participant is placed in the state
+    of their longest episode in input.csv (ties: the most recent start, then
+    the earlier row) and the participants' values are grouped by that state.
+    No `state_fips` in the cohort -> no states, as before.
     Returns 400 if `value_col` is missing, unknown, an input column, or
     non-numeric.
     """
@@ -347,11 +394,9 @@ def results_geo(
     import math
     import pandas as pd  # noqa: PLC0415
 
-    df = pd.read_csv(
-        result_path,
-        dtype={"state_fips": "string", "county_fips": "string",
-               "tract_geoid": "string", "bg_geoid": "string"},
-    )
+    task_dir = result_path.parent.parent
+    level = output_level.result_level(task_dir)
+    df = _read_result(result_path)
     if value_col not in df.columns:
         raise HTTPException(status_code=400, detail=f"Unknown column: {value_col}")
     if value_col in task_manager.INPUT_COLS:
@@ -362,13 +407,25 @@ def results_geo(
     if not pd.api.types.is_numeric_dtype(df[value_col]):
         raise HTTPException(status_code=400, detail=f"Column is not numeric: {value_col}")
 
-    if "state_fips" not in df.columns:
-        return {"by_state": []}
-
-    # Defensive zfill — protects against int-coerced FIPS upstream.
-    sub = df[["state_fips", value_col]].copy()
-    sub = sub[sub["state_fips"].notna()]
-    sub["state_fips"] = sub["state_fips"].astype("string").str.zfill(2)
+    extra = {"level": level, "row_unit": output_level.ROW_UNIT[level]}
+    if level == output_level.PARTICIPANT:
+        extra["state_rule"] = "longest_episode"
+        try:
+            states = output_level.participant_states(task_dir)
+        except (OSError, ValueError):
+            states = None
+        if states is None or "pid" not in df.columns:
+            return {"by_state": [], **extra}
+        states["pid"] = states["pid"].astype("string")
+        sub = states.merge(df[["pid", value_col]], on="pid", how="inner")
+        sub = sub[["state_fips", value_col]]
+    else:
+        if "state_fips" not in df.columns:
+            return {"by_state": [], **extra}
+        # Defensive zfill — protects against int-coerced FIPS upstream.
+        sub = df[["state_fips", value_col]].copy()
+        sub = sub[sub["state_fips"].notna()]
+        sub["state_fips"] = sub["state_fips"].astype("string").str.zfill(2)
     sub = sub.dropna(subset=[value_col])
 
     def _finite(v: float) -> float | None:
@@ -377,7 +434,7 @@ def results_geo(
         return round(float(v), 6)
 
     if sub.empty:
-        return {"by_state": []}
+        return {"by_state": [], **extra}
 
     grouped = (
         sub.groupby("state_fips", dropna=True)[value_col]
@@ -396,7 +453,7 @@ def results_geo(
         for row in grouped.itertuples(index=False)
     ]
 
-    return {"by_state": by_state}
+    return {"by_state": by_state, **extra}
 
 
 @router.get("/{task_id}/coverage")
@@ -411,7 +468,11 @@ def get_coverage(
     if not var_keys:
         raise HTTPException(status_code=400, detail="variables query is required")
     try:
-        return task_manager.compute_coverage(task_id, var_keys)
+        out = task_manager.compute_coverage(task_id, var_keys)
+        # Phase D: the pre-execution check counts input rows (location episodes)
+        # whatever the task's output level (dates and locations are per episode).
+        out["level"] = output_level.EPISODE
+        return out
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except KeyError as exc:

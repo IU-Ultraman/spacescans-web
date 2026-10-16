@@ -284,6 +284,7 @@ def _attach_variables(meta: dict, task_dir: Path) -> None:
     if not config_path.exists():
         meta["variables"] = []
         meta["buffer"] = None
+        meta["output_level"] = None
         return
     try:
         cfg = json.loads(config_path.read_text())
@@ -294,6 +295,18 @@ def _attach_variables(meta: dict, task_dir: Path) -> None:
     except Exception:
         meta["variables"] = []
         meta["buffer"] = None
+        meta["output_level"] = None
+        return
+    # The level the task is configured for (a pre-phase-D config: episode) and,
+    # once there is a result, the level of that table.
+    from app import output_level  # noqa: PLC0415
+
+    try:
+        meta["output_level"] = output_level.of_config(cfg)
+    except output_level.OutputLevelError:
+        meta["output_level"] = None
+    if (task_dir / "output" / "result.csv").exists():
+        meta["result_level"] = output_level.result_level(task_dir)
 
 
 # #3: a not_started task left untouched this long is "stale" — surfaced to the
@@ -472,7 +485,13 @@ def save_upload(task_id: str, file_content: bytes, filename: str) -> dict:
 def save_config(task_id: str, config: dict):
     task_dir = app.config.settings.TASKS_DIR / f"task-{task_id}"
     # Default experiment to bg_ndi_wi but allow caller-provided override.
+    # Phase D: every saved config states its output level; one per participant
+    # unless the caller asks for episodes (app/output_level.py).
+    from app import output_level  # noqa: PLC0415
+
     config = {"experiment": "bg_ndi_wi", **config}
+    config[output_level.CONFIG_KEY] = output_level.normalize(
+        config.get(output_level.CONFIG_KEY), default=output_level.DEFAULT_LEVEL)
     config["version"] = 1
     config["input_file"] = "input.csv"
     (task_dir / "config.json").write_text(json.dumps(config, indent=2))
