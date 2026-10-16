@@ -290,6 +290,7 @@ def _attach_variables(meta: dict, task_dir: Path) -> None:
         meta["variables"] = []
         meta["buffer"] = None
         meta["output_level"] = None
+        meta["custom_datasets"] = []
         return
     try:
         cfg = json.loads(config_path.read_text())
@@ -301,6 +302,7 @@ def _attach_variables(meta: dict, task_dir: Path) -> None:
         meta["variables"] = []
         meta["buffer"] = None
         meta["output_level"] = None
+        meta["custom_datasets"] = []
         return
     # The level the task is configured for (a pre-phase-D config: episode) and,
     # once there is a result, the level of that table.
@@ -310,6 +312,9 @@ def _attach_variables(meta: dict, task_dir: Path) -> None:
         meta["output_level"] = output_level.of_config(cfg)
     except output_level.OutputLevelError:
         meta["output_level"] = None
+    ids = cfg.get("custom_datasets")
+    meta["custom_datasets"] = [str(i) for i in ids if isinstance(i, str)] if isinstance(
+        ids, list) else []
     if (task_dir / "output" / "result.csv").exists():
         meta["result_level"] = output_level.result_level(task_dir)
 

@@ -428,6 +428,8 @@ def test_select_by_id_snapshots_the_definition(env, no_registry, users):
     assert cfg["custom_datasets"] == [ds["id"]]
     assert cfg["custom_variables"][ds["variable_key"]]["label"] == "Greenness"
     assert cfg["output_level"] == "participant"
+    task = users[1].get(f"/api/tasks/{task_id}").json()
+    assert task["custom_datasets"] == [ds["id"]] and task["output_level"] == "participant"
 
 
 def test_snapshot_is_frozen_against_later_edits(env, no_registry, users):
