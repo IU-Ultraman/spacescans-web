@@ -416,6 +416,33 @@ def test_participant_run_writes_one_row_per_participant(fake_cli, participant_pa
     assert "ndi" in dictionary["feature_name"].tolist()
 
 
+def test_participant_run_of_a_custom_dataset(fake_cli, participant_package):
+    """The custom experiment at participant level: a library dataset snapshotted into the
+    task, its C4 output per participant, the dataset's own columns in result.csv and its
+    description in the feature dictionary."""
+    from app import custom_exposomes
+    from app.experiments import custom
+
+    csv = "tract,greenness,heat\n12073001100,0.41,88.2\n12073001200,0.55,86.0\n"
+    m = custom_exposomes.create(1, content=csv.encode(), name="Greenness",
+                                description="Synthetic greenness.", boundary="Tract",
+                                key_col="tract", value_cols=["greenness", "heat"],
+                                year_col=None, value_units={"greenness": "index"})
+    task_dir = _task(fake_cli, "task-cust0001", [m["variable_key"]], csv=CSV_TEXT_IDS)
+    cfg = json.loads((task_dir / "config.json").read_text())
+    cfg["custom_variables"] = {m["variable_key"]: m}
+    (task_dir / "config.json").write_text(json.dumps(cfg))
+    assert custom.run(task_dir) == 0, _status(task_dir)
+    partial = pd.read_csv(task_dir / "output" / "result_custom.csv", dtype={"pid": str})
+    assert list(partial.columns) == ["pid", "greenness", "heat"]
+    result = pd.read_csv(_merge.fan_in(task_dir, ["custom"]), dtype={"pid": str})
+    assert result["pid"].tolist() == ["A7", "B12", "C450"]
+    assert list(result.columns) == ["pid", "greenness", "heat"]
+    rows = pd.read_csv(task_dir / "output" / "feature_dictionary.csv").set_index("feature_name")
+    assert list(rows.index) == ["pid", "greenness", "heat"]
+    assert rows.loc["greenness", "detailed_description"] == "Synthetic greenness. Unit: index."
+
+
 def test_participant_without_a_contributing_day_keeps_a_row(fake_cli, participant_package,
                                                              monkeypatch):
     monkeypatch.setenv("FAKE_SPACESCANS_NO_VALUE", "450")
