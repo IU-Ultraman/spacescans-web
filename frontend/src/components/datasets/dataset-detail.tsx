@@ -74,8 +74,10 @@ export function DatasetDetail({
     ],
     [
       "Time",
-      `${TEMPORAL_LABEL[d.temporal] ?? d.temporal} — ${temporalHint(d.kind, d.temporal)}${
-        key?.time_column ? ` (“${key.time_column}”)` : ""
+      `${TEMPORAL_LABEL[d.temporal] ?? d.temporal} — ${
+        key?.time_column
+          ? `${d.temporal === "daily" ? "dates" : "years"} in “${key.time_column}”`
+          : temporalHint(d.kind, d.temporal)
       }`,
     ],
     ["Key", typeof d.key === "string" ? d.key : null],

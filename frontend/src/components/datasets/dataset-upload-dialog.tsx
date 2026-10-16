@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertCircle, FileUp, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -93,6 +93,7 @@ function byName(a: File, b: File): number {
 }
 
 function formatBytes(n: number): string {
+  if (n < 1024) return `${n} byte${n === 1 ? "" : "s"}`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
   return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
@@ -186,6 +187,11 @@ export function DatasetUploadDialog({ open, onOpenChange, onCreated }: DatasetUp
   const [error, setError] = useState<{ message: string; issues: string[] } | null>(null);
   // Bumped to remount the file inputs, so a stale selection clears.
   const [inputKey, setInputKey] = useState(0);
+  // The dialog scrolls; a refusal from the server must not land out of view.
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [error]);
 
   useEffect(() => {
     if (!open) return;
@@ -922,7 +928,11 @@ export function DatasetUploadDialog({ open, onOpenChange, onCreated }: DatasetUp
           </section>
 
           {error && (
-            <div className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+            <div
+              ref={errorRef}
+              role="alert"
+              className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive"
+            >
               <AlertCircle className="mt-0.5 size-4 shrink-0" />
               <div className="min-w-0 space-y-1">
                 <p>{error.message}</p>
