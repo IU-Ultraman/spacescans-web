@@ -231,8 +231,9 @@ def merge_results(experiment: str, task_dir: Path, variables: Sequence[str], *,
                   log: LogWriter | None = None, level: str | None = None) -> Path:
     """Write ``output/result_<experiment>.csv`` (the runner's ``merge_results``).
 
-    Episode level: ``orchestrate.partial_from_dir`` with the recipe's merge table
-    and value columns, FAQSD's renames written back into its C4 parquet
+    Episode level: ``orchestrate.partial_from_dir``'s table (through
+    ``_merge.episode_partial``, which spells numeric C4 ids as input.csv does) with
+    the recipe's merge table and value columns, FAQSD's renames written back into its C4 parquet
     (``rewrite_in_place``), and the ``merge_partial_low_match_pct`` record in
     ``logs.jsonl`` when fewer than 90% of episodes got a value. Participant level:
     ``output_level.participant_partial`` with the same table, renames and record,
@@ -248,9 +249,13 @@ def merge_results(experiment: str, task_dir: Path, variables: Sequence[str], *,
             task_dir, experiment, keys, rec.output_map(keys), value_cols,
             renames=dict(rec.renames) or None, rewrite_in_place=rec.rename_in_place)
     else:
-        table, stats = partial_from_dir(task_dir, experiment, keys, rec.output_map(keys),
-                                        value_cols, renames=dict(rec.renames) or None,
-                                        rewrite_in_place=rec.rename_in_place)
+        # partial_from_dir's table, with numeric cohort ids that reached C4 as numbers
+        # joined back to input.csv's text (app/experiments/_merge.episode_partial).
+        from app.experiments._merge import episode_partial
+
+        table, stats = episode_partial(task_dir, experiment, keys, rec.output_map(keys),
+                                       value_cols, renames=dict(rec.renames) or None,
+                                       rewrite_in_place=rec.rename_in_place)
     out_dir = task_dir / "output"
     out_dir.mkdir(parents=True, exist_ok=True)
     if stats.low:

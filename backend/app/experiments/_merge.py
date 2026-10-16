@@ -61,6 +61,43 @@ def write_partial(
     return out_path
 
 
+def episode_partial(task_dir: Path, experiment_key: str, variables: list[str],
+                    parquet_map: dict[str, str], value_cols: dict[str, list[str]], *,
+                    renames: dict[str, str] | None = None,
+                    rewrite_in_place: bool = False):
+    """``spacescans.orchestrate.merge.partial_from_dir`` with each C4 id spelled as the cohort spells it.
+
+    The web converts the cohort with ``pid_as_str=False`` (the legacy C3 cache keys hash
+    input.parquet), so an all-numeric id column reaches C4 as numbers while input.csv is
+    read as text, and the package's merge cannot join the two (pandas refuses a str and an
+    int64 key; zero-padded ids would also lose their zeros). Each C4 row's ``geoid`` is
+    its input row (``episode_id``), so its ``PATID`` is replaced by input.csv's text for
+    that row before the package's ``merge_partial`` runs. For ids that were text all
+    along this changes nothing: the partial is the one partial_from_dir writes. The C4
+    parquets are rewritten only for ``renames`` (FAQSD), as before.
+    """
+    import pandas as pd
+
+    task_dir = Path(task_dir)
+    out_dir = task_dir / "output"
+    if rewrite_in_place and renames:
+        for var_key in variables:
+            path = out_dir / parquet_map[var_key]
+            pd.read_parquet(path).rename(columns=dict(renames)).to_parquet(path, index=False)
+    keys = _merge.episode_keys(pd.read_csv(task_dir / "input.csv", dtype=str))
+    text_ids = keys["pid"].tolist()
+    outputs = []
+    for var_key in variables:
+        df = pd.read_parquet(out_dir / parquet_map[var_key])
+        if "PATID" in df.columns and "geoid" in df.columns:
+            rows = df["geoid"].astype(int).tolist()
+            df = df.assign(PATID=[text_ids[i] if 0 <= i < len(text_ids) else None
+                                  for i in rows])
+        outputs.append((var_key, df))
+    return _merge.merge_partial(keys, outputs, value_cols, experiment=experiment_key,
+                                renames=renames)
+
+
 def _task_config(task_dir: Path) -> dict:
     path = Path(task_dir) / "config.json"
     if not path.is_file():

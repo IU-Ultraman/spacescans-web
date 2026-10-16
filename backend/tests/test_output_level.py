@@ -490,14 +490,36 @@ def test_a_config_without_the_key_runs_per_episode(fake_cli, participant_package
     assert output_level.read_result_meta(task_dir)["row_unit"] == "episodes"
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "pre-existing (web 0.2.7 and d92f7a3): the web converts the cohort with "
-    "pid_as_str=False, so all-numeric ids reach C4 as numbers and the episode merge "
-    "joins text ids from input.csv with int64 ids from C4; reported in phase D track C"))
 def test_episode_run_with_all_numeric_ids(fake_cli, participant_package, monkeypatch):
+    """Web 0.2.7 and d92f7a3 failed this merge ("merge on str and int64 columns"): the web
+    converts the cohort with pid_as_str=False, so all-numeric ids reach C4 as numbers."""
     monkeypatch.delenv("FAKE_SPACESCANS_GROUPING")
     task_dir = _task(fake_cli, "task-run00006", ["ndi"], level="episode")
     assert bg_ndi_wi.run(task_dir) == 0, _status(task_dir)["message"]
+    partial = pd.read_csv(task_dir / "output" / "result_bg_ndi_wi.csv", dtype={"pid": str})
+    assert partial["pid"].tolist() == ["007", "12", "007", "0450"]
+    result = pd.read_csv(_merge.fan_in(task_dir, ["bg_ndi_wi"]), dtype={"pid": str})
+    assert result["pid"].tolist() == ["007", "12", "007", "0450"]
+    assert result["ndi"].tolist() == [1.0, 2.0, 3.0, 4.0]          # every episode linked
+
+
+def test_episode_partial_equals_the_packages_for_text_ids(tmp_path):
+    from spacescans.orchestrate import merge as pkg_merge
+
+    task_dir = _task(tmp_path, "task-epi00001", ["ndi", "walkability"], csv=CSV_TEXT_IDS)
+    _pipeline_input(task_dir)
+    ids = ["A7", "B12", "A7", "C450"]
+    _c4(task_dir, "c4_ndi.parquet",
+        pd.DataFrame({"PATID": ids, "geoid": [0, 1, 2, 3], "ndi": [1.0, None, 3.0, 4.0]}))
+    _c4(task_dir, "c4_wi.parquet",
+        pd.DataFrame({"PATID": ids[:3], "geoid": [0, 1, 2], "NatWalkInd": [5.0, 6.0, 7.0]}))
+    args = (task_dir, "bg_ndi_wi", ["ndi", "walkability"],
+            {"ndi": "c4_ndi.parquet", "walkability": "c4_wi.parquet"},
+            {"ndi": ["ndi"], "walkability": ["NatWalkInd"]})
+    ours, our_stats = _merge.episode_partial(*args)
+    theirs, their_stats = pkg_merge.partial_from_dir(*args)
+    assert ours.to_csv(index=False) == theirs.to_csv(index=False)
+    assert our_stats == their_stats
 
 
 def test_participant_run_with_the_installed_package(fake_cli, monkeypatch):
