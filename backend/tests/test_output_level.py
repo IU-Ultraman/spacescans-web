@@ -420,6 +420,20 @@ def test_participant_run_on_a_package_without_levels_fails_with_a_message(
     assert not (task_dir / "pipeline_configs").exists()           # no step ran
 
 
+def test_dispatcher_refuses_a_participant_task_up_front_without_levels(
+        fake_cli, no_level_package, monkeypatch):
+    from app import dispatcher
+
+    task_dir = _task(fake_cli, "task-disp0001", ["ndi"])
+    spawned = []
+    monkeypatch.setattr(dispatcher.subprocess, "Popen",
+                        lambda *a, **k: spawned.append(a) or None)
+    result = dispatcher.dispatch(str(task_dir))
+    assert result["failed"] == ["bg_ndi_wi"] and not spawned
+    status = _status(task_dir)
+    assert status["status"] == "error" and "episode-level output" in status["message"]
+
+
 def test_pooled_ids_fail_the_merge_without_quoting_them(fake_cli, participant_package):
     csv = ("pid,startDate,endDate,longitude,latitude\n"
            "007,2017-01-01,2017-12-31,-93.0,45.0\n"

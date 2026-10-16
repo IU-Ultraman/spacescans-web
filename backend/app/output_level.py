@@ -216,7 +216,7 @@ def supports_participant() -> bool:
         return False
 
 
-def _unsupported_message() -> str:
+def unsupported_message() -> str:
     try:
         import spacescans
 
@@ -244,7 +244,7 @@ def run_context(task_dir: Path, *, data_dir: Any, buffer_m: Any, raster_res_m: A
     where = package_support()
     if where is None:
         if level != EPISODE:
-            raise ParticipantLevelUnsupported(_unsupported_message())
+            raise ParticipantLevelUnsupported(unsupported_message())
         return ctx
     kind, name = where
     if kind == "context":
@@ -258,7 +258,7 @@ def source_kwargs(level: str) -> dict[str, Any]:
     where = package_support()
     if where is None:
         if level != EPISODE:
-            raise ParticipantLevelUnsupported(_unsupported_message())
+            raise ParticipantLevelUnsupported(unsupported_message())
         return {}
     kind, name = where
     return {name: _PARAM_VALUES[name][level]} if kind == "run_source" else {}
