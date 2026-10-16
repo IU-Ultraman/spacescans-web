@@ -102,6 +102,19 @@ def dispatch(task_id_or_dir: str) -> dict:
                       message="no variables selected")
         return {"task_id": task_dir.name, "failed": []}
 
+    # Phase D: a participant-level task on a pipeline that cannot render it
+    # fails here with the reason, rather than once per experiment.
+    from app import output_level
+    try:
+        level = output_level.of_config(config)
+    except output_level.OutputLevelError as exc:
+        _write_status(task_dir, status="error", progress=0.0, message=str(exc))
+        return {"task_id": task_dir.name, "failed": list(by_exp)}
+    if level == output_level.PARTICIPANT and not output_level.supports_participant():
+        _write_status(task_dir, status="error", progress=0.0,
+                      message=output_level.unsupported_message())
+        return {"task_id": task_dir.name, "failed": list(by_exp)}
+
     # Seed each experiment slot with its plan()'s step names + progress=0.0
     # so _derive_flat_fields produces a real top-level steps[] / progress.
     # Sprint 3 final-review fix (BLOCKER): previously we wrote only

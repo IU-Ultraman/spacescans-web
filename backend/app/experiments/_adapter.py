@@ -30,6 +30,13 @@ paper's ``independent_impl_chain.sh`` greps for), the SIGTERM handler (status
 and exit codes, and the order of variables (as received: ``walkability,ndi``
 still works and still orders the partial's columns).
 
+Phase D: ``config["output_level"]`` (``app.output_level``) picks one row per participant
+or per location episode. Episode level is the run above, unchanged; participant level asks
+the package for per-participant C4 output (``output_level.run_context`` /
+``source_kwargs``, refused with a status message when the installed spacescans cannot) and
+writes a per-participant partial (``output_level.participant_partial``). A config without
+the key predates phase D and runs per episode.
+
 Logs and status carry step names, counts, exit codes and cache keys, never a
 cohort value. When the cohort's dates cannot be parsed, the ``csv_to_parquet
 failed: ...`` log line and the ``input conversion failed: ...`` status message keep
@@ -48,6 +55,7 @@ from pathlib import Path
 from typing import Any
 
 import app.config
+from app import output_level
 from spacescans import catalog, cohort
 from spacescans.orchestrate import (
     LOG_CACHE_CHECK_FAILED,
@@ -58,7 +66,6 @@ from spacescans.orchestrate import (
     Event,
     LogWriter,
     RenderError,
-    RunContext,
     RunLock,
     RunLockBusy,
     StepFailed,
@@ -221,21 +228,34 @@ def install_cancel_handler(task_dir: Path) -> None:
 
 def merge_results(experiment: str, task_dir: Path, variables: Sequence[str], *,
                   definitions: Mapping[str, Mapping[str, Any]] | None = None,
-                  log: LogWriter | None = None) -> Path:
+                  log: LogWriter | None = None, level: str | None = None) -> Path:
     """Write ``output/result_<experiment>.csv`` (the runner's ``merge_results``).
 
-    ``orchestrate.partial_from_dir`` with the recipe's merge table and value
-    columns, FAQSD's renames written back into its C4 parquet
+    Episode level: ``orchestrate.partial_from_dir``'s table (through
+    ``_merge.episode_partial``, which spells numeric C4 ids as input.csv does) with
+    the recipe's merge table and value columns, FAQSD's renames written back into its C4 parquet
     (``rewrite_in_place``), and the ``merge_partial_low_match_pct`` record in
-    ``logs.jsonl`` when fewer than 90% of episodes got a value.
+    ``logs.jsonl`` when fewer than 90% of episodes got a value. Participant level:
+    ``output_level.participant_partial`` with the same table, renames and record,
+    counted in participants. ``level`` defaults to the task's configured level.
     """
     task_dir = Path(task_dir)
     rec = catalog.recipe(experiment)
     keys = list(variables)
+    level = output_level.of_task(task_dir) if level is None else output_level.normalize(level)
     value_cols = {k: list(catalog.variable(k, overlay=definitions).value_cols) for k in keys}
-    table, stats = partial_from_dir(task_dir, experiment, keys, rec.output_map(keys), value_cols,
-                                    renames=dict(rec.renames) or None,
-                                    rewrite_in_place=rec.rename_in_place)
+    if level == output_level.PARTICIPANT:
+        table, stats = output_level.participant_partial(
+            task_dir, experiment, keys, rec.output_map(keys), value_cols,
+            renames=dict(rec.renames) or None, rewrite_in_place=rec.rename_in_place)
+    else:
+        # partial_from_dir's table, with numeric cohort ids that reached C4 as numbers
+        # joined back to input.csv's text (app/experiments/_merge.episode_partial).
+        from app.experiments._merge import episode_partial
+
+        table, stats = episode_partial(task_dir, experiment, keys, rec.output_map(keys),
+                                       value_cols, renames=dict(rec.renames) or None,
+                                       rewrite_in_place=rec.rename_in_place)
     out_dir = task_dir / "output"
     out_dir.mkdir(parents=True, exist_ok=True)
     if stats.low:
@@ -337,6 +357,11 @@ def _run_locked(experiment: str, task_dir: Path, variables: Sequence[str] | None
     status = StatusSink(task_dir, experiment, dispatcher_driven=dispatcher_driven)
     log = LogWriter.for_run_dir(task_dir)
     emit = tee(log, status)
+    try:
+        level = output_level.of_config(config)
+    except output_level.OutputLevelError as exc:
+        status.error(str(exc))
+        return 1
 
     status.begin([s.name for s in steps])
 
@@ -355,16 +380,30 @@ def _run_locked(experiment: str, task_dir: Path, variables: Sequence[str] | None
     if bad is not None:
         return _render_failure(experiment, bad[0], bad[1], total, bad[2], emit, status)
     buffer = config["buffer"]
-    # raster_res_m as given; when absent no step reads it (_unrenderable), so the default stands
-    ctx = RunContext.from_task_dir(task_dir, data_dir=settings.SPACESCANS_DATA_DIR,
-                                   buffer_m=buffer["size"],
-                                   raster_res_m=buffer.get("raster_res_m", 25),
-                                   overlay=definitions)
+    # raster_res_m as given; when absent no step reads it (_unrenderable), so the default stands.
+    # The level rides on the context (or run_source) when the package takes one; at episode
+    # level with a package that takes none this is the pre-phase-D call.
+    try:
+        ctx = output_level.run_context(task_dir, data_dir=settings.SPACESCANS_DATA_DIR,
+                                       buffer_m=buffer["size"],
+                                       raster_res_m=buffer.get("raster_res_m", 25),
+                                       overlay=definitions, level=level)
+        extra = output_level.source_kwargs(level)
+    except output_level.ParticipantLevelUnsupported as exc:
+        status.error(str(exc))
+        return 1
+    if level == output_level.PARTICIPANT and not extra:
+        wrong = output_level.check_rendered(steps, ctx, level)
+        if wrong is not None:
+            status.error(f"participant-level output did not reach step {wrong}; the installed "
+                         "spacescans renders it per episode")
+            return 1
     cache = WeightCache(settings.C3_CACHE_DIR, key_format="legacy-v1")
     executor = SubprocessExecutor([settings.SPACESCANS_PIPELINE_PYTHON,
                                    settings.SPACESCANS_PIPELINE_CLI])
     try:
-        run_source(experiment, keys, ctx, cache=cache, executor=executor, on_event=emit)
+        run_source(experiment, keys, ctx, cache=cache, executor=executor, on_event=emit,
+                   **extra)
     except RenderError as exc:
         status.error(f"render failed at {exc.step}")
         return 1
@@ -382,7 +421,8 @@ def _run_locked(experiment: str, task_dir: Path, variables: Sequence[str] | None
 
             for record in diagnostics(task_dir, keys, definitions or {}):
                 log.write(record["level"], record["source"], record["msg"])
-        merge_results(experiment, task_dir, keys, definitions=definitions, log=log)
+        merge_results(experiment, task_dir, keys, definitions=definitions, log=log,
+                      level=level)
     except Exception as exc:  # noqa: BLE001 - the runner reports any merge error
         log.write("error", "runner", LOG_MERGE_FAILED.format(exc=exc))
         status.error(f"merge failed: {exc}")

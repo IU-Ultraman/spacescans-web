@@ -22,8 +22,11 @@ two files differ.
 """
 from __future__ import annotations
 
+import csv
+from collections.abc import Mapping
 from importlib import resources
 from pathlib import Path
+from typing import Any
 
 from spacescans.catalog import FEATURE_FIELDNAMES, feature_rows, features, write_feature_csv
 from spacescans.catalog._features import FEATURES_FILE
@@ -49,7 +52,74 @@ def rows_for(columns: list[str]) -> list[dict[str, str]]:
     return feature_rows(columns)
 
 
-def write_csv(columns: list[str], out_path: Path) -> Path:
+#: The participant table's id column (phase D): what one row is and what its values mean.
+PID_ROW = {
+    "feature_name": "pid",
+    "short_description": "Participant identifier",
+    "detailed_description": (
+        "The participant id from the uploaded cohort. One row per participant, in order of "
+        "first appearance. Each exposure value is the mean over the participant's location "
+        "episodes and source periods, weighted by the days that contributed a value for that "
+        "variable; it is missing when no day contributed."
+    ),
+}
+
+
+def _custom_columns(config: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    """Result column -> the custom definition it comes from (value columns no shipped
+    variable of the selection also produces; a shipped column keeps its description)."""
+    from spacescans import catalog
+
+    definitions = config.get("custom_variables") or {}
+    if not isinstance(definitions, Mapping):
+        return {}
+    shipped: set[str] = set()
+    for key in config.get("variables") or []:
+        if key in definitions:
+            continue
+        try:
+            shipped.update(catalog.variable(key).value_cols)
+        except Exception:  # noqa: BLE001 - an unknown key has no columns to describe
+            continue
+    out: dict[str, Mapping[str, Any]] = {}
+    for definition in definitions.values():
+        if not isinstance(definition, Mapping):
+            continue
+        for col in definition.get("value_cols") or []:
+            if col not in shipped:
+                out.setdefault(str(col), definition)
+    return out
+
+
+def write_csv(columns: list[str], out_path: Path, *, level: str | None = None,
+              config: Mapping[str, Any] | None = None) -> Path:
     """Write the dictionary for `columns`. Always writes a header, even when
-    no column matched, so downstream code can read the file unconditionally."""
-    return write_feature_csv(columns, out_path)
+    no column matched, so downstream code can read the file unconditionally.
+
+    With neither ``level`` nor ``config`` this is the package's writer (the bytes
+    of every run before phase D). With them (the merge step): the participant
+    table's ``pid`` row first at participant level, the shipped columns from the
+    catalog's dictionary, and the task's custom columns from their own
+    definitions (label, description, unit), all in result column order.
+    """
+    if level is None and config is None:
+        return write_feature_csv(columns, out_path)
+    from spacescans.custom import feature_rows as custom_rows
+
+    shipped = {row["feature_name"]: row for row in feature_rows(columns)}
+    custom = _custom_columns(config or {})
+    rows: list[dict[str, str]] = []
+    for col in columns:
+        if col == "pid" and level == "participant":
+            rows.append(dict(PID_ROW))
+        elif col in custom:
+            rows.extend(custom_rows(custom[col], [col]))
+        elif col in shipped:
+            rows.append(shipped[col])
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=FIELDNAMES, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    return out_path
