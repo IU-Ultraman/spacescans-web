@@ -1,0 +1,59 @@
+# syntax=docker/dockerfile:1
+
+# TEST backend image for the phase-D integration gate: tier2-d-backend:integration.
+# Not the production image. Built by docs/phaseD-test-stack.yml (see
+# docs/phaseD-test-stack.md).
+#
+# Identical to backend/Dockerfile except step 3: the pipeline package is installed
+# from a LOCAL wheel (the integrated spacescans-pipeline 0.3.0, which is not pushed
+# or published yet) instead of
+# git+https://github.com/IU-Ultraman/spacescans.git@${SPACESCANS_REF}. Steps 1, 2
+# and 4 are copied verbatim, so they share the build cache with backend/Dockerfile.
+# Once 0.3.0 is pushed, bump SPACESCANS_REF in backend/Dockerfile instead and drop
+# this file.
+#
+# Build context: backend/. The wheel's directory is the named build context
+# "pipeline_wheel": compose passes it as additional_contexts; by hand,
+#   docker build -f docs/Dockerfile.test \
+#     --build-context pipeline_wheel=/Users/xai/Desktop/spacescans-all/tier2-artifacts/phaseD/dist \
+#     -t tier2-d-backend:integration backend
+# The wheel's sha256 is checked before it is installed.
+FROM mambaorg/micromamba:1.5.10
+
+# 1) GDAL/C++ layer from conda-forge (as backend/Dockerfile).
+RUN micromamba install -y -n base -c conda-forge \
+        python=3.12 \
+        libgdal \
+        rasterio \
+        exactextract \
+        pyhdf \
+        git \
+    && micromamba clean --all --yes
+
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
+
+USER root
+RUN mkdir -p /app/data && chown -R $MAMBA_USER:$MAMBA_USER /app
+USER $MAMBA_USER
+WORKDIR /app
+
+# 2) Python API deps (as backend/Dockerfile).
+COPY --chown=$MAMBA_USER:$MAMBA_USER requirements.txt constraints.txt ./
+RUN grep -vi "spacescans-pipeline" requirements.txt > /tmp/req.txt \
+    && python -m pip install --no-cache-dir -c constraints.txt -r /tmp/req.txt
+
+# 3) TEST ONLY: the pipeline from a local wheel, with the same extras, pins and
+#    constraints as backend/Dockerfile step 3.
+ARG PIPELINE_WHEEL=spacescans_pipeline-0.3.0-py3-none-any.whl
+ARG PIPELINE_WHEEL_SHA256=c28696733a00986ebcb7cc8ce8ffb1ebd1ba42116ab488a9be7c08086ef1fea3
+COPY --from=pipeline_wheel --chown=$MAMBA_USER:$MAMBA_USER ${PIPELINE_WHEEL} /tmp/wheels/
+RUN echo "${PIPELINE_WHEEL_SHA256}  /tmp/wheels/${PIPELINE_WHEEL}" | sha256sum -c - \
+    && python -m pip install --no-cache-dir -c constraints.txt \
+    "pandas==3.0.5" "pyarrow==26.0.0" \
+    "spacescans-pipeline[geo,rda,hdf4,nc] @ file:///tmp/wheels/${PIPELINE_WHEEL}"
+
+# 4) Backend source (as backend/Dockerfile).
+COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
+
+EXPOSE 8000
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

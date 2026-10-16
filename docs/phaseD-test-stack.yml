@@ -1,0 +1,66 @@
+# TEST stack for the phase-D integration gate. NOT the live app.
+#
+#   docker compose -p tier2-d-test -f docs/phaseD-test-stack.yml up -d
+#   frontend http://localhost:3100   backend http://localhost:8100
+#
+# How to build, start, use and stop it: docs/phaseD-test-stack.md.
+#
+# Standalone on purpose: do NOT combine it with ../docker-compose.yml (-f ... -f ...).
+# Compose appends port lists across files, so the live stack's 3000/8000 mappings and
+# its names would come along. Everything here is separate from the live project
+# "spacescans-web": project tier2-d-test, images tier2-d-*:integration, its own data
+# volume (tier2-d-test_backend-data), host ports 3100/8100 bound to this machine only,
+# the exposure data root mounted READ-ONLY.
+#
+# Relative paths resolve against this file's directory (docs/).
+name: tier2-d-test
+
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docs/Dockerfile.test
+      additional_contexts:
+        # The directory holding the spacescans-pipeline wheel (I1's build).
+        pipeline_wheel: ${TIER2_PIPELINE_WHEEL_DIR:-/Users/xai/Desktop/spacescans-all/tier2-artifacts/phaseD/dist}
+    image: tier2-d-backend:integration
+    init: true
+    environment:
+      SPACESCANS_DATA_DIR: /project
+      SPACESCANS_CONFIG_TEMPLATES_DIR: /configs
+      SPACESCANS_PIPELINE_PYTHON: /opt/conda/bin/python
+      SPACESCANS_PIPELINE_CLI: /opt/conda/bin/spacescans
+      # The test frontend's origin (the app's default list names port 3000 only).
+      CORS_ORIGINS: '["http://localhost:3100","http://127.0.0.1:3100"]'
+      # No secret in this file: set TIER2_TEST_SECRET_KEY to keep logins across
+      # restarts; otherwise every start signs tokens with a fresh random key.
+      TIER2_TEST_SECRET_KEY: ${TIER2_TEST_SECRET_KEY:-}
+    command:
+      - sh
+      - -c
+      - >-
+        export SECRET_KEY="$${TIER2_TEST_SECRET_KEY:-$$(python -c 'import secrets; print(secrets.token_hex(32))')}";
+        exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ../configs:/configs:ro
+      # The exposure data root, read-only (rule H3).
+      - ${TIER2_PIPELINE_DATA:-/Users/xai/Desktop/spacescans-all/spacescans-web/pipeline-data}:/project:ro
+      # Scratch app state (SQLite DB, tasks/, c3_cache/, custom datasets).
+      - backend-data:/app/data
+    ports:
+      - "127.0.0.1:8100:8000"
+
+  frontend:
+    build:
+      context: ../frontend
+      args:
+        # Baked into the bundle at build time: the browser calls the test backend.
+        NEXT_PUBLIC_API_URL: http://localhost:8100
+    image: tier2-d-frontend:integration
+    ports:
+      - "127.0.0.1:3100:3000"
+    depends_on:
+      - backend
+
+volumes:
+  backend-data:
