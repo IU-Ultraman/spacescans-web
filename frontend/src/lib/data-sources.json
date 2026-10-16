@@ -206,7 +206,7 @@
       ],
       "notes": [
         "Prefer the original source? Download the three CONUS_ TIFs from the NPS DataStore (https://irma.nps.gov/DataStore/Reference/Profile/2217356); skip the AK_/HI_ variants.",
-        "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
+        "No census boundary file needed — values are linked straight from each location's 270 m buffer onto this raster grid (grid_weights), not via block-group polygons.",
         "Keep the exact filenames — the reader hard-codes all three.",
         "Download only the CONUS_ files; skip the AK_/HI_ variants (different projections).",
         "Provenance: project metadata labels this 'US DOT BTS', but the actual files are the NPS soundscape dataset.",
@@ -268,7 +268,7 @@
         "VNL/C3/"
       ],
       "notes": [
-        "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
+        "No census boundary file needed — values are linked straight from each location's 270 m buffer onto this raster grid (grid_weights), not via block-group polygons.",
         "Requires a free EOG account (login) to download the annual global files.",
         "gunzip each .tif.gz after download; keep the original filenames (the reader parses the year)."
       ]
@@ -296,7 +296,7 @@
         "TEMIS/C4/raw/{var}/{year}/"
       ],
       "notes": [
-        "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
+        "No census boundary file needed — values are linked straight from each location's 270 m buffer onto this raster grid (grid_weights), not via block-group polygons.",
         "Native HDF-4 — install pyhdf (+ the system HDF4 library) to read it.",
         "Scriptable: `spacescans data fetch --dataset temis_uv_raw --accept-terms knmi-temis` downloads every day from the CloudFront mirror d1qb6yzwaaq4he.cloudfront.net/uvradiation/v2.0/{year}/{mm}/{var}YYYYMMDD.hdf",
         "Layout: one subfolder per variable, then per year.",
@@ -331,7 +331,7 @@
         "ACAG/C4/xNorthAmerica/{dir}/BiWeekly/"
       ],
       "notes": [
-        "No census boundary file needed — values are linked straight from each patient's 270 m residential buffer onto the 0.01° grid (grid_weights); the template raster ACAG/C3/acag_template.tif ships with the repo.",
+        "No census boundary file needed — values are linked straight from each location's 270 m buffer onto the 0.01° grid (grid_weights); the template raster ACAG/C3/acag_template.tif ships with the repo.",
         "Both variants are required: the linkage derives each species' non-biomass share as plain minus FromBiomass.",
         "Scriptable: `spacescans data fetch --dataset acag --accept-terms acag-v5na05` fetches the files one by one from the four WashU Box shares (the folder API rejects anonymous calls and 'download folder' is disabled); pipeline-data/ACAG/README.md documents the folder IDs.",
         "{dir} is PM25, BC, DUST, NH4, NO3, OM, SO4, SS for the plain surfaces and the same names with _bm for the FromBiomass ones.",
@@ -395,7 +395,7 @@
       "shipped": true,
       "role": "Exposure values",
       "artifact": "zbp_nationwide_*.Rda + cbp_nationwide_*.Rda",
-      "origin": "Derived from Census ZIP + County Business Patterns (raw ZBP/CBP are public). ZBP gives ZCTA5-level density; patients whose ZIP has no ZBP row fall back to their county's CBP — so BOTH files are needed. The fallback also reuses the ZBP linkage output internally (auto-generated per run, not a download).",
+      "origin": "Derived from Census ZIP + County Business Patterns (raw ZBP/CBP are public). ZBP gives ZCTA5-level density; locations whose ZIP has no ZBP row fall back to their county's CBP — so BOTH files are needed. The fallback also reuses the ZBP linkage output internally (auto-generated per run, not a download).",
       "placeDir": [
         "Community_Organization_Density/C4/"
       ]
