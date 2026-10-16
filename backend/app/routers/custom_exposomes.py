@@ -4,6 +4,12 @@ Kept off /api/variables on purpose: that endpoint is unauthenticated and its
 schema_version is pinned, so per-user rows must not appear in it. The frontend
 fetches both and merges them client-side.
 
+Phase D: an alias of ``/api/datasets`` (``app.datasets``) kept until the
+frontend has moved over. Uploads here take the phase-C path and get a private
+dataset record; the list is the caller's own datasets (also those registered
+through ``/api/datasets``), shaped as before; DELETE is the datasets' delete
+(owner only, refused while a queued or running task uses the dataset).
+
 See docs/superpowers/specs/2026-09-21-custom-exposome-design.md.
 """
 from __future__ import annotations
@@ -13,7 +19,7 @@ import json
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 import app.config
-from app import custom_exposomes
+from app import custom_exposomes, datasets
 from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/custom-exposomes", tags=["custom-exposomes"])
@@ -68,13 +74,17 @@ def list_boundaries(user: dict = Depends(get_current_user)):
 
 @router.get("")
 def list_datasets(user: dict = Depends(get_current_user)):
-    """The caller's datasets, shaped like /api/variables entries."""
-    return {
-        "variables": {
-            m["variable_key"]: _public(m)
-            for m in custom_exposomes.list_for_user(user["id"])
-        }
-    }
+    """The caller's own datasets, shaped like /api/variables entries (newest first)."""
+    out = {}
+    for ds in datasets.visible_to(user["id"]):
+        if ds.owner != str(user["id"]) or ds.status()[0] != "ready":
+            continue
+        try:
+            definition = ds.definition()
+        except Exception:  # noqa: BLE001 - an unreadable dataset is left out, as before
+            continue
+        out.setdefault(ds.variable_key, datasets.public_definition(definition))
+    return {"variables": out}
 
 
 @router.post("/preview")
@@ -155,6 +165,7 @@ async def create_dataset(
         )
     except custom_exposomes.CustomExposomeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    datasets.write_library_record(user["id"], manifest)
     return _public(manifest)
 
 
@@ -260,15 +271,16 @@ async def create_raster_dataset(
         )
     except custom_exposomes.CustomExposomeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    datasets.write_library_record(user["id"], manifest)
     return _public(manifest)
 
 
 @router.delete("/{dataset_id}")
 def delete_dataset(dataset_id: str, user: dict = Depends(get_current_user)):
     try:
-        custom_exposomes.delete(user["id"], dataset_id)
-    except custom_exposomes.CustomExposomeError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except KeyError:
+        datasets.delete(user["id"], dataset_id)
+    except datasets.NotFound:
         raise HTTPException(status_code=404, detail="Dataset not found") from None
+    except datasets.DatasetsError as exc:
+        raise HTTPException(status_code=exc.status, detail=exc.detail) from exc
     return {"status": "deleted"}

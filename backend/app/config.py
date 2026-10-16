@@ -24,6 +24,11 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3002",
     ]
     MAX_UPLOAD_SIZE_MB: int = 100
+    # Registered datasets (POST /api/datasets): files per dataset (a daily raster
+    # series is one GeoTIFF per day) and their total size; each file is also held
+    # to MAX_UPLOAD_SIZE_MB.
+    MAX_DATASET_FILES: int = 1000
+    MAX_DATASET_UPLOAD_MB: int = 4096
 
     # spacescans-pipeline integration
     SPACESCANS_DATA_DIR: Path = Path("/nonexistent")

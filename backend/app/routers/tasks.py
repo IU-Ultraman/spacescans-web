@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from app.auth import get_current_user
-from app import custom_exposomes, output_level, task_manager
+from app import custom_exposomes, datasets, output_level, task_manager
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -23,6 +23,9 @@ class ConfigRequest(BaseModel):
     execution: dict | None = None
     # Phase D: one row per participant (default) or per location episode.
     output_level: Literal["participant", "episode"] = output_level.DEFAULT_LEVEL
+    # Phase D: registered datasets selected by id (own or shared); their
+    # variables are linked after the other selected ones.
+    custom_datasets: list[str] | None = None
 
 def _verify_ownership(task_id: str, user: dict):
     task = task_manager.get_task(task_id)
@@ -108,30 +111,51 @@ async def upload_file(task_id: str, file: UploadFile = File(...), user: dict = D
 def save_config(task_id: str, config: ConfigRequest, user: dict = Depends(get_current_user)):
     _verify_ownership(task_id, user)
     payload = config.model_dump(exclude_none=True)
-    # Resolve any custom exposome in the selection against THIS caller's own
-    # library and snapshot the manifests into the config. This is the ownership
-    # check for the feature — the runner subprocess has no user — and it freezes
-    # what the task computes against a later delete or re-upload. Anything the
+    # Resolve the custom datasets of the selection — by id (custom_datasets) or
+    # by their custom_<id> keys in variables — against what THIS caller may see
+    # (their own datasets and the ones shared with the deployment) and snapshot
+    # the definitions into the config. This is the access check for the
+    # feature — the runner subprocess has no user — and it freezes what the
+    # task computes against a later edit, delete or re-upload. Anything the
     # client sent under this key is discarded.
     payload.pop(custom_exposomes.TASK_CUSTOM_KEY, None)
-    custom_keys = [k for k in payload.get("variables", [])
-                   if custom_exposomes.is_custom_key(k)]
-    if custom_keys:
+    dataset_ids = payload.pop("custom_datasets", None) or []
+    variables = list(payload.get("variables", []))
+    custom_keys = [k for k in variables if custom_exposomes.is_custom_key(k)]
+    if dataset_ids or custom_keys:
         try:
-            payload[custom_exposomes.TASK_CUSTOM_KEY] = (
-                custom_exposomes.resolve_selection(user["id"], custom_keys)
-            )
-        except KeyError as exc:
-            raise HTTPException(
-                status_code=404,
-                detail=f"custom exposome not found in your library: {exc.args[0]}",
-            ) from exc
+            snapshot, used = datasets.resolve_for_task(user["id"], dataset_ids, custom_keys)
+        except datasets.DatasetsError as exc:
+            raise HTTPException(status_code=exc.status, detail=exc.detail) from exc
+        variables += [key for key in snapshot if key not in variables]
+        payload["variables"] = variables
+        payload[custom_exposomes.TASK_CUSTOM_KEY] = snapshot
+        payload["custom_datasets"] = used
     task_manager.save_config(task_id, payload)
     return {"status": "saved"}
 
 @router.post("/{task_id}/start")
 def start_task(task_id: str, user: dict = Depends(get_current_user)):
     _verify_ownership(task_id, user)
+    # Phase D: a dataset the task snapshotted must still exist and be visible
+    # to the task's user (another user may have stopped sharing it); a finished
+    # task keeps its results either way.
+    config_path = task_manager._task_dir(task_id) / "config.json"
+    if config_path.exists():
+        import json  # noqa: PLC0415
+
+        try:
+            config = json.loads(config_path.read_text())
+        except ValueError:
+            config = {}
+        gone = datasets.unusable_in_task(user["id"], config)
+        if gone:
+            raise HTTPException(
+                status_code=409,
+                detail=("this task uses custom dataset(s) that were deleted or are no "
+                        f"longer shared with you ({', '.join(gone)}); choose its "
+                        "exposures again"),
+            )
     try:
         # Returns {"status": "running", ...} if started now, or
         # {"status": "queued"} if another task holds the run-lock (#1).
@@ -468,7 +492,10 @@ def get_coverage(
     if not var_keys:
         raise HTTPException(status_code=400, detail="variables query is required")
     try:
-        out = task_manager.compute_coverage(task_id, var_keys)
+        # Custom datasets not yet in the task's config: the caller's own or
+        # shared ones (phase D), so the wizard can show their coverage too.
+        extra = datasets.overlay_for_keys(user["id"], var_keys)
+        out = task_manager.compute_coverage(task_id, var_keys, extra_overlay=extra)
         # Phase D: the pre-execution check counts input rows (location episodes)
         # whatever the task's output level (dates and locations are per episode).
         out["level"] = output_level.EPISODE

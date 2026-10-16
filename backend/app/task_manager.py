@@ -58,7 +58,8 @@ def _load_variable_metadata() -> dict:
     return _VARIABLE_METADATA_CACHE
 
 
-def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
+def compute_coverage(task_id: str, variable_keys: list[str],
+                     extra_overlay: dict | None = None) -> dict:
     """Compute per-variable cohort coverage statistics for a task's input.csv.
 
     Returns
@@ -102,7 +103,11 @@ def compute_coverage(task_id: str, variable_keys: list[str]) -> dict:
         try:
             resolved[var] = variable_registry.get_variable(var, task_dir=task_dir)
         except KeyError:
-            unknown.append(var)
+            # A custom dataset the caller may use but the task has not saved yet.
+            if extra_overlay and var in extra_overlay:
+                resolved[var] = extra_overlay[var]
+            else:
+                unknown.append(var)
     if unknown:
         raise KeyError(", ".join(unknown))
 

@@ -626,7 +626,7 @@ def test_coverage_counts_episodes(api, tmp_path):
     task_dir = tmp_path / "tasks" / f"task-{meta['id']}"
     (task_dir / "input.csv").write_text(CSV_NUMERIC_IDS)
 
-    def fake(task_id, keys):
+    def fake(task_id, keys, **_kw):
         return {"row_count": 4, "variables": {}}
 
     import app.task_manager as tm

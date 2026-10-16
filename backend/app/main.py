@@ -7,6 +7,7 @@ from app.database import init_db
 from app.routers.auth import router as auth_router
 from app.routers.custom_exposomes import router as custom_exposomes_router
 from app.routers.data_setup import router as data_setup_router
+from app.routers.datasets import router as datasets_router
 from app.routers.tasks import router as tasks_router
 from app.routers.variables import router as variables_router
 from app.task_manager import recover_orphaned_tasks
@@ -29,6 +30,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(custom_exposomes_router)
     app.include_router(data_setup_router)
+    app.include_router(datasets_router)
     app.include_router(tasks_router)
     app.include_router(variables_router)
 
@@ -38,6 +40,16 @@ def create_app() -> FastAPI:
         settings.TASKS_DIR.mkdir(parents=True, exist_ok=True)
         init_db()
         recover_orphaned_tasks()
+        # Phase D: every upload made before it becomes a private registered
+        # dataset (a record next to its manifest; nothing is moved).
+        try:
+            from app import datasets
+
+            migrated = datasets.migrate()
+            if migrated:
+                _log.info("datasets: wrote the record of %d earlier upload(s)", migrated)
+        except Exception:  # pragma: no cover - listing migrates lazily anyway
+            _log.exception("datasets: migration of earlier uploads failed")
         validate_pipeline_settings()
         # Sprint 12 G5: eager-fire the pipeline-version probe at boot so a
         # stale spacescans-pipeline install fails fast on `uvicorn` startup
