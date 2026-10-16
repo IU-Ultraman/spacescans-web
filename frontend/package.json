@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check:lib": "rm -rf .next-check && tsc -p tsconfig.check.json && node scripts/check-variable-grouping.mjs && node --test scripts/datasets.test.mjs scripts/output-level.test.mjs scripts/api-datasets.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

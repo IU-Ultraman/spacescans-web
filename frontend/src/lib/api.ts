@@ -1,11 +1,89 @@
+import {
+  normalizeDatasetList,
+  unwrapDataset,
+  type DatasetMetadata,
+  type RegisteredDataset,
+} from "./datasets";
+import type { OutputLevel } from "./output-level";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export class ApiError extends Error {
   constructor(
     public status: number,
     public detail: string,
+    /** Itemised validation problems (e.g. a dataset upload's `issues[]`). */
+    public issues: string[] = [],
   ) {
     super(detail);
+  }
+}
+
+export interface ErrorDescription {
+  message: string;
+  issues: string[];
+}
+
+function issueText(issue: unknown): string | null {
+  if (typeof issue === "string") return issue.trim() || null;
+  if (!issue || typeof issue !== "object") return null;
+  const o = issue as Record<string, unknown>;
+  const msg = [o.message, o.msg, o.detail, o.error].find(
+    (v): v is string => typeof v === "string" && v.trim() !== "",
+  );
+  if (!msg) return null;
+  let where = "";
+  if (typeof o.field === "string" && o.field) where = o.field;
+  else if (Array.isArray(o.loc)) where = o.loc.filter((p) => p !== "body").join(".");
+  return where ? `${where}: ${msg}` : msg;
+}
+
+/**
+ * A readable message (and the itemised issues, if any) from an error body.
+ * FastAPI puts whatever `HTTPException(detail=...)` carried under "detail" —
+ * a string, an object such as `{detail, issues[]}` or `{error, message}`, or,
+ * for a 422, a list of `{loc, msg}` — and a JSONResponse may put `issues`
+ * next to `detail`. The UI must never show "[object Object]".
+ */
+export function describeError(body: unknown, fallback: string): ErrorDescription {
+  if (typeof body === "string") return { message: body.trim() || fallback, issues: [] };
+  if (!body || typeof body !== "object" || Array.isArray(body)) return { message: fallback, issues: [] };
+  const top = body as Record<string, unknown>;
+  const inner =
+    top.detail && typeof top.detail === "object" && !Array.isArray(top.detail)
+      ? (top.detail as Record<string, unknown>)
+      : null;
+  const src = inner ?? top;
+  const rawIssues = Array.isArray(src.issues)
+    ? src.issues
+    : Array.isArray(top.issues)
+      ? top.issues
+      : Array.isArray(top.detail)
+        ? top.detail
+        : [];
+  let issues = rawIssues.map(issueText).filter((t): t is string => !!t);
+  let message = [src.detail, src.message, src.error, top.error].find(
+    (v): v is string => typeof v === "string" && v.trim() !== "",
+  );
+  if (!message) {
+    if (issues.length === 1) {
+      message = issues[0];
+      issues = [];
+    } else {
+      message = issues.length ? "Please correct the following:" : fallback;
+    }
+  }
+  return { message, issues: issues.filter((t) => t !== message) };
+}
+
+/** The body of a response as JSON; null when empty (204) or not JSON. */
+async function readJson(res: Response): Promise<unknown> {
+  const text = await res.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
 }
 
@@ -41,12 +119,8 @@ async function downloadFile(path: string, filename: string): Promise<void> {
     throw new ApiError(401, "Unauthorized");
   }
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ detail: "Download failed" }));
-    const raw = body.detail ?? body.error ?? "Download failed";
-    throw new ApiError(
-      res.status,
-      typeof raw === "string" ? raw : raw?.message || JSON.stringify(raw),
-    );
+    const d = describeError(await readJson(res), "Download failed");
+    throw new ApiError(res.status, d.message, d.issues);
   }
 
   const blob = await res.blob();
@@ -73,14 +147,52 @@ async function requestMultipart<T>(path: string, body: FormData): Promise<T> {
     throw new ApiError(401, "Unauthorized");
   }
   if (!res.ok) {
-    const parsed = await res.json().catch(() => ({ detail: res.statusText }));
-    const raw = parsed.detail ?? parsed.error ?? "Upload failed";
-    throw new ApiError(
-      res.status,
-      typeof raw === "string" ? raw : raw?.message || JSON.stringify(raw),
-    );
+    const d = describeError(await readJson(res), res.statusText || "Upload failed");
+    throw new ApiError(res.status, d.message, d.issues);
   }
-  return res.json() as Promise<T>;
+  return (await readJson(res)) as T;
+}
+
+/**
+ * Send a FormData body with XMLHttpRequest rather than fetch, so the caller
+ * can show upload progress (rasters and daily tables can be large).
+ */
+function xhrMultipart<T>(
+  method: string,
+  path: string,
+  form: FormData,
+  onProgress?: (pct: number) => void,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, `${API_BASE}${path}`);
+    for (const [k, v] of Object.entries(getAuthHeaders())) xhr.setRequestHeader(k, v);
+    xhr.upload.onprogress = (e) => {
+      if (onProgress && e.lengthComputable && e.total > 0) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      let body: unknown = null;
+      try {
+        body = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        body = null;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(body as T);
+        return;
+      }
+      if (xhr.status === 401) handleUnauthorized();
+      const d = describeError(
+        body,
+        xhr.status === 413 ? "The files are larger than this server accepts." : "Upload failed",
+      );
+      reject(new ApiError(xhr.status, d.message, d.issues));
+    };
+    xhr.onerror = () => reject(new ApiError(0, "Network error during upload"));
+    xhr.send(form);
+  });
 }
 
 async function request<T>(
@@ -102,19 +214,14 @@ async function request<T>(
   }
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ detail: "Unknown error" }));
     // detail may be a structured object ({error, message, ...}) — FastAPI
-    // allows any JSON there and our data pre-flights use that form. Pick a
-    // human-readable string so the UI never shows "[object Object]".
-    const raw = body.detail ?? body.error ?? "Request failed";
-    const message =
-      typeof raw === "string"
-        ? raw
-        : raw?.message || raw?.error || JSON.stringify(raw);
-    throw new ApiError(res.status, message);
+    // allows any JSON there and our data pre-flights use that form.
+    const d = describeError(await readJson(res), "Request failed");
+    throw new ApiError(res.status, d.message, d.issues);
   }
 
-  return res.json();
+  // A DELETE may answer 204 with no body.
+  return (await readJson(res)) as T;
 }
 
 export interface Task {
@@ -137,6 +244,20 @@ export interface Task {
     columns: string[];
     date_range?: { min: string; max: string };
   } | null;
+  /** From the saved config, when the server reports it (phase D). */
+  output_level?: OutputLevel | null;
+  /** Ids of the registered datasets the task links, when reported. */
+  custom_datasets?: unknown[] | null;
+}
+
+/** What the wizard saves with PUT /api/tasks/{id}/config. Catalog variables
+ *  go in `variables`; the user's registered datasets go by id in
+ *  `custom_datasets` (the server snapshots their definitions). */
+export interface TaskConfigInput {
+  buffer: { size: number; raster_res_m: number };
+  variables: string[];
+  output_level: OutputLevel;
+  custom_datasets: string[];
 }
 
 /**
@@ -338,6 +459,8 @@ export interface ColumnSummary {
 }
 
 export interface ResultsPreview {
+  /** What one row stands for; absent on results from before phase D. */
+  level?: OutputLevel;
   columns: string[];
   rows: (string | number | null)[][];
   total_rows: number;
@@ -355,6 +478,7 @@ export interface HistogramData {
 }
 
 export interface HistogramResponse {
+  level?: OutputLevel;
   histograms: HistogramData[];
 }
 
@@ -365,6 +489,9 @@ export interface StateGeoBucket {
 }
 
 export interface GeoResponse {
+  /** Participant level: each participant counts once, in the state of their
+   *  longest location episode. */
+  level?: OutputLevel;
   by_state: StateGeoBucket[];
 }
 
@@ -481,7 +608,7 @@ export const api = {
       xhr.send(formData);
     }),
 
-  saveConfig: (id: string, config: Record<string, unknown>) =>
+  saveConfig: (id: string, config: TaskConfigInput) =>
     request<Task>(`/api/tasks/${id}/config`, {
       method: "PUT",
       body: JSON.stringify({ experiment: "auto", ...config }),
@@ -583,4 +710,52 @@ export const api = {
     request<{ status: string }>(`/api/custom-exposomes/${datasetId}`, {
       method: "DELETE",
     }),
+
+  // --- registered datasets ("My datasets", PHASE_D §2.2) -------------------
+  // The caller's own datasets plus every dataset another user shared with the
+  // whole deployment; only the owner may edit, re-share or delete one.
+
+  listDatasets: async (): Promise<RegisteredDataset[]> =>
+    normalizeDatasetList(await request<unknown>("/api/datasets")),
+
+  getDataset: async (id: string): Promise<RegisteredDataset> =>
+    unwrapDataset(await request<unknown>(`/api/datasets/${encodeURIComponent(id)}`)),
+
+  /** Upload and register. Resolves to the new dataset, or null when the reply
+   *  does not describe it (the caller then reloads the list). */
+  createDataset: async (
+    input: { files: File[]; metadata: DatasetMetadata },
+    onProgress?: (pct: number) => void,
+  ): Promise<RegisteredDataset | null> => {
+    const form = new FormData();
+    for (const f of input.files) form.append("files", f, f.name);
+    form.append("metadata", JSON.stringify(input.metadata));
+    const raw = await xhrMultipart<unknown>("POST", "/api/datasets", form, onProgress);
+    try {
+      return unwrapDataset(raw);
+    } catch {
+      return null;
+    }
+  },
+
+  /** Owner only: metadata and/or visibility. Null when the reply does not
+   *  describe the dataset (the caller then reloads). */
+  updateDataset: async (
+    id: string,
+    patch: Record<string, unknown>,
+  ): Promise<RegisteredDataset | null> => {
+    const raw = await request<unknown>(`/api/datasets/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    try {
+      return unwrapDataset(raw);
+    } catch {
+      return null;
+    }
+  },
+
+  /** Owner only; refused (409) while a running task uses the dataset. */
+  deleteDataset: (id: string) =>
+    request<unknown>(`/api/datasets/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };

@@ -14,6 +14,7 @@ import { Pill } from "@/components/ui/chip";
 import { api, ApiError } from "@/lib/api";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import { groupByExperiment } from "@/lib/variable-grouping";
+import { DEFAULT_OUTPUT_LEVEL } from "@/lib/output-level";
 import {
   ArrowLeft,
   Clock,
@@ -71,6 +72,8 @@ export function ReviewStep({
       await api.saveConfig(taskId, {
         buffer: bufferConfig,
         variables: selectedVariables,
+        output_level: DEFAULT_OUTPUT_LEVEL,
+        custom_datasets: [],
       });
       await api.startTask(taskId);
       router.push(`/dashboard/task/${taskId}`);
