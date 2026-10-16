@@ -1,3 +1,25 @@
+# SPACESCANS web frontend
+
+Next.js 14 (App Router). The API base URL is inlined at build time from
+`NEXT_PUBLIC_API_URL` (default `http://localhost:8000`).
+
+## Checks
+
+```bash
+npm ci
+npm run lint
+npx tsc --noEmit
+npm run build
+npm run check:lib   # tsc-emits src/lib/{variable-grouping,datasets,output-level,api}.ts to
+                    # .next-check (CommonJS) and runs scripts/check-variable-grouping.mjs plus
+                    # the node tests in scripts/*.test.mjs (API client against a mocked fetch/XHR)
+```
+
+To work against a backend on another port, start the dev server with that URL,
+e.g. `NEXT_PUBLIC_API_URL=http://127.0.0.1:8001 npx next dev -p 3001`.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

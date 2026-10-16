@@ -31,9 +31,10 @@ export default function Home() {
             Spatial and Contextual Exposome Analysis Platform
           </p>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground/80">
-            Link patient cohorts to environmental exposures using a comprehensive
-            ontology-driven pipeline. Configure tasks, select variables, and
-            process geospatial linkages with ease.
+            Link your cohort&apos;s time-referenced geolocation data to
+            environmental exposures using a comprehensive ontology-driven
+            pipeline. Configure tasks, select variables, and process geospatial
+            linkages with ease.
           </p>
 
           {/* CTA Buttons */}

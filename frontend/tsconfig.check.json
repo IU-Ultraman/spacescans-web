@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": ".next-check",
+    "rootDir": "src",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2020",
+    "incremental": false,
+    "declaration": false,
+    "sourceMap": false,
+    "plugins": []
+  },
+  "include": [
+    "src/lib/variable-grouping.ts",
+    "src/lib/datasets.ts",
+    "src/lib/output-level.ts",
+    "src/lib/api.ts"
+  ]
+}

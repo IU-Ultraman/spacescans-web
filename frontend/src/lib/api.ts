@@ -1,11 +1,89 @@
+import {
+  normalizeDatasetList,
+  unwrapDataset,
+  type DatasetMetadata,
+  type RegisteredDataset,
+} from "./datasets";
+import type { OutputLevel } from "./output-level";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export class ApiError extends Error {
   constructor(
     public status: number,
     public detail: string,
+    /** Itemised validation problems (e.g. a dataset upload's `issues[]`). */
+    public issues: string[] = [],
   ) {
     super(detail);
+  }
+}
+
+export interface ErrorDescription {
+  message: string;
+  issues: string[];
+}
+
+function issueText(issue: unknown): string | null {
+  if (typeof issue === "string") return issue.trim() || null;
+  if (!issue || typeof issue !== "object") return null;
+  const o = issue as Record<string, unknown>;
+  const msg = [o.message, o.msg, o.detail, o.error].find(
+    (v): v is string => typeof v === "string" && v.trim() !== "",
+  );
+  if (!msg) return null;
+  let where = "";
+  if (typeof o.field === "string" && o.field) where = o.field;
+  else if (Array.isArray(o.loc)) where = o.loc.filter((p) => p !== "body").join(".");
+  return where ? `${where}: ${msg}` : msg;
+}
+
+/**
+ * A readable message (and the itemised issues, if any) from an error body.
+ * FastAPI puts whatever `HTTPException(detail=...)` carried under "detail" —
+ * a string, an object such as `{detail, issues[]}` or `{error, message}`, or,
+ * for a 422, a list of `{loc, msg}` — and a JSONResponse may put `issues`
+ * next to `detail`. The UI must never show "[object Object]".
+ */
+export function describeError(body: unknown, fallback: string): ErrorDescription {
+  if (typeof body === "string") return { message: body.trim() || fallback, issues: [] };
+  if (!body || typeof body !== "object" || Array.isArray(body)) return { message: fallback, issues: [] };
+  const top = body as Record<string, unknown>;
+  const inner =
+    top.detail && typeof top.detail === "object" && !Array.isArray(top.detail)
+      ? (top.detail as Record<string, unknown>)
+      : null;
+  const src = inner ?? top;
+  const rawIssues = Array.isArray(src.issues)
+    ? src.issues
+    : Array.isArray(top.issues)
+      ? top.issues
+      : Array.isArray(top.detail)
+        ? top.detail
+        : [];
+  let issues = rawIssues.map(issueText).filter((t): t is string => !!t);
+  let message = [src.detail, src.message, src.error, top.error].find(
+    (v): v is string => typeof v === "string" && v.trim() !== "",
+  );
+  if (!message) {
+    if (issues.length === 1) {
+      message = issues[0];
+      issues = [];
+    } else {
+      message = issues.length ? "Please correct the following:" : fallback;
+    }
+  }
+  return { message, issues: issues.filter((t) => t !== message) };
+}
+
+/** The body of a response as JSON; null when empty (204) or not JSON. */
+async function readJson(res: Response): Promise<unknown> {
+  const text = await res.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
 }
 
@@ -41,12 +119,8 @@ async function downloadFile(path: string, filename: string): Promise<void> {
     throw new ApiError(401, "Unauthorized");
   }
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ detail: "Download failed" }));
-    const raw = body.detail ?? body.error ?? "Download failed";
-    throw new ApiError(
-      res.status,
-      typeof raw === "string" ? raw : raw?.message || JSON.stringify(raw),
-    );
+    const d = describeError(await readJson(res), "Download failed");
+    throw new ApiError(res.status, d.message, d.issues);
   }
 
   const blob = await res.blob();
@@ -60,27 +134,48 @@ async function downloadFile(path: string, filename: string): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-/** POST a FormData body. Content-Type is deliberately NOT set: the browser has
- *  to add it itself so the multipart boundary is correct. */
-async function requestMultipart<T>(path: string, body: FormData): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body,
+/**
+ * Send a FormData body with XMLHttpRequest rather than fetch, so the caller
+ * can show upload progress (rasters and daily tables can be large).
+ * Content-Type is deliberately NOT set: the browser adds it with the
+ * multipart boundary.
+ */
+function xhrMultipart<T>(
+  method: string,
+  path: string,
+  form: FormData,
+  onProgress?: (pct: number) => void,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, `${API_BASE}${path}`);
+    for (const [k, v] of Object.entries(getAuthHeaders())) xhr.setRequestHeader(k, v);
+    xhr.upload.onprogress = (e) => {
+      if (onProgress && e.lengthComputable && e.total > 0) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      let body: unknown = null;
+      try {
+        body = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        body = null;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(body as T);
+        return;
+      }
+      if (xhr.status === 401) handleUnauthorized();
+      const d = describeError(
+        body,
+        xhr.status === 413 ? "The files are larger than this server accepts." : "Upload failed",
+      );
+      reject(new ApiError(xhr.status, d.message, d.issues));
+    };
+    xhr.onerror = () => reject(new ApiError(0, "Network error during upload"));
+    xhr.send(form);
   });
-  if (res.status === 401) {
-    handleUnauthorized();
-    throw new ApiError(401, "Unauthorized");
-  }
-  if (!res.ok) {
-    const parsed = await res.json().catch(() => ({ detail: res.statusText }));
-    const raw = parsed.detail ?? parsed.error ?? "Upload failed";
-    throw new ApiError(
-      res.status,
-      typeof raw === "string" ? raw : raw?.message || JSON.stringify(raw),
-    );
-  }
-  return res.json() as Promise<T>;
 }
 
 async function request<T>(
@@ -102,19 +197,14 @@ async function request<T>(
   }
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ detail: "Unknown error" }));
     // detail may be a structured object ({error, message, ...}) — FastAPI
-    // allows any JSON there and our data pre-flights use that form. Pick a
-    // human-readable string so the UI never shows "[object Object]".
-    const raw = body.detail ?? body.error ?? "Request failed";
-    const message =
-      typeof raw === "string"
-        ? raw
-        : raw?.message || raw?.error || JSON.stringify(raw);
-    throw new ApiError(res.status, message);
+    // allows any JSON there and our data pre-flights use that form.
+    const d = describeError(await readJson(res), "Request failed");
+    throw new ApiError(res.status, d.message, d.issues);
   }
 
-  return res.json();
+  // A DELETE may answer 204 with no body.
+  return (await readJson(res)) as T;
 }
 
 export interface Task {
@@ -137,6 +227,20 @@ export interface Task {
     columns: string[];
     date_range?: { min: string; max: string };
   } | null;
+  /** From the saved config, when the server reports it (phase D). */
+  output_level?: OutputLevel | null;
+  /** Ids of the registered datasets the task links, when reported. */
+  custom_datasets?: unknown[] | null;
+}
+
+/** What the wizard saves with PUT /api/tasks/{id}/config. Catalog variables
+ *  go in `variables`; the user's registered datasets go by id in
+ *  `custom_datasets` (the server snapshots their definitions). */
+export interface TaskConfigInput {
+  buffer: { size: number; raster_res_m: number };
+  variables: string[];
+  output_level: OutputLevel;
+  custom_datasets: string[];
 }
 
 /**
@@ -191,77 +295,8 @@ export interface VarCoverage {
   temporal?: 'static' | 'yearly';
 }
 
-/** A custom exposome: a user's own area-level values, uploaded as a CSV and
- *  attached to a boundary layer the deployment already provisions. Shaped like
- *  a catalog entry so it renders next to the shipped variables, plus the fields
- *  the library UI needs. It never carries an ontology_id — custom exposomes
- *  have no ontology node, which is why they get their own block in the wizard
- *  rather than appearing in the tree. */
-export interface CustomRasterFile {
-  year: number | null;
-  uploaded_filename: string;
-  sha256: string;
-  bytes: number;
-}
-
-export interface CustomRasterGrid {
-  width: number;
-  height: number;
-  crs: string;
-  resolution: [number, number];
-  resolution_label: string;
-  nodata: number | null;
-  bounds_wgs84: [number, number, number, number];
-}
-
-export interface CustomExposome extends VariableMetadata {
-  /** polygon: a CSV on a Census geography; raster: the user's own GeoTIFF grid. */
-  geometry: 'polygon' | 'raster';
-  dataset_id: string;
-  variable_key: string;
-  /** The user's own geography column in their CSV. */
-  key_col: string;
-  /** The weights-table column it joins to, e.g. GEOID10. */
-  join_col: string;
-  year_col: string | null;
-  value_labels: Record<string, string>;
-  /** Per value column; the dataset-level display_unit is a derived summary. */
-  value_units: Record<string, string>;
-  row_count: number;
-  distinct_keys: number;
-  uploaded_filename: string;
-  created_at: string;
-  /** raster only */
-  rasters?: CustomRasterFile[];
-  /** Parallel to value_cols: the band each result column is read from. */
-  bands?: number[];
-  /** First band; the only band field on datasets saved before multi-band. */
-  band?: number;
-  grid?: CustomRasterGrid;
-}
-
-export interface CustomRasterPreview extends CustomRasterGrid {
-  cells: number;
-  band_count: number;
-  bands: { index: number; description: string; dtype: string; nodata: number | null }[];
-  grid_hash: string;
-  filename: string;
-  bytes: number;
-}
-
-export interface CreateCustomRasterInput {
-  /** One file with year null = time-invariant; several, each with a year. */
-  files: { file: File; year: number | null }[];
-  name: string;
-  /** One result column per band; value_cols is parallel to bands. */
-  bands: number[];
-  value_cols: string[];
-  description?: string;
-  /** Keyed by column name. */
-  value_labels?: Record<string, string>;
-  value_units?: Record<string, string>;
-}
-
+/** A boundary layer an area-table dataset can be keyed on, and whether this
+ *  deployment provisions it (GET /api/custom-exposomes/boundaries). */
 export interface CustomBoundary {
   boundary: 'BG' | 'ZCTA5' | 'Tract' | 'County';
   label: string;
@@ -270,33 +305,6 @@ export interface CustomBoundary {
   /** False when this deployment has no boundary data, so a dataset on it could
    *  never run — the dialog hides those. */
   available: boolean;
-}
-
-export interface CustomPreviewColumn {
-  name: string;
-  numeric: boolean;
-  distinct_sample: string[];
-  /** [min, max] of the parsed values; present only when numeric. */
-  range?: [number, number];
-}
-
-export interface CustomPreview {
-  columns: CustomPreviewColumn[];
-  row_count: number;
-  sample_rows: Record<string, string>[];
-  filename: string;
-}
-
-export interface CreateCustomExposomeInput {
-  file: File;
-  name: string;
-  boundary: string;
-  key_col: string;
-  value_cols: string[];
-  description?: string;
-  year_col?: string | null;
-  value_labels?: Record<string, string>;
-  value_units?: Record<string, string>;
 }
 
 export interface VariableMetadata {
@@ -338,6 +346,8 @@ export interface ColumnSummary {
 }
 
 export interface ResultsPreview {
+  /** What one row stands for; absent on results from before phase D. */
+  level?: OutputLevel;
   columns: string[];
   rows: (string | number | null)[][];
   total_rows: number;
@@ -355,6 +365,7 @@ export interface HistogramData {
 }
 
 export interface HistogramResponse {
+  level?: OutputLevel;
   histograms: HistogramData[];
 }
 
@@ -365,6 +376,9 @@ export interface StateGeoBucket {
 }
 
 export interface GeoResponse {
+  /** Participant level: each participant counts once, in the state of their
+   *  longest location episode. */
+  level?: OutputLevel;
   by_state: StateGeoBucket[];
 }
 
@@ -481,7 +495,7 @@ export const api = {
       xhr.send(formData);
     }),
 
-  saveConfig: (id: string, config: Record<string, unknown>) =>
+  saveConfig: (id: string, config: TaskConfigInput) =>
     request<Task>(`/api/tasks/${id}/config`, {
       method: "PUT",
       body: JSON.stringify({ experiment: "auto", ...config }),
@@ -529,58 +543,57 @@ export const api = {
 
   listVariables: () => request<VariableCatalog>("/api/variables"),
 
-  // --- custom exposomes (per-user library) ---------------------------------
-  // Deliberately separate from /api/variables: that endpoint is unauthenticated
-  // with a pinned schema_version, so per-user rows must not appear in it. The
-  // wizard fetches both and merges them.
-
+  // Which boundary layers this deployment provisions, so the dataset form can
+  // hide area tables that could never run. Served under the pre-phase-D
+  // custom-exposome path; callers treat a failure as "unknown".
   listCustomBoundaries: () =>
     request<{ boundaries: CustomBoundary[] }>("/api/custom-exposomes/boundaries"),
 
-  listCustomExposomes: () =>
-    request<{ variables: Record<string, CustomExposome> }>("/api/custom-exposomes"),
+  // --- registered datasets ("My datasets", PHASE_D §2.2) -------------------
+  // The caller's own datasets plus every dataset another user shared with the
+  // whole deployment; only the owner may edit, re-share or delete one.
 
-  previewCustomExposome: (file: File) => {
+  listDatasets: async (): Promise<RegisteredDataset[]> =>
+    normalizeDatasetList(await request<unknown>("/api/datasets")),
+
+  getDataset: async (id: string): Promise<RegisteredDataset> =>
+    unwrapDataset(await request<unknown>(`/api/datasets/${encodeURIComponent(id)}`)),
+
+  /** Upload and register. Resolves to the new dataset, or null when the reply
+   *  does not describe it (the caller then reloads the list). */
+  createDataset: async (
+    input: { files: File[]; metadata: DatasetMetadata },
+    onProgress?: (pct: number) => void,
+  ): Promise<RegisteredDataset | null> => {
     const form = new FormData();
-    form.append("file", file);
-    return requestMultipart<CustomPreview>("/api/custom-exposomes/preview", form);
+    for (const f of input.files) form.append("files", f, f.name);
+    form.append("metadata", JSON.stringify(input.metadata));
+    const raw = await xhrMultipart<unknown>("POST", "/api/datasets", form, onProgress);
+    try {
+      return unwrapDataset(raw);
+    } catch {
+      return null;
+    }
   },
 
-  createCustomExposome: (input: CreateCustomExposomeInput) => {
-    const form = new FormData();
-    form.append("file", input.file);
-    form.append("name", input.name);
-    form.append("boundary", input.boundary);
-    form.append("key_col", input.key_col);
-    form.append("value_cols", JSON.stringify(input.value_cols));
-    form.append("description", input.description ?? "");
-    form.append("value_labels", JSON.stringify(input.value_labels ?? {}));
-    form.append("value_units", JSON.stringify(input.value_units ?? {}));
-    if (input.year_col) form.append("year_col", input.year_col);
-    return requestMultipart<CustomExposome>("/api/custom-exposomes", form);
+  /** Owner only: metadata and/or visibility. Null when the reply does not
+   *  describe the dataset (the caller then reloads). */
+  updateDataset: async (
+    id: string,
+    patch: Record<string, unknown>,
+  ): Promise<RegisteredDataset | null> => {
+    const raw = await request<unknown>(`/api/datasets/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    try {
+      return unwrapDataset(raw);
+    } catch {
+      return null;
+    }
   },
 
-  previewCustomRaster: (file: File) => {
-    const form = new FormData();
-    form.append("file", file);
-    return requestMultipart<CustomRasterPreview>("/api/custom-exposomes/preview-raster", form);
-  },
-
-  createCustomRaster: (input: CreateCustomRasterInput) => {
-    const form = new FormData();
-    for (const f of input.files) form.append("files", f.file);
-    form.append("years", JSON.stringify(input.files.map((f) => f.year)));
-    form.append("name", input.name);
-    form.append("bands", JSON.stringify(input.bands));
-    form.append("value_cols", JSON.stringify(input.value_cols));
-    form.append("description", input.description ?? "");
-    form.append("value_labels", JSON.stringify(input.value_labels ?? {}));
-    form.append("value_units", JSON.stringify(input.value_units ?? {}));
-    return requestMultipart<CustomExposome>("/api/custom-exposomes/raster", form);
-  },
-
-  deleteCustomExposome: (datasetId: string) =>
-    request<{ status: string }>(`/api/custom-exposomes/${datasetId}`, {
-      method: "DELETE",
-    }),
+  /** Owner only; refused (409) while a running task uses the dataset. */
+  deleteDataset: (id: string) =>
+    request<unknown>(`/api/datasets/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };

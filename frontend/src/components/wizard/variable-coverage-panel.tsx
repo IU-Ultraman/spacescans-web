@@ -73,7 +73,7 @@ export function VariableCoveragePanel({
     >
       <div className="flex items-center gap-1.5 font-medium">
         <Icon className="size-3.5" />
-        {data.coverage_pct}% of your cohort covered
+        {data.coverage_pct}% of your location episodes covered
       </div>
 
       {/* Geographic and temporal coverage shown as two separate dimensions —
