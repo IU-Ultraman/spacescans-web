@@ -134,8 +134,8 @@ SELF_SERVE: list[tuple[str, str, dict[str, Any]]] = [
         "notes": [
             "Prefer the original source? Download the three CONUS_ TIFs from the NPS DataStore "
             "(https://irma.nps.gov/DataStore/Reference/Profile/2217356); skip the AK_/HI_ variants.",
-            "No census boundary file needed — values are linked straight from each patient's 270 m "
-            "residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
+            "No census boundary file needed — values are linked straight from each location's 270 m "
+            "buffer onto this raster grid (grid_weights), not via block-group polygons.",
             "Keep the exact filenames — the reader hard-codes all three.",
             "Download only the CONUS_ files; skip the AK_/HI_ variants (different projections).",
             "Provenance: project metadata labels this 'US DOT BTS', but the actual files are the NPS "
@@ -164,8 +164,8 @@ SELF_SERVE: list[tuple[str, str, dict[str, Any]]] = [
              "note": "one per year 2013–2019; choose the 'average_masked' variant"},
         ],
         "notes": [
-            "No census boundary file needed — values are linked straight from each patient's 270 m "
-            "residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
+            "No census boundary file needed — values are linked straight from each location's 270 m "
+            "buffer onto this raster grid (grid_weights), not via block-group polygons.",
             "Requires a free EOG account (login) to download the annual global files.",
             "gunzip each .tif.gz after download; keep the original filenames (the reader parses the year).",
         ],
@@ -179,8 +179,8 @@ SELF_SERVE: list[tuple[str, str, dict[str, Any]]] = [
              "note": "4 variables (uvief, uvdec, uvdvc, uvddc) — one file per day"},
         ],
         "notes": [
-            "No census boundary file needed — values are linked straight from each patient's 270 m "
-            "residential buffer onto this raster grid (grid_weights), not via block-group polygons.",
+            "No census boundary file needed — values are linked straight from each location's 270 m "
+            "buffer onto this raster grid (grid_weights), not via block-group polygons.",
             "Native HDF-4 — install pyhdf (+ the system HDF4 library) to read it.",
             "Scriptable: `spacescans data fetch --dataset temis_uv_raw --accept-terms knmi-temis` downloads "
             "every day from the CloudFront mirror d1qb6yzwaaq4he.cloudfront.net/uvradiation/v2.0/{year}/{mm}/{var}YYYYMMDD.hdf",
@@ -203,8 +203,8 @@ SELF_SERVE: list[tuple[str, str, dict[str, Any]]] = [
              "note": "seven components: BC, DUST, NH4, NO3, OM, SO4, SS"},
         ],
         "notes": [
-            "No census boundary file needed — values are linked straight from each patient's 270 m "
-            "residential buffer onto the 0.01° grid (grid_weights); the template raster "
+            "No census boundary file needed — values are linked straight from each location's 270 m "
+            "buffer onto the 0.01° grid (grid_weights); the template raster "
             "ACAG/C3/acag_template.tif ships with the repo.",
             "Both variants are required: the linkage derives each species' non-biomass share as plain "
             "minus FromBiomass.",
@@ -252,7 +252,7 @@ PRESET: list[tuple[str, str, dict[str, Any]]] = [
         "shipped": True,
         "artifact": "zbp_nationwide_*.Rda + cbp_nationwide_*.Rda",
         "origin": ("Derived from Census ZIP + County Business Patterns (raw ZBP/CBP are public). ZBP gives "
-                   "ZCTA5-level density; patients whose ZIP has no ZBP row fall back to their county's CBP "
+                   "ZCTA5-level density; locations whose ZIP has no ZBP row fall back to their county's CBP "
                    "— so BOTH files are needed. The fallback also reuses the ZBP linkage output internally "
                    "(auto-generated per run, not a download)."),
     }),
