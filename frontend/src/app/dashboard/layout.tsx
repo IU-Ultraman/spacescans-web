@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { clearToken, getEmail, isAuthenticated } from "@/lib/auth";
@@ -15,6 +16,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [email, setEmail] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
 
@@ -66,12 +68,28 @@ export default function DashboardLayout({
               SPACESCANS
             </Link>
             <nav className="hidden items-center gap-4 text-sm sm:flex">
-              <Link
-                href="/dashboard"
-                className="text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Dashboard
-              </Link>
+              {[
+                { href: "/dashboard", label: "Dashboard" },
+                { href: "/dashboard/datasets", label: "My datasets" },
+              ].map(({ href, label }) => {
+                const active =
+                  href === "/dashboard"
+                    ? pathname === "/dashboard" || pathname.startsWith("/dashboard/task")
+                    : pathname.startsWith(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "transition-colors hover:text-foreground",
+                      active ? "font-medium text-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
             </nav>
           </div>
 
