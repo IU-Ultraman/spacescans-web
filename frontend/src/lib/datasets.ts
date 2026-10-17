@@ -674,3 +674,23 @@ export function metadataPatch(
   if (changed || vars.length !== before.variables.length) patch.variables = vars;
   return patch;
 }
+
+// ------------------------------------------------------- task summaries ---
+
+/** custom_<8 hex>: the variable key the server gives each registered dataset. */
+const CUSTOM_VARIABLE_KEY = /^custom_[0-9a-f]{8}$/;
+
+/**
+ * A task's catalog variables. The server appends the variable key of every
+ * registered dataset a task links (custom_<8 hex>) to `variables`; when it also
+ * reports those datasets (`custom_datasets`), the views list them by name, so
+ * their keys are left out here. Tasks from before phase D keep every key.
+ */
+export function catalogVariableKeys(task: {
+  variables?: readonly string[] | null;
+  custom_datasets?: readonly unknown[] | null;
+}): string[] {
+  const variables = [...(task.variables ?? [])];
+  const reported = Array.isArray(task.custom_datasets) && task.custom_datasets.length > 0;
+  return reported ? variables.filter((v) => !CUSTOM_VARIABLE_KEY.test(v)) : variables;
+}

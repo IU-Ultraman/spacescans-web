@@ -10,6 +10,7 @@ import {
   type TaskStatus,
   type ResultsPreview,
 } from "@/lib/api";
+import { catalogVariableKeys } from "@/lib/datasets";
 import { INPUT_COLUMNS } from "@/lib/result-columns";
 import { useColumnMeta } from "@/lib/use-column-meta";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
@@ -314,11 +315,11 @@ export default function TaskResultsPage() {
               <span className="font-medium">{task.buffer.size} m</span>
             </div>
           )}
-          {task.variables && task.variables.length > 0 && (
+          {catalogVariableKeys(task).length > 0 && (
             <div className="flex justify-between gap-4">
               <span className="shrink-0 text-muted-foreground">Variables</span>
               <span className="text-right font-medium">
-                {task.variables
+                {catalogVariableKeys(task)
                   .map((v) => catalog?.variables[v]?.label ?? v)
                   .join(", ")}
               </span>

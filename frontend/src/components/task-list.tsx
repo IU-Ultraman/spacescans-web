@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api, type Task } from "@/lib/api";
+import { catalogVariableKeys } from "@/lib/datasets";
 import { useVariableCatalog } from "@/lib/use-variable-catalog";
 import { OUTPUT_LEVEL_INFO, isOutputLevel } from "@/lib/output-level";
 import { StatusBadge } from "@/components/status-badge";
@@ -407,9 +408,9 @@ export function TaskList() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  {(task.variables?.length ?? 0) + datasetCount(task) > 0 ? (
+                  {catalogVariableKeys(task).length + datasetCount(task) > 0 ? (
                     <div className="flex flex-wrap gap-1">
-                      {(task.variables ?? []).map((v) => (
+                      {catalogVariableKeys(task).map((v) => (
                         <Chip key={v} className="text-[10px]">
                           {variableLabel(v)}
                         </Chip>

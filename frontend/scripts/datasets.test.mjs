@@ -27,6 +27,7 @@ import {
   isFailed,
   sortDatasets,
   metadataPatch,
+  catalogVariableKeys,
   MAX_VARIABLE_NAME,
 } from "../.next-check/lib/datasets.js";
 
@@ -310,4 +311,14 @@ test("edit patch carries only what changed", () => {
     source: "Lab",
     variables: [{ name: "v", unit: "ug/m3", description: "PM" }],
   });
+});
+
+test("task summaries list registered datasets by name, not by their custom_ keys", () => {
+  const task = { variables: ["noise", "custom_8bb37698", "custom_2bc227b4"], custom_datasets: ["8bb37698x", "2bc227b4y"] };
+  assert.deepEqual(catalogVariableKeys(task), ["noise"]);
+  assert.deepEqual(catalogVariableKeys({ ...task, variables: ["custom_8bb37698"] }), []);
+  // a task from before phase D reports no datasets: its keys stay
+  assert.deepEqual(catalogVariableKeys({ variables: ["noise", "custom_8bb37698"] }), ["noise", "custom_8bb37698"]);
+  assert.deepEqual(catalogVariableKeys({ variables: ["custom_notahexk"], custom_datasets: ["x"] }), ["custom_notahexk"]);
+  assert.deepEqual(catalogVariableKeys({}), []);
 });
