@@ -80,7 +80,7 @@ def test_fara_descriptions_state_the_share_semantics():
     entries = _dict_json()
     for col in ("LILATracts_1And10", "LATracts1", "HUNVFlag", "LowIncomeTracts"):
         d = entries[col]["definition"]
-        assert d.startswith("Share of the residential buffer"), (col, d)
+        assert d.startswith("Share of the buffer around the location"), (col, d)
 
 
 def test_merge_writes_the_dictionary_next_to_result(tmp_path, monkeypatch):

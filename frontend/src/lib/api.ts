@@ -593,7 +593,7 @@ export const api = {
     }
   },
 
-  /** Owner only; refused (409) while a running task uses the dataset. */
+  /** Owner only; refused (409) while a queued or running task uses the dataset. */
   deleteDataset: (id: string) =>
     request<unknown>(`/api/datasets/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };

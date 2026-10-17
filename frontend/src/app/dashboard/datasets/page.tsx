@@ -282,7 +282,7 @@ export default function DatasetsPage() {
             <DialogTitle>Delete “{confirmDelete?.name}”?</DialogTitle>
             <DialogDescription>
               It can no longer be selected for new tasks. Finished tasks keep their
-              results. Deleting is refused while a running task uses it.
+              results. Deleting is refused while a queued or running task uses it.
               {confirmDelete?.visibility === "deployment" &&
                 " Other users of this deployment lose access to it too."}
             </DialogDescription>
