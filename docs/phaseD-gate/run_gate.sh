@@ -11,6 +11,7 @@
 # container logs). Needs backend/.venv (its Python has geopandas, rasterio, httpx), node
 # and Google Chrome. Synthetic data only.
 set -u
+export PYTHONDONTWRITEBYTECODE=1
 HERE=$(cd "$(dirname "$0")" && pwd)
 WT=$(cd "$HERE/../.." && pwd)
 WORK=${1:?usage: run_gate.sh <work_dir>}
