@@ -649,6 +649,20 @@ def _registry_metadata(uid: str, meta: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _without_server_paths(msg: str) -> str:
+    """A client-facing message with any server dataset-store path removed (review finding R2-3).
+
+    Registry error text can embed the absolute datasets root (``DATA_DIR/custom_exposomes/
+    user-<uid>``); clients never need the server's filesystem layout.
+    """
+    root = str(app.config.settings.DATA_DIR)
+    return re.sub(re.escape(root) + r"\S*", "the dataset store", msg)
+
+
+#: What the client is told when a name is already taken (no server path, review finding R2-3).
+_NAME_TAKEN_MSG = "a dataset with this name already exists; choose another name"
+
+
 def _register_in_registry(uid: str, udir: Path, files: Mapping[str, Path],
                           meta: Mapping[str, Any]) -> Dataset:
     udir.mkdir(parents=True, exist_ok=True)
@@ -661,11 +675,13 @@ def _register_in_registry(uid: str, udir: Path, files: Mapping[str, Path],
             metadata=_registry_metadata(uid, meta), root=udir)
     except Exception as exc:
         if taken is not None and isinstance(exc, taken):
-            raise Conflict(str(exc), issues=[{"field": "name", "message": str(exc)}]) from None
+            raise Conflict(_NAME_TAKEN_MSG,
+                           issues=[{"field": "name", "message": _NAME_TAKEN_MSG}]) from None
         if type(exc).__name__ == "MissingExtraError":
             raise Unavailable(f"this deployment cannot read {meta['kind']} files: {exc}") from None
         if isinstance(exc, dataset_registry.errors()):
-            raise Invalid(str(exc), issues=[{"field": None, "message": str(exc)}]) from None
+            msg = _without_server_paths(str(exc))
+            raise Invalid(msg, issues=[{"field": None, "message": msg}]) from None
         raise
     rid = str(record["id"])
     return Dataset(rid, uid, REGISTRY, record, udir / rid)
@@ -731,7 +747,8 @@ def _register_in_library(uid: str, files: Mapping[str, Path], meta: Mapping[str,
                 uid, rasters=rasters, name=meta["name"], description=description,
                 bands=bands, value_cols=cols, value_labels=labels, value_units=units)
     except custom_exposomes.CustomExposomeError as exc:
-        raise Invalid(str(exc), issues=[{"field": None, "message": str(exc)}]) from None
+        msg = _without_server_paths(str(exc))
+        raise Invalid(msg, issues=[{"field": None, "message": msg}]) from None
     directory = custom_exposomes.dataset_dir(uid, manifest["dataset_id"])
     record = _record_from_manifest(uid, directory, manifest)
     record.update({field: meta.get(field) or None for field in METADATA_TEXT})
@@ -812,9 +829,9 @@ def update(uid: int | str, dataset_id: str, changes: Mapping[str, Any]) -> Datas
         except Exception as exc:
             taken = dataset_registry.name_taken()
             if taken is not None and isinstance(exc, taken):
-                raise Conflict(str(exc)) from None
+                raise Conflict(_NAME_TAKEN_MSG) from None
             if isinstance(exc, dataset_registry.errors()):
-                raise Invalid(str(exc)) from None
+                raise Invalid(_without_server_paths(str(exc))) from None
             raise
         ds.record = record
         return ds

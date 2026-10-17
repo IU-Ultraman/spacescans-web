@@ -58,6 +58,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, Request, UploadFile
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
+from starlette.formparsers import MultiPartException, MultiPartParser
 
 import app.config
 from app import custom_exposomes, dataset_registry, datasets
@@ -108,6 +109,28 @@ def _safe_name(raw: str | None) -> str | None:
     return name
 
 
+class _UploadTooLarge(MultiPartException):
+    """Raised from the capped upload stream. A MultiPartException subclass so the parser still
+    closes its spooled temp files on the way out (see :func:`create_dataset`)."""
+
+
+async def _capped_stream(stream, max_bytes: int):
+    """Yield the request body, aborting once more than ``max_bytes`` have arrived.
+
+    MultiPartParser spools each file part to a temp file with no size cap of its own
+    (Starlette 0.41.3 enforces max_part_size on form fields, not on file parts), so without this
+    the whole body is written to the backend's disk while ``request.form()`` parses it, before
+    the per-file and total checks run. This bounds the bytes received to the configured total.
+    Review finding R2-2.
+    """
+    total = 0
+    async for chunk in stream:
+        total += len(chunk)
+        if total > max_bytes:
+            raise _UploadTooLarge("upload exceeds the total size limit")
+        yield chunk
+
+
 async def _save(upload: UploadFile, dest: Path, max_bytes: int) -> int:
     """Stream one upload to ``dest``; returns its size. Raises ValueError("too large")."""
     total = 0
@@ -126,10 +149,26 @@ async def _save(upload: UploadFile, dest: Path, max_bytes: int) -> int:
 @router.post("", status_code=201)
 async def create_dataset(request: Request, user: dict = Depends(get_current_user)):
     limits = _limits()
+    total_cap = limits["max_total_mb"] * 1024 * 1024
+    # Reject an oversized body during receipt, before it is spooled to disk (R2-2): an honest
+    # Content-Length first, then a hard byte cap on the stream feeding the multipart parser.
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > total_cap:
+        return _plain_error(413, f"the files exceed {limits['max_total_mb']} MB in total", "files")
     # Starlette's own caps (1000 files and fields) give way to the configured limit,
     # checked below with a clear message.
-    form = await request.form(max_files=limits["max_files"] + 1,
-                              max_fields=limits["max_files"] + 10)
+    if request.headers.get("content-type", "").startswith("multipart/form-data"):
+        parser = MultiPartParser(request.headers, _capped_stream(request.stream(), total_cap),
+                                 max_files=limits["max_files"] + 1,
+                                 max_fields=limits["max_files"] + 10)
+        try:
+            form = await parser.parse()
+        except _UploadTooLarge:
+            return _plain_error(413, f"the files exceed {limits['max_total_mb']} MB in total",
+                                "files")
+    else:
+        form = await request.form(max_files=limits["max_files"] + 1,
+                                  max_fields=limits["max_files"] + 10)
     raw_meta = form.get("metadata")
     if raw_meta is None:
         return _plain_error(400, "send the dataset's metadata as a JSON field named metadata",

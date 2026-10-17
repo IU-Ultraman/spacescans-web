@@ -284,11 +284,57 @@ def test_size_and_count_limits(env, no_registry, users, monkeypatch):
     assert not list((custom_exposomes.library_root() / ".staging").iterdir())   # cleaned up
 
 
+def test_oversized_upload_is_rejected_before_spooling(env, no_registry, users, monkeypatch):
+    """R2-2: a body over the total limit is refused during receipt, not after it is on disk."""
+    import app.config
+
+    monkeypatch.setattr(app.config.settings, "MAX_DATASET_UPLOAD_MB", 1)
+    big = b"x" * (2 * 1024 * 1024)   # 2 MB, over the 1 MB total
+    r = _post(users[1], [("big.tif", big)],
+              {"name": "x", "kind": "raster", "temporal": "yearly"})
+    assert r.status_code == 413 and "in total" in r.json()["detail"]
+    staging = custom_exposomes.library_root() / ".staging"
+    assert not staging.exists() or not list(staging.iterdir())   # nothing was spooled
+
+
+def test_capped_stream_aborts_past_the_limit():
+    """R2-2: the stream feeding the parser stops once the cap is passed (no Content-Length path)."""
+    import asyncio
+
+    from app.routers.datasets import _UploadTooLarge, _capped_stream
+
+    async def body():
+        for _ in range(10):
+            yield b"x" * 100           # 1000 bytes in all
+
+    async def drain():
+        seen = bytearray()
+        async for chunk in _capped_stream(body(), 250):
+            seen.extend(chunk)
+        return seen
+
+    with pytest.raises(_UploadTooLarge):
+        asyncio.run(drain())
+
+
 def test_a_name_is_unique_per_owner(env, no_registry, users):
     assert _post(users[1], [("values.csv", CSV)], _table_meta()).status_code == 201
     r = _post(users[1], [("values.csv", CSV)], _table_meta(name="GREENNESS"))
     assert r.status_code == 409 and r.json()["issues"][0]["field"] == "name"
     assert _post(users[2], [("values.csv", CSV)], _table_meta()).status_code == 201
+
+
+def test_registry_error_messages_hide_the_server_path(env):
+    """R2-3: client-facing registry messages carry no server filesystem path or other names."""
+    import app.config
+
+    root = str(app.config.settings.DATA_DIR)
+    leaky = f"no dataset named 'x' in {root}/custom_exposomes/user-7 (registered: 'y')"
+    scrubbed = datasets._without_server_paths(leaky)
+    assert root not in scrubbed and "/custom_exposomes/" not in scrubbed
+    assert "the dataset store" in scrubbed
+    # the name-taken message the client sees names no path
+    assert "/" not in datasets._NAME_TAKEN_MSG and root not in datasets._NAME_TAKEN_MSG
 
 
 def test_capabilities(env, no_registry, users):
