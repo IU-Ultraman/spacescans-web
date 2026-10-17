@@ -376,6 +376,17 @@ def _run_locked(experiment: str, task_dir: Path, variables: Sequence[str] | None
         status.error(f"input conversion failed: {exc}")
         return 1
 
+    # Participant level: the ids must be distinct once read as numbers (the merge pools equal
+    # ones). Check it now, right after the cohort is converted, so an all-numeric cohort with
+    # colliding ids (e.g. 007 and 7) fails before the C-steps run, not in the final merge after a
+    # whole run. Review finding R1-F4.
+    if level == output_level.PARTICIPANT:
+        try:
+            output_level.id_lookup(task_dir)
+        except output_level.OutputLevelError as exc:
+            status.error(str(exc))
+            return 1
+
     bad = _unrenderable(steps, config)
     if bad is not None:
         return _render_failure(experiment, bad[0], bad[1], total, bad[2], emit, status)

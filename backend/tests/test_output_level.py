@@ -154,6 +154,23 @@ def _status(task_dir: Path) -> dict:
 # level rules
 # ---------------------------------------------------------------------------
 
+def test_participant_columns_follow_the_request_order():
+    """R1-F6: the participant table lists variables in the requested order, like Python/R."""
+    import pandas as pd
+
+    from app.experiments._merge import _order_participant_columns
+
+    # noise -> l50dba_exi/imp/nat (catalog order); walkability -> NatWalkInd.
+    df = pd.DataFrame({"pid": ["1"], "NatWalkInd": [1.0], "l50dba_exi": [2.0],
+                       "l50dba_imp": [3.0], "l50dba_nat": [4.0]})
+    out = _order_participant_columns(df, {"variables": ["noise", "walkability"]},
+                                     Path("/nonexistent"))
+    assert list(out.columns) == ["pid", "l50dba_exi", "l50dba_imp", "l50dba_nat", "NatWalkInd"]
+    out2 = _order_participant_columns(df, {"variables": ["walkability", "noise"]},
+                                      Path("/nonexistent"))
+    assert list(out2.columns) == ["pid", "NatWalkInd", "l50dba_exi", "l50dba_imp", "l50dba_nat"]
+
+
 def test_default_is_participant_and_a_config_without_the_key_is_episode():
     assert output_level.DEFAULT_LEVEL == "participant"
     assert output_level.normalize(None) == "participant"
@@ -486,16 +503,22 @@ def test_dispatcher_refuses_a_participant_task_up_front_without_levels(
     assert status["status"] == "error" and "episode-level output" in status["message"]
 
 
-def test_pooled_ids_fail_the_merge_without_quoting_them(fake_cli, participant_package):
+def test_pooled_ids_fail_before_the_steps_run(fake_cli, participant_package):
+    """R1-F4: colliding numeric ids are refused right after the cohort is converted, before the
+    C-steps, not wrapped as a late merge failure after a whole run."""
     csv = ("pid,startDate,endDate,longitude,latitude\n"
            "007,2017-01-01,2017-12-31,-93.0,45.0\n"
            "7,2017-01-01,2017-12-31,-94.0,44.0\n")
     task_dir = _task(fake_cli, "task-run00004", ["ndi"], csv=csv)
     assert bg_ndi_wi.run(task_dir) == 1
     status = _status(task_dir)
-    assert status["message"].startswith("merge failed: participant-level output")
+    # the raw refusal, surfaced early (not the "merge failed: ..." wrapper from the final merge)
+    assert status["message"].startswith("participant-level output:")
+    assert "different spelling" in status["message"]
     assert "007" not in status["message"]
-    assert "007" not in (task_dir / "logs.jsonl").read_text()
+    logs = task_dir / "logs.jsonl"
+    assert not logs.exists() or "007" not in logs.read_text()
+    assert not list((task_dir / "output").glob("c4_*.parquet"))   # no steps ran
 
 
 def test_a_config_without_the_key_runs_per_episode(fake_cli, participant_package, monkeypatch):

@@ -109,6 +109,28 @@ def _task_config(task_dir: Path) -> dict:
     return config if isinstance(config, dict) else {}
 
 
+def _order_participant_columns(df, config: dict, task_dir: Path):
+    """Value columns in the requested order (PHASE_D 2.2 / 7.1 item 5, review finding R1-F6).
+
+    The participant fan-in appends sources and their columns in catalog-metadata order; the
+    package (Python/R) lists them in the request order. Reorder by ``config["variables"]``,
+    mapping each result column to the variable whose ``value_cols`` produced it. Columns of no
+    listed variable (e.g. a deduplicated ``_<source>_dup``) keep their order at the end.
+    """
+    variables = list(config.get("variables") or [])
+    if not variables:
+        return df
+    variable_of: dict[str, str] = {}
+    for var_key in variables:
+        try:
+            cols = variable_registry.get_variable(var_key, task_dir=task_dir).get("value_cols") or []
+        except KeyError:
+            continue
+        for col in cols:
+            variable_of.setdefault(col, var_key)
+    return _merge.order_by_variables(df, variable_of, variables)
+
+
 def fan_in(task_dir: Path, experiment_keys: list[str]) -> Path:
     """Join every result_<key>.csv into result.csv at the task's output level.
 
@@ -127,6 +149,7 @@ def fan_in(task_dir: Path, experiment_keys: list[str]) -> Path:
     output_level.clear_result_meta(task_dir)
     if level == output_level.PARTICIPANT:
         df = output_level.participant_fan_in(task_dir, experiment_keys)
+        df = _order_participant_columns(df, config, task_dir)   # request order (R1-F6)
         blank = output_level.blank_id_rows(task_dir)
         if blank:
             _emit_log_warning(
