@@ -45,7 +45,7 @@ RUN grep -vi "spacescans-pipeline" requirements.txt > /tmp/req.txt \
 # 3) TEST ONLY: the pipeline from a local wheel, with the same extras, pins and
 #    constraints as backend/Dockerfile step 3.
 ARG PIPELINE_WHEEL=spacescans_pipeline-0.3.0-py3-none-any.whl
-ARG PIPELINE_WHEEL_SHA256=c28696733a00986ebcb7cc8ce8ffb1ebd1ba42116ab488a9be7c08086ef1fea3
+ARG PIPELINE_WHEEL_SHA256=82516ba620b2239ac7e601ff2b432449dc6548fca53fc5fd1aa7717ef0e3f055
 COPY --from=pipeline_wheel --chown=$MAMBA_USER:$MAMBA_USER ${PIPELINE_WHEEL} /tmp/wheels/
 RUN echo "${PIPELINE_WHEEL_SHA256}  /tmp/wheels/${PIPELINE_WHEEL}" | sha256sum -c - \
     && python -m pip install --no-cache-dir -c constraints.txt \

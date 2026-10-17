@@ -1,7 +1,7 @@
 # Phase-D test stack (`tier2-d-test`)
 
 A TEST copy of the web app built from branch `tier2/web-d-integration` with the integrated
-spacescans-pipeline 0.3.0 wheel (phase-D track I1, commit 0031a17). It is **not** the live
+spacescans-pipeline 0.3.0 wheel (phase-D integration branch after the fix pass, commit 0a8a3c7). It is **not** the live
 app: the live compose project is `spacescans-web` on ports 3000/8000, and nothing here
 touches it, its images or its volume.
 
