@@ -215,7 +215,7 @@ def test_plan_gives_a_raster_its_own_c3_named_by_grid():
     steps = custom.plan(_config([R], {R: _raster_def()}))
     assert [s.name for s in steps] == ["c3_customgrid_abcd1234", f"c4_{R}"]
     assert steps[0].template_relpath == "c3/custom_grid.yaml"
-    assert steps[0].cache_tag == "CUSTOMGRID_abcd1234"
+    assert steps[0].cache_tag == "CUSTOMGRIDND_abcd1234"  # R1-F1: nodata-free grid tag
     assert steps[0].uses_raster_res is False            # grid_weights: no __r suffix
     assert steps[1].materialise_values is True
 
