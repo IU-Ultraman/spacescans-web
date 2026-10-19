@@ -1,7 +1,7 @@
 # Phase-D test stack (`tier2-d-test`)
 
-A TEST copy of the web app built from branch `tier2/web-d-integration` with the integrated
-spacescans-pipeline 0.3.0 wheel (phase-D integration branch after the fix pass, commit 0a8a3c7). It is **not** the live
+A TEST copy of the web app, built from the same `backend/Dockerfile` and `frontend/` as production
+(spacescans installed from GitHub at the Dockerfile's `SPACESCANS_REF`). It is **not** the live
 app: the live compose project is `spacescans-web` on ports 3000/8000, and nothing here
 touches it, its images or its volume.
 
@@ -9,11 +9,11 @@ touches it, its images or its volume.
 |---|---|
 | Compose file | `docs/phaseD-test-stack.yml` (standalone; never combine it with `docker-compose.yml`) |
 | Project | `tier2-d-test` (containers `tier2-d-test-backend-1`, `tier2-d-test-frontend-1`) |
-| Images | `tier2-d-backend:integration` (from `docs/Dockerfile.test`), `tier2-d-frontend:integration` |
+| Images | `tier2-d-backend:integration` (from `backend/Dockerfile`), `tier2-d-frontend:integration` |
 | URLs | frontend <http://localhost:3100>, backend <http://localhost:8100> (bound to this machine only) |
 | App state | volume `tier2-d-test_backend-data` (SQLite users, tasks, registered datasets, C3 cache) |
 | Exposure data | `/Users/xai/Desktop/spacescans-all/spacescans-web/pipeline-data`, mounted **read-only** |
-| Pipeline wheel | `/Users/xai/Desktop/spacescans-all/tier2-artifacts/phaseD/dist/spacescans_pipeline-0.3.0-py3-none-any.whl` (sha256 checked at build) |
+| Pipeline | spacescans-pipeline from GitHub at `backend/Dockerfile`'s `SPACESCANS_REF` |
 
 Run every command below from the repository root (`spacescans-web-wt/d-integration`). Builds
 and runs are heavy work: take the host lock
@@ -71,29 +71,18 @@ lead no longer needs the stack; then `docker image rm` them.
 
 ## Rebuild
 
-Only needed after a change on this branch or a new wheel:
+Only needed after a change on this branch, for example a new `SPACESCANS_REF`:
 
 ```bash
 heavy docker compose -p tier2-d-test -f docs/phaseD-test-stack.yml build
 ```
 
-With another wheel, point at its directory and give its file name and sha256:
-
-```bash
-TIER2_PIPELINE_WHEEL_DIR=/path/to/dist heavy docker compose -p tier2-d-test \
-  -f docs/phaseD-test-stack.yml build \
-  --build-arg PIPELINE_WHEEL=spacescans_pipeline-X.Y.Z-py3-none-any.whl \
-  --build-arg PIPELINE_WHEEL_SHA256=<sha256>
-```
 
 The frontend bakes `NEXT_PUBLIC_API_URL=http://localhost:8100` in at build time; the backend
 allows CORS from `http://localhost:3100` and `http://127.0.0.1:3100` only.
 
 ## What differs from production
 
-- `docs/Dockerfile.test` is `backend/Dockerfile` with step 3 replaced: the pipeline comes from
-  the local wheel, because the integrated package is not pushed. When 0.3.0 is pushed, bump
-  `SPACESCANS_REF` in `backend/Dockerfile` instead and drop the test Dockerfile.
 - No `restart: unless-stopped`, ports bound to 127.0.0.1, the data root read-only, no
   RStudio service, a random per-start `SECRET_KEY`, CORS for port 3100.
 

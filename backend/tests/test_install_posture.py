@@ -1,7 +1,7 @@
 """Install-posture tests for the spacescans-pipeline pin (T4 / H1).
 
 These tests guard the cross-repo invariant that backend/requirements.txt
-pins `spacescans-pipeline>=0.2` AND that the installed distribution actually
+pins `spacescans-pipeline>=0.3` AND that the installed distribution actually
 satisfies that floor. They are paired with the pipeline 0.1.0 -> 0.2.0 bump.
 """
 from __future__ import annotations
@@ -28,8 +28,8 @@ def test_requirements_pin_resolves(tmp_path: Path) -> None:
     """`pip install --dry-run -r backend/requirements.txt` must succeed."""
     assert REQUIREMENTS.is_file(), f"missing requirements file: {REQUIREMENTS}"
     contents = REQUIREMENTS.read_text(encoding="utf-8")
-    assert "spacescans-pipeline>=0.2" in contents, (
-        "expected 'spacescans-pipeline>=0.2' pin in backend/requirements.txt; "
+    assert "spacescans-pipeline>=0.3" in contents, (
+        "expected 'spacescans-pipeline>=0.3' pin in backend/requirements.txt; "
         f"got:\n{contents}"
     )
 

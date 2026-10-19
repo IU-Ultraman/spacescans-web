@@ -18,11 +18,8 @@ name: tier2-d-test
 services:
   backend:
     build:
+      # The production Dockerfile: spacescans from GitHub at its SPACESCANS_REF.
       context: ../backend
-      dockerfile: ../docs/Dockerfile.test
-      additional_contexts:
-        # The directory holding the spacescans-pipeline wheel (I1's build).
-        pipeline_wheel: ${TIER2_PIPELINE_WHEEL_DIR:-/Users/xai/Desktop/spacescans-all/tier2-artifacts/phaseD/dist}
     image: tier2-d-backend:integration
     init: true
     environment:

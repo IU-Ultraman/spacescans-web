@@ -55,7 +55,7 @@ RUN grep -vi "spacescans-pipeline" requirements.txt > /tmp/req.txt \
 #    SPACESCANS_REF to pull a newer release. The pandas / pyarrow pins are
 #    repeated so the resolver cannot move them while installing the extras, and
 #    constraints.txt holds the extras' dependencies to the tested versions.
-ARG SPACESCANS_REF=d92f7a3623ff5c35cde7a296ea6a347d108be5b3
+ARG SPACESCANS_REF=fff65b748253ad361edbee4c572b1457080e451a
 RUN python -m pip install --no-cache-dir -c constraints.txt \
     "pandas==3.0.5" "pyarrow==26.0.0" \
     "spacescans-pipeline[geo,rda,hdf4,nc] @ git+https://github.com/IU-Ultraman/spacescans.git@${SPACESCANS_REF}"
