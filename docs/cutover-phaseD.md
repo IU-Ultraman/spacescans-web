@@ -67,3 +67,38 @@ Live smoke (as `paper-figures`): the earlier upload listed; the 5 earlier finish
 results, preview and map endpoints answer; noise on the 300-episode cohort of
 `cutover-smoke-new-182742` at participant level finished in 9 s with 154 rows for 154
 participants. The task stays in that account. The frontend answers on `/` and `/login`.
+
+## Release upgrade (2026-10-23): spacescans 0.3.0 from the release tag
+
+On the author's go-ahead ("升级到正式发布版") the live app moved from spacescans fff65b7 to the
+released 0.3.0 (tag v0.3.0, commit 374d7c6, also on PyPI as `spacescans`). Between the two
+the package gained the duckdb < 2 cap and the pandas 3.1 FileNotFoundError fix, the 7
+remaining mirror files became `available` in its data manifest, and the distribution was
+renamed from `spacescans-pipeline` to `spacescans`; its config templates did not change.
+Web commit 1dd8e77 follows the rename (Dockerfile install spec and requirements filter,
+requirements.txt, tests, messages).
+
+Checked before the switch: the web backend suite with the PyPI wheel installed (623 passed,
+the known health-probe failure that needs real paths, 2 skips); the candidate image
+`spacescans-web-backend:rel-1dd8e77` (8cc6a96c3c37) reports dist-info
+`spacescans-0.3.0.dist-info` at commit 374d7c6, no `spacescans_pipeline` dist-info, and every
+`constraints.txt` pin; in an isolated container (empty volume, data read-only) a
+participant-level noise task on the committed synth_1k cohort finished in 9 s with 510 rows
+for 510 participants.
+
+Switched at 15:21 EDT with no task running or queued: backend 8cc6a96c3c37, frontend
+`spacescans-web-frontend:rel-1dd8e77` (f7f4e64ac662). Live smoke as `paper-figures`: the
+earlier upload listed, the 6 earlier finished tasks' results, preview and map endpoints
+answer, noise on the 300-episode cohort at participant level finished in 6 s with 154 rows
+for 154 participants.
+
+The image check of step 7 now looks for `spacescans-*.dist-info` (not
+`spacescans_pipeline-*`). Rollback to the phase-D images (spacescans fff65b7):
+
+```bash
+docker tag spacescans-web-backend:phaseD-4d2a636 spacescans-web-backend:latest
+docker tag spacescans-web-frontend:phaseD-4d2a636 spacescans-web-frontend:latest
+docker compose up -d backend frontend
+```
+
+then revert 1dd8e77 so that the next build does not bring 0.3.0 back.
