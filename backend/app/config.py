@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     MAX_DATASET_FILES: int = 1000
     MAX_DATASET_UPLOAD_MB: int = 4096
 
-    # spacescans-pipeline integration
+    # spacescans package integration
     SPACESCANS_DATA_DIR: Path = Path("/nonexistent")
     SPACESCANS_PIPELINE_PYTHON: Path = Path("/nonexistent")
     SPACESCANS_PIPELINE_CLI: Path = Path("/nonexistent")

@@ -7,7 +7,7 @@
 #   goldens came from (ten web-stack packages, such as anyio and cryptography, are newer).
 #   pandas and pyarrow are also pinned in requirements.txt and the Dockerfile: the legacy
 #   C3 cache keys depend on the pandas patch version (phase B #12).
-# - Not here: spacescans-pipeline (installed from SPACESCANS_REF) and the conda-forge layer
+# - Not here: spacescans (installed from SPACESCANS_REF) and the conda-forge layer
 #   (python, libgdal, rasterio, exactextract, pyhdf and what they pull in, such as numpy),
 #   which the Dockerfile's micromamba line resolves.
 # To regenerate after a deliberate upgrade: list the pip-installed distributions of the

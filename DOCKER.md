@@ -13,11 +13,11 @@ container regardless of host OS. There is nothing OS-specific to configure.
 ## Prerequisites
 
 1. **Docker** (Docker Desktop on macOS/Windows, Docker Engine on Linux).
-2. **The pipeline** — `spacescans-pipeline` is not on PyPI, so the backend image
-   `pip install`s it straight from its public repo (`IU-Ultraman/spacescans`),
-   pinned to a release tag. Nothing to do for a normal install. Maintainers
-   only: tag a new release on that repo and bump `SPACESCANS_REF` in
-   `backend/Dockerfile` (default `v0.2.0`).
+2. **The pipeline** — the backend image `pip install`s the `spacescans`
+   package (also on PyPI) from its public repo (`IU-Ultraman/spacescans`),
+   pinned to a commit. Nothing to do for a normal install. Maintainers only:
+   bump `SPACESCANS_REF` in `backend/Dockerfile` (the commit of the release
+   tag; 0.3.0 is `374d7c6`).
 
 3. **The exposure data** — put the dataset folders (several GB) in
    `pipeline-data/` (see [pipeline-data/README.md](pipeline-data/README.md) for

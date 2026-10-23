@@ -55,7 +55,7 @@ def test_every_pip_install_of_the_image_uses_the_constraints() -> None:
 
 def test_constraints_pin_the_cache_key_versions_and_not_the_package() -> None:
     pins = _constraints()
-    assert "spacescans-pipeline" not in pins          # installed from SPACESCANS_REF
+    assert "spacescans" not in pins                   # installed from SPACESCANS_REF
     requirements = (BACKEND / "requirements.txt").read_text()
     dockerfile = (BACKEND / "Dockerfile").read_text()
     for name, version in (("pandas", "3.0.5"), ("pyarrow", "26.0.0")):

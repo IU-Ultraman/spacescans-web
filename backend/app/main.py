@@ -52,7 +52,7 @@ def create_app() -> FastAPI:
             _log.exception("datasets: migration of earlier uploads failed")
         validate_pipeline_settings()
         # Sprint 12 G5: eager-fire the pipeline-version probe at boot so a
-        # stale spacescans-pipeline install fails fast on `uvicorn` startup
+        # stale spacescans install fails fast on `uvicorn` startup
         # instead of on the first /api/variables request. The probe is
         # guarded by a module-level _PROBE_DONE flag, so the lazy call at
         # the first load_variables() is a defense-in-depth no-op once this

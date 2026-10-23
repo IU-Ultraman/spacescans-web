@@ -20,8 +20,9 @@
 #
 # Needs a Python with the spacescans package importable (the one the backend
 # uses; set SPACESCANS_PYTHON to pick it, default python3). Install it with
-#   pip install "spacescans-pipeline @ git+https://github.com/IU-Ultraman/spacescans.git@<ref>"
-# using the ref pinned in backend/Dockerfile (SPACESCANS_REF).
+#   pip install spacescans
+# (or "spacescans @ git+https://github.com/IU-Ultraman/spacescans.git@<ref>" with the ref
+# pinned in backend/Dockerfile, SPACESCANS_REF).
 #
 # Note on size: a default Codespace has ~32 GB of disk. The NHD cache needs
 # ~89 GB (38.5 download + 50.3 extracted) and simply will not fit — run the
@@ -44,8 +45,8 @@ case "${1:-}" in ""|-h|--help) usage; exit 0 ;; esac
 command -v "$PY" >/dev/null || { echo "$PY is required but not installed (set SPACESCANS_PYTHON)"; exit 1; }
 "$PY" -c 'import spacescans.data' 2>/dev/null || {
   echo "the spacescans package is not importable by $PY."
-  echo "Install it (see the ref in backend/Dockerfile, SPACESCANS_REF):"
-  echo "  $PY -m pip install \"spacescans-pipeline @ git+https://github.com/IU-Ultraman/spacescans.git@<ref>\""
+  echo "Install it:"
+  echo "  $PY -m pip install spacescans"
   echo "or point SPACESCANS_PYTHON at an interpreter that has it. The running backend"
   echo "container has one, with the data root mounted at /project:"
   echo "  docker compose exec backend /opt/conda/bin/python -m spacescans data fetch --data-dir /project --dataset <key>"

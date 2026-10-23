@@ -42,10 +42,12 @@ def test_every_mirrored_dataset_has_a_card_and_every_variable_is_reachable():
     cards = data["selfServe"] + data["preset"]
     served = {v for c in cards for v in c["variableKeys"]}
     assert served == set(manifest.variables), served ^ set(manifest.variables)
-    # Every artifact that is on the mirror is fetchable from some card.
+    # Every artifact that is on the mirror is fetchable from some card, unless this repository
+    # ships it under pipeline-data/ (its card says so instead of giving a fetch command).
     fetchable = {c.get("fetch") or c.get("fetchCmd") for c in cards} - {None}
     for name, art in manifest.artifacts.items():
-        if art.available and name != "varnameCountRemoved.csv":
+        shipped = art.kind == "bare" and (_WEB_ROOT / "pipeline-data" / art.dest / name).is_file()
+        if art.available and not shipped:
             assert any(cmd.endswith(" " + name) for cmd in fetchable), name
     # Sizes and hashes come from the manifest, not from prose.
     county = next(c for c in data["selfServe"] if c["key"] == "county-boundaries")

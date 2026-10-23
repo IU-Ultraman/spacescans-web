@@ -87,13 +87,13 @@ def _assert_pipeline_version_compatible() -> None:
     except Exception as exc:
         raise MetadataSchemaError(
             f"pipeline import failed: {exc}. "
-            "Install/upgrade spacescans-pipeline >= 0.2 "
+            "Install/upgrade spacescans >= 0.3 "
             "(Sprint 2 episode-dimension contract)."
         ) from exc
     if not flags.get("episode_grouping"):
         raise MetadataSchemaError(
             "pipeline capabilities lack the episode_grouping flag — install/upgrade "
-            "spacescans-pipeline >= 0.2 (Sprint 2 episode-dimension contract)."
+            "spacescans >= 0.3 (Sprint 2 episode-dimension contract)."
         )
     _PROBE_DONE = True
 

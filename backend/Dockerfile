@@ -43,7 +43,7 @@ WORKDIR /app
 #    of the image the tier-2 gates tested: a rebuild (a new SPACESCANS_REF
 #    re-runs both steps) would otherwise take whatever PyPI has that day.
 COPY --chown=$MAMBA_USER:$MAMBA_USER requirements.txt constraints.txt ./
-RUN grep -vi "spacescans-pipeline" requirements.txt > /tmp/req.txt \
+RUN grep -vi "^spacescans" requirements.txt > /tmp/req.txt \
     && python -m pip install --no-cache-dir -c constraints.txt -r /tmp/req.txt
 
 # 3) The pipeline package, installed straight from its public GitHub repo
@@ -55,10 +55,10 @@ RUN grep -vi "spacescans-pipeline" requirements.txt > /tmp/req.txt \
 #    SPACESCANS_REF to pull a newer release. The pandas / pyarrow pins are
 #    repeated so the resolver cannot move them while installing the extras, and
 #    constraints.txt holds the extras' dependencies to the tested versions.
-ARG SPACESCANS_REF=fff65b748253ad361edbee4c572b1457080e451a
+ARG SPACESCANS_REF=374d7c626ab79849177300ac6f4326c8ee500aab
 RUN python -m pip install --no-cache-dir -c constraints.txt \
     "pandas==3.0.5" "pyarrow==26.0.0" \
-    "spacescans-pipeline[geo,rda,hdf4,nc] @ git+https://github.com/IU-Ultraman/spacescans.git@${SPACESCANS_REF}"
+    "spacescans[geo,rda,hdf4,nc] @ git+https://github.com/IU-Ultraman/spacescans.git@${SPACESCANS_REF}"
 
 # 4) Backend source.
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /app

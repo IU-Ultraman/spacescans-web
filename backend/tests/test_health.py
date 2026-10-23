@@ -19,7 +19,7 @@ def test_startup_invokes_pipeline_version_probe():
     """Sprint 12 G5: the pipeline-version probe must be invoked at app boot
     (FastAPI startup event), not lazily on the first load_variables() call.
 
-    Rationale: a misconfigured/stale spacescans-pipeline install should fail
+    Rationale: a misconfigured/stale spacescans install should fail
     fast at `uvicorn` startup so it can't pass an external healthcheck and
     silently serve broken metadata. The lazy call inside load_variables()
     remains as defense-in-depth (CLI / non-FastAPI imports).

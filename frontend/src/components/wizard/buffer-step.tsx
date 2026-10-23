@@ -23,7 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export interface BufferConfig {
-  // spacescans-pipeline only supports circular buffers (shapely .buffer with
+  // spacescans only supports circular buffers (shapely .buffer with
   // a resolution count); square/rectangle buffers have no pipeline code path,
   // so we omit the shape field from the wizard entirely.
   size: number;

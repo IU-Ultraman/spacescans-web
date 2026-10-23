@@ -1,7 +1,7 @@
-"""Install-posture tests for the spacescans-pipeline pin (T4 / H1).
+"""Install-posture tests for the spacescans pin (T4 / H1).
 
 These tests guard the cross-repo invariant that backend/requirements.txt
-pins `spacescans-pipeline>=0.3` AND that the installed distribution actually
+pins `spacescans>=0.3` AND that the installed distribution actually
 satisfies that floor. They are paired with the pipeline 0.1.0 -> 0.2.0 bump.
 """
 from __future__ import annotations
@@ -17,10 +17,9 @@ from packaging.version import Version
 
 REPO_ROOT = Path(__file__).resolve().parents[2]  # .../.worktrees/feat-sprint-6/
 REQUIREMENTS = REPO_ROOT / "backend" / "requirements.txt"
-PIN_FLOOR = Version("0.2")
-DIST_NAME = "spacescans-pipeline"
-# Pipeline repo wheel-output dir for find-links. spacescans-pipeline is not
-# published to PyPI, so dry-run resolution needs a local --find-links pointer.
+PIN_FLOOR = Version("0.3")
+DIST_NAME = "spacescans"   # "spacescans-pipeline" before 0.3.0 (never on PyPI)
+# Pipeline repo wheel-output dir for find-links, so the dry run resolves offline.
 PIPELINE_DIST_DIR = REPO_ROOT.parent.parent.parent / "dist"
 
 
@@ -28,16 +27,16 @@ def test_requirements_pin_resolves(tmp_path: Path) -> None:
     """`pip install --dry-run -r backend/requirements.txt` must succeed."""
     assert REQUIREMENTS.is_file(), f"missing requirements file: {REQUIREMENTS}"
     contents = REQUIREMENTS.read_text(encoding="utf-8")
-    assert "spacescans-pipeline>=0.3" in contents, (
-        "expected 'spacescans-pipeline>=0.3' pin in backend/requirements.txt; "
+    assert "spacescans>=0.3" in contents, (
+        "expected 'spacescans>=0.3' pin in backend/requirements.txt; "
         f"got:\n{contents}"
     )
 
     if not PIPELINE_DIST_DIR.is_dir() or not any(
-        PIPELINE_DIST_DIR.glob("spacescans_pipeline-*.whl")
+        PIPELINE_DIST_DIR.glob("spacescans-*.whl")
     ):
         pytest.skip(
-            f"no local spacescans-pipeline wheel found in {PIPELINE_DIST_DIR}; "
+            f"no local spacescans wheel found in {PIPELINE_DIST_DIR}; "
             "run `python -m build --wheel` in the pipeline repo first"
         )
 
@@ -65,7 +64,7 @@ def test_requirements_pin_resolves(tmp_path: Path) -> None:
 
 
 def test_pipeline_version_matches_pin() -> None:
-    """Installed spacescans-pipeline must satisfy the >=0.2 floor."""
+    """Installed spacescans must satisfy the >=0.3 floor."""
     try:
         installed = Version(version(DIST_NAME))
     except PackageNotFoundError:

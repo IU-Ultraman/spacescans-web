@@ -13,7 +13,7 @@ touches it, its images or its volume.
 | URLs | frontend <http://localhost:3100>, backend <http://localhost:8100> (bound to this machine only) |
 | App state | volume `tier2-d-test_backend-data` (SQLite users, tasks, registered datasets, C3 cache) |
 | Exposure data | `/Users/xai/Desktop/spacescans-all/spacescans-web/pipeline-data`, mounted **read-only** |
-| Pipeline | spacescans-pipeline from GitHub at `backend/Dockerfile`'s `SPACESCANS_REF` |
+| Pipeline | spacescans from GitHub at `backend/Dockerfile`'s `SPACESCANS_REF` |
 
 Run every command below from the repository root (`spacescans-web-wt/d-integration`). Builds
 and runs are heavy work: take the host lock

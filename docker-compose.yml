@@ -3,8 +3,8 @@ name: spacescans-web
 # One-command local run:  docker compose up --build
 # Frontend → http://localhost:3000   Backend → http://localhost:8000
 #
-# Prereq: the pipeline wheel must be present at backend/wheels/*.whl
-#   (see DOCKER.md — copy it from the parent repo's dist/).
+# The backend image installs the spacescans package from GitHub at backend/Dockerfile's
+# SPACESCANS_REF (see DOCKER.md).
 
 services:
   backend:
