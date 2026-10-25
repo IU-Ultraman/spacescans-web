@@ -55,7 +55,7 @@ from pathlib import Path
 from typing import Any
 
 import app.config
-from app import output_level
+from app import output_level, pipeline_workers
 from spacescans import catalog, cohort
 from spacescans.orchestrate import (
     LOG_CACHE_CHECK_FAILED,
@@ -403,6 +403,7 @@ def _run_locked(experiment: str, task_dir: Path, variables: Sequence[str] | None
     except output_level.ParticipantLevelUnsupported as exc:
         status.error(str(exc))
         return 1
+    ctx = pipeline_workers.with_workers(ctx, settings.SPACESCANS_PIPELINE_WORKERS)
     if level == output_level.PARTICIPANT and not extra:
         wrong = output_level.check_rendered(steps, ctx, level)
         if wrong is not None:

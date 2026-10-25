@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -42,6 +43,11 @@ class Settings(BaseSettings):
     # because the paper's scripts read it.
     SPACESCANS_CONFIG_TEMPLATES_DIR: Path | None = None
     PIPELINE_STEP_TIMEOUT_SECONDS: int = 1800  # 30 min per spacescans run
+    # Worker processes per pipeline step (spacescans engine.workers, 0.3.1+): the
+    # polygon-overlap weights and ACAG's NetCDF files are computed by this many
+    # processes, with the same output as one. Each worker adds memory. A spacescans
+    # without the "workers" capability (0.3.0) ignores it (app.pipeline_workers).
+    SPACESCANS_PIPELINE_WORKERS: int = Field(default=4, ge=1)
 
     class Config:
         env_file = ".env"

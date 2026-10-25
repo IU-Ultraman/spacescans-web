@@ -35,6 +35,12 @@ cp .env.docker.example .env      # then edit SECRET_KEY
 `.env` is read automatically by `docker compose`. Without it, defaults apply
 (fine for local testing; set a real `SECRET_KEY` otherwise).
 
+`SPACESCANS_PIPELINE_WORKERS` (default 4) is the number of worker processes a
+pipeline step may use for the polygon-overlap weights and ACAG's NetCDF files
+(spacescans 0.3.1 and later; 0.3.0 ignores it). The results are the same with
+any number. Each worker adds memory, so lower it if large runs are killed for
+lack of memory, and keep it below the CPUs Docker gives the backend.
+
 ---
 
 ## Run

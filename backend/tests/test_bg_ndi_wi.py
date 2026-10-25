@@ -619,3 +619,20 @@ def test_cohort_conversion_is_the_runners(fake_cli):
     again = fake_cli / "again.parquet"
     cohort.csv_to_parquet(task_dir / "input.csv", again, variant="bg_ndi_wi")
     assert again.read_bytes() == (task_dir / "input.parquet").read_bytes()
+
+
+def test_rendered_configs_carry_the_workers_setting(fake_cli):
+    """SPACESCANS_PIPELINE_WORKERS reaches every step's engine block when the package takes
+    it; with spacescans 0.3.0 the configs stay as 0.3.0 renders them."""
+    import yaml
+
+    import app.config
+    from app import pipeline_workers
+
+    task_dir = _task(fake_cli, "task-workers01", ["ndi"])
+    assert bg_ndi_wi.run(task_dir) == 0
+    want = app.config.settings.SPACESCANS_PIPELINE_WORKERS if pipeline_workers.supported() else None
+    configs = sorted((task_dir / "pipeline_configs").glob("*.yaml"))
+    assert configs
+    for path in configs:
+        assert (yaml.safe_load(path.read_text()).get("engine") or {}).get("workers") == want, path.name
