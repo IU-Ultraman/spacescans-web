@@ -102,3 +102,49 @@ docker compose up -d backend frontend
 ```
 
 then revert 1dd8e77 so that the next build does not bring 0.3.0 back.
+
+## Release upgrade (2026-10-25): spacescans 0.3.1 with worker processes
+
+On the author's go-ahead ("线上 web 升级到 0.3.1，默认 4 个 worker") the live app moved from
+spacescans 0.3.0 (374d7c6) to 0.3.1 (tag v0.3.1, commit 3010689, on PyPI). 0.3.1 adds
+`engine.workers`: the polygon-overlap weights (block groups, tracts, ZCTAs, counties) and the
+ACAG NetCDF files are computed by that many worker processes, with the same Step 1 output as
+one process. Web commit b5f527b passes `SPACESCANS_PIPELINE_WORKERS` (compose default 4) into
+the run context when the package has the `workers` flag. Commit 5021bd0 moves
+`SPACESCANS_REF` to 3010689.
+
+Checked before the switch:
+- The web backend suite: 630 passed, plus the known health-probe failure. This was run once
+  with PyPI 0.3.0 and once with the 0.3.1 branch installed. A runner test asserts that every
+  rendered config carries `engine.workers` 4 with 0.3.1 and none with 0.3.0.
+- The candidate image `spacescans-web-backend:rel-5021bd0` (743a041205a2) reports
+  `spacescans-0.3.1.dist-info` at commit 3010689, the `workers` flag, and all 49
+  `constraints.txt` pins.
+- Isolated containers: an empty volume, the data mounted read-only, `--oom-score-adj 500`,
+  `SPACESCANS_PIPELINE_WORKERS=4`.
+  - Walkability on synth_1k at participant level finished in 18 s with 510 rows for 510
+    participants. Both configs carried `workers: 4`, and Step 1 logged "569 tiles with work
+    in 32 chunks on 4 worker processes".
+  - ACAG on synth_100k at episode level finished in 1,232 s. The paper's single-process run
+    in this environment took 2,229 s. The ACAG run peaked at 19.3 GiB summed over processes
+    (21.9 GiB cgroup `memory.peak`, page cache included) of 23.4 GiB, with no OOM kill. It
+    wrote 99,549 result rows, the same count as the paper's 100k run
+    (`paper-RT-100k-acag-r1`): episodes without any ACAG cell have no row in either.
+
+Switched at 19:39 EDT, with no task running or queued: backend 743a041205a2; the frontend is
+unchanged (f7f4e64ac662, also tagged `rel-5021bd0`). After the switch:
+- `/api/health` answers ok; the container has `SPACESCANS_PIPELINE_WORKERS=4` and spacescans
+  0.3.1.
+- A walkability task on synth_1k in the live container (participant level, task
+  `paper-relcheck-wi-1k`, removed afterwards) finished in 16.9 s with 510 rows, `workers: 4`
+  in both configs, and four workers in Step 1.
+
+Fewer workers without a rollback: set `SPACESCANS_PIPELINE_WORKERS=1` (or 2) in `.env`, then
+`docker compose up -d backend`. Rollback to 0.3.0 (the env variable is then ignored):
+
+```bash
+docker tag spacescans-web-backend:rel-1dd8e77 spacescans-web-backend:latest
+docker compose up -d backend
+```
+
+then revert 5021bd0 so that the next build does not bring 0.3.1 back.
