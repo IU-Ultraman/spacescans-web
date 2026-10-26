@@ -60,11 +60,12 @@ from it installs pipeline v0.2.7 again. It does not keep the library versions: 3
 that day's PyPI releases of pandas, pyarrow and every library the pipeline computes with. The
 exact environment of the paper's runs is the image the backend runs now. Its only tag is `latest`, which step 4 moves to the new image;
 without a tag of its own, any `docker image prune` or Docker Desktop clean-up deletes it.
+The git tag was renamed `web-pipeline-0.2.7` on 2026-10-26; it points to the same commit.
 
 ```bash
 cd spacescans-web
-git tag -a paper-jamia-2026 3991c3b -m "Web state of the JAMIA paper's runs (pipeline v0.2.7)"
-git push origin paper-jamia-2026
+git tag -a web-pipeline-0.2.7 3991c3b -m "Web state used for the evaluation runs (pipeline v0.2.7)"
+git push origin web-pipeline-0.2.7
 # Keep the image the backend runs now: it is the fast way back (see Rollback).
 docker inspect spacescans-web-backend-1 --format '{{.Image}}'      # sha256:8b219bc1b067... at the time of writing
 docker tag "$(docker inspect spacescans-web-backend-1 --format '{{.Image}}')" spacescans-web-backend:pre-tier2-0.2.7
