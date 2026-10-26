@@ -148,3 +148,63 @@ docker compose up -d backend
 ```
 
 then revert 5021bd0 so that the next build does not bring 0.3.1 back.
+
+## Release upgrade (2026-10-26): spacescans 0.3.2, workers for every Step 1
+
+On the author's go-ahead (2026-10-26, to "upgrade the live web to 0.3.2") the live app moved
+from spacescans 0.3.1 (3010689) to 0.3.2 (tag v0.3.2, commit 7827bdc, on PyPI). 0.3.2 runs the
+spatial computation (Step 1) of every catalog source in `SPACESCANS_PIPELINE_WORKERS` worker
+processes (4 here): the grid weights of noise, VIIRS, TEMIS, ACAG and custom grids, the NHD
+and TIGER searches, and, as in 0.3.1, the polygon overlap. ACAG's NetCDF files are decoded in
+workers as before, and TEMIS's daily HDF4 files when no converted copy covers the request. The
+Step 1 output is the same as with one process. Web commit f80404d moves `SPACESCANS_REF` to
+7827bdc and updates the comments and DOCKER.md; the runner code is unchanged.
+
+Checked before the switch:
+- The web backend suite with the 0.3.2 wheel: 630 passed, plus the known health-probe failure.
+- The candidate image `spacescans-web-backend:rel-f80404d` (27c927f68e6b) reports spacescans
+  0.3.2 installed from commit 7827bdc, the `workers` flag, and all 49 `constraints.txt` pins.
+- An isolated container: an empty volume, the data mounted read-only, `--init`,
+  `--oom-score-adj 500`, `SPACESCANS_PIPELINE_WORKERS=4`. Every run ended with exit code 0 and
+  no OOM kill, every config carried `workers: 4`, and each Step 1 logged its worker processes.
+  The paper's single-process runs in this environment are the comparison (Table 2, and
+  Supplementary Table S1 for 10k):
+
+  | Run | Time (s) | Paper, one process (s) | Rows | Peak, summed over processes (GiB) |
+  |---|---|---|---|---|
+  | Walkability, synth_1k, participant level | 18.8 | — | 510 | 6.4 |
+  | Noise, synth_100k, episode level | 32.4 | 84.9 | 100,000 | 4.2 |
+  | VIIRS, synth_100k, episode level | 42.1 | 96.6 | 100,000 | 8.1 |
+  | NHD, synth_100k, episode level | 161.3 | 387.2 | 100,000 | 3.4 |
+  | TIGER, synth_100k, episode level | 164.5 | 406.5 | 100,000 | 6.9 |
+  | TEMIS, synth_10k, episode level | 36.6 | 34.6 | 10,002 | 9.5 |
+
+  Walkability took 18 s in the same check of 0.3.1. The row counts equal those of the paper's
+  runs (`paper-RT-100k-<key>-r1`, `paper-RT-10k-temis-r3`). TEMIS took about as long as with one
+  process: 27.4 of its 34.6 s are Step 2, which reads the converted parquet in one process. The
+  cgroup's `memory.peak` reached 21.4 GiB of 23.4 GiB over the six runs, page cache included.
+
+Switched at 07:53 EDT, with no task running or queued: backend 27c927f68e6b; the frontend is
+unchanged (f7f4e64ac662, also tagged `rel-f80404d`). After the switch:
+- `/api/health` answers ok; the container has `SPACESCANS_PIPELINE_WORKERS=4` and spacescans
+  0.3.2.
+- Tasks in the live container, with four workers, exit code 0 and no OOM kill:
+  - walkability on synth_1k at participant level (task `paper-relcheck-wi-1k`): 510 rows in
+    2.1 s, its Step 1 weights served from the cache;
+  - noise on a copy of synth_10k whose participant ids carry a new prefix, so the cache could
+    not serve it (task `paper-relcheck-noise-10k`): 10,002 rows in 14.8 s, `workers: 4` in both
+    configs, and Step 1 logged "3 chunks on 4 worker processes".
+
+  The two task folders, three files under `/tmp` and the cache entry
+  `3709a9e4__BG_NOISE__b270m` (parquet and meta.json) from these checks are still in the live
+  container; they hold synthetic data only.
+
+Fewer workers without a rollback: set `SPACESCANS_PIPELINE_WORKERS=1` (or 2) in `.env`, then
+`docker compose up -d backend`. Rollback to 0.3.1:
+
+```bash
+docker tag spacescans-web-backend:rel-5021bd0 spacescans-web-backend:latest
+docker compose up -d backend
+```
+
+then revert f80404d so that the next build does not bring 0.3.2 back.
