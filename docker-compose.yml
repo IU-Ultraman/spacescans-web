@@ -34,9 +34,10 @@ services:
       # script). Absolute paths — the backend validates these exist on startup.
       SPACESCANS_PIPELINE_PYTHON: /opt/conda/bin/python
       SPACESCANS_PIPELINE_CLI: /opt/conda/bin/spacescans
-      # Worker processes per pipeline step for the polygon-overlap weights and
-      # ACAG's NetCDF files (spacescans 0.3.1+; 0.3.0 ignores it). Same output
-      # with any number; each worker adds memory.
+      # Worker processes per pipeline step for the spatial computation of every
+      # source and ACAG's NetCDF files (spacescans 0.3.2; 0.3.1 covers the
+      # polygon-overlap weights only, 0.3.0 ignores it). Same output with any
+      # number; each worker adds memory.
       SPACESCANS_PIPELINE_WORKERS: ${SPACESCANS_PIPELINE_WORKERS:-4}
       SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
       # GitHub Codespaces browser access: lets the backend CORS-allow the

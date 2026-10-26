@@ -17,7 +17,7 @@ container regardless of host OS. There is nothing OS-specific to configure.
    package (also on PyPI) from its public repo (`IU-Ultraman/spacescans`),
    pinned to a commit. Nothing to do for a normal install. Maintainers only:
    bump `SPACESCANS_REF` in `backend/Dockerfile` (the commit of the release
-   tag; 0.3.1 is `3010689`).
+   tag; 0.3.2 is `7827bdc`).
 
 3. **The exposure data** — put the dataset folders (several GB) in
    `pipeline-data/` (see [pipeline-data/README.md](pipeline-data/README.md) for
@@ -36,9 +36,10 @@ cp .env.docker.example .env      # then edit SECRET_KEY
 (fine for local testing; set a real `SECRET_KEY` otherwise).
 
 `SPACESCANS_PIPELINE_WORKERS` (default 4) is the number of worker processes a
-pipeline step may use for the polygon-overlap weights and ACAG's NetCDF files
-(spacescans 0.3.1 and later; 0.3.0 ignores it). The results are the same with
-any number. Each worker adds memory, so lower it if large runs are killed for
+pipeline step may use. In spacescans 0.3.2 they run the spatial computation
+(Step 1) of every catalog source and custom grid, and decode ACAG's NetCDF
+files; 0.3.1 used them for the polygon-overlap weights and ACAG's files only,
+and 0.3.0 ignores the setting. The results are the same with any number. Each worker adds memory, so lower it if large runs are killed for
 lack of memory, and keep it below the CPUs Docker gives the backend.
 
 ---

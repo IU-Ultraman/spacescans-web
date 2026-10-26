@@ -44,8 +44,9 @@ class Settings(BaseSettings):
     SPACESCANS_CONFIG_TEMPLATES_DIR: Path | None = None
     PIPELINE_STEP_TIMEOUT_SECONDS: int = 1800  # 30 min per spacescans run
     # Worker processes per pipeline step (spacescans engine.workers, 0.3.1+): the
-    # polygon-overlap weights and ACAG's NetCDF files are computed by this many
-    # processes, with the same output as one. Each worker adds memory. A spacescans
+    # spatial computation of every source (0.3.2; the polygon-overlap weights only in
+    # 0.3.1) and ACAG's NetCDF files are computed by this many processes, with the
+    # same output as one. Each worker adds memory. A spacescans
     # without the "workers" capability (0.3.0) ignores it (app.pipeline_workers).
     SPACESCANS_PIPELINE_WORKERS: int = Field(default=4, ge=1)
 

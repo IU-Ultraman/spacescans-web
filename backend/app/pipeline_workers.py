@@ -1,8 +1,9 @@
 """How many worker processes a pipeline step may use (``SPACESCANS_PIPELINE_WORKERS``).
 
-spacescans 0.3.1 takes ``RunContext.engine["workers"]`` and writes it into every rendered
-config: the polygon-overlap weights (block groups, tracts, ZCTAs) and ACAG's NetCDF files
-are then computed by that many processes, with the same output as one process. The
+spacescans 0.3.1 and later take ``RunContext.engine["workers"]`` and write it into every
+rendered config. The spatial computation of every source (0.3.2; the polygon-overlap weights
+only in 0.3.1) and ACAG's NetCDF files are then computed by that many processes, with the
+same output as one process. The
 legacy-v1 weight cache keys do not read the rendered config, so cache hits are unchanged.
 """
 from __future__ import annotations
