@@ -208,3 +208,56 @@ docker compose up -d backend
 ```
 
 then revert f80404d so that the next build does not bring 0.3.2 back.
+
+## Release upgrade (2026-10-27): spacescans 0.3.3, the bridge interrupt fix
+
+On the author's go-ahead ("把 web 升到 0.3.3") the live app moved from spacescans 0.3.2
+(7827bdc) to 0.3.3 (tag v0.3.3, commit e8f99b6, on PyPI). 0.3.3 only changes how the Python
+bridge, which the R package talks to, handles SIGINT/SIGTERM on Python 3.13 and later; the web
+does not use the bridge, so the runners and every config are unchanged. Web commit 9bd76aa
+moves `SPACESCANS_REF` to e8f99b6 and DOCKER.md's example.
+
+Checked before the switch:
+- The candidate image `spacescans-web-backend:rel-9bd76aa` (39c559abbda7) reports spacescans
+  0.3.3 installed from commit e8f99b6, the `workers` flag, and all 49 `constraints.txt` pins.
+- The web backend suite, run inside the candidate image with the compose mounts (`/configs`,
+  the data read-only at `/project`): 617 passed in the image's own `/app`, and the five
+  repository-layout tests (`test_data_sources_generated`, `test_install_posture`,
+  `test_variable_registry`) pass with the repository mounted; 7 skipped. The health-probe test
+  passes with the mounts.
+- An isolated container (empty volume, data read-only, `--init`, `--oom-score-adj 500`, no
+  network, `SPACESCANS_PIPELINE_WORKERS=4`), driven by the paper's `runtime.py`: noise on
+  synth_1k, cold 8.0 s and cached 5.0 s, and walkability on synth_1k, cold 20.5 s (Step 1
+  18.5 s on four workers) and cached 1.8 s; every run exit code 0, 1,001 rows, `workers: 4`
+  in every config, the cached runs served from the cache.
+
+Switched at 10:25 EDT, with no task running or queued (the task folders' `status.json`:
+28 finished, 2 partial, 1 cancelled, none running): backend 39c559abbda7; the frontend is
+unchanged (f7f4e64ac662, also tagged `rel-9bd76aa`). After the switch:
+- `/api/health` answers ok; PID 1 is `docker-init`; the container has
+  `SPACESCANS_PIPELINE_WORKERS=4` and spacescans 0.3.3 with the `workers` flag.
+- Noise on synth_1k in the live container (task `paper-RT-1k-noise-r1-w4`, four workers):
+  cold 8.5 s, cached 5.0 s, exit code 0, 1,001 rows.
+
+Residue of the checks, synthetic data only, which the lead's tooling may not delete (its
+`rm` in the live container is blocked): the task folders `paper-RT-1k-noise-r1-w4`,
+`paper-relcheck-wi-1k` and `paper-relcheck-noise-10k` under `/app/data/tasks`, the cache entries
+`33eebe32__BG_NOISE__b270m` and `3709a9e4__BG_NOISE__b270m` (parquet and meta.json) under
+`/app/data/c3_cache`, and `/tmp/ss_relcheck*` from 2026-10-26. One command removes them:
+
+```bash
+docker exec spacescans-web-backend-1 rm -rf /app/data/tasks/paper-RT-1k-noise-r1-w4 \
+  /app/data/tasks/paper-relcheck-wi-1k /app/data/tasks/paper-relcheck-noise-10k \
+  /app/data/c3_cache/33eebe32__BG_NOISE__b270m.parquet /app/data/c3_cache/33eebe32__BG_NOISE__b270m.meta.json \
+  /app/data/c3_cache/3709a9e4__BG_NOISE__b270m.parquet /app/data/c3_cache/3709a9e4__BG_NOISE__b270m.meta.json \
+  /tmp/ss_relcheck.py /tmp/ss_relcheck_synth_1k.csv /tmp/ss_relcheck_synth_10k.csv
+```
+
+Rollback to 0.3.2:
+
+```bash
+docker tag spacescans-web-backend:rel-f80404d spacescans-web-backend:latest
+docker compose up -d backend
+```
+
+then revert 9bd76aa so that the next build does not bring 0.3.3 back.
