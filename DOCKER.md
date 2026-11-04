@@ -17,7 +17,7 @@ container regardless of host OS. There is nothing OS-specific to configure.
    package (also on PyPI) from its public repo (`IU-Ultraman/spacescans`),
    pinned to a commit. Nothing to do for a normal install. Maintainers only:
    bump `SPACESCANS_REF` in `backend/Dockerfile` (the commit of the release
-   tag; 0.3.3 is `e8f99b6`).
+   tag; 0.3.5 is `6d970f6`).
 
 3. **The exposure data** — put the dataset folders (several GB) in
    `pipeline-data/` (see [pipeline-data/README.md](pipeline-data/README.md) for
