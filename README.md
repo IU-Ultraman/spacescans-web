@@ -1,8 +1,9 @@
 # spacescans-web
 
-Web app for the SPACESCANS EHR ↔ environmental-exposure linkage pipeline:
-upload a patient cohort CSV, pick exposure variables, run the pipeline, and
-explore the results.
+Web application for SPACESCANS, which links time-referenced geolocation data
+(location episodes) to the spatial and contextual exposome: browse the
+ontology-organized exposure catalog, add your own datasets, upload a cohort of
+location episodes, check its coverage, run the linkage and inspect the results.
 
 The same setup runs on macOS, Windows, and Linux — everything runs inside
 Docker containers, so there is nothing OS-specific to configure.
