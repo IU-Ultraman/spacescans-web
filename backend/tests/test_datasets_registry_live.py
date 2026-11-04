@@ -132,3 +132,28 @@ def test_refused_data_names_the_problem_without_values(users, env):  # noqa: F81
         "key": {"geography": "Tract", "column": "GEOID", "time_column": "date"}})
     assert r.status_code == 400, r.text
     assert "not-a-date" not in json.dumps(r.json())
+
+
+def test_ontology_concepts_of_a_registered_dataset_reach_the_api(users, env, tmp_path):  # noqa: F811
+    """A dataset registered with concepts (Python or R) shows them in the list and the detail."""
+    from spacescans import catalog, custom
+
+    from app import custom_exposomes
+
+    if not hasattr(catalog, "concept"):
+        pytest.skip("the installed spacescans has no ontology concepts (< 0.3.5)")
+    csv = tmp_path / "county.csv"
+    csv.write_text(f"GEOID,pm25,unemployment\n{TRACT_A},8.1,4.0\n{TRACT_B},7.2,3.1\n")
+    rec = custom.register(csv, name="Tract measures", kind="polygon_table", temporal="static",
+                          key={"boundary": "tract", "column": "GEOID"},
+                          variables=[{"name": "pm25", "ontology_id": "000102_2"}, "unemployment"],
+                          metadata={"ontology_id": "000093_2", "owner": "1"},
+                          root=custom_exposomes.user_dir(1))
+    listed = users[1].get("/api/datasets").json()
+    ds = next(d for d in listed if d["id"] == rec.id)
+    assert ds["ontology_id"] == "000093_2"
+    assert ds["variables"][0]["ontology_id"] == "000102_2"
+    assert "ontology_id" not in ds["variables"][1]
+    detail = users[1].get(f"/api/datasets/{rec.id}").json()["dataset"]
+    assert detail["ontology_id"] == "000093_2"
+    assert detail["entry"]["ontology_id"] == "000093_2"      # the catalog-shaped entry keeps it

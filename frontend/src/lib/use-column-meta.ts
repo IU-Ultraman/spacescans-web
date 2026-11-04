@@ -62,3 +62,30 @@ export function useColumnMeta(): (col: string) => ColumnMeta | null {
     return entry ? { label: entry.label, definition: entry.definition } : null;
   };
 }
+
+/**
+ * Returns a lookup `(nodeId) => ColumnMeta | null` for ontology nodes by id (a
+ * registered dataset's `ontology_id`). Shares the metadata cache with
+ * useColumnMeta and, like it, returns null until (or unless) the metadata loads.
+ */
+export function useOntologyNode(): (nodeId: string) => ColumnMeta | null {
+  const [map, setMap] = useState<OntoMap | null>(cache);
+
+  useEffect(() => {
+    if (cache) return;
+    let cancelled = false;
+    loadOntologyMetadata()
+      .then((d) => {
+        if (!cancelled) setMap(d);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (nodeId: string): ColumnMeta | null => {
+    const entry = map?.[nodeId];
+    return entry ? { label: entry.label, definition: entry.definition } : null;
+  };
+}

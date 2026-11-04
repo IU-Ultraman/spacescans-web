@@ -464,6 +464,8 @@ def _variables(ds: Dataset) -> list[dict]:
         item = {"name": v["name"], "unit": v.get("unit"), "description": v.get("description")}
         if "band" in v:
             item["band"] = v["band"]
+        if v.get("ontology_id"):                       # registered with a concept (spacescans >= 0.3.5)
+            item["ontology_id"] = v["ontology_id"]
         out.append(item)
     return out
 
@@ -499,6 +501,7 @@ def public(ds: Dataset, uid: int | str, names: Mapping[str, str] | None = None) 
         "version": record.get("version"),
         "description": record.get("description"),
         "license_note": record.get("license_note"),
+        "ontology_id": record.get("ontology_id"),
         "files": [Path(f).name for f in record.get("files") or []],
         "checksum": record.get("checksum"),
         "spacescans_version": record.get("spacescans_version"),

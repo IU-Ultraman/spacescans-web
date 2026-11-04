@@ -7,8 +7,12 @@ Phase D (PHASE_D.md section 2.2); the library and its access rules are ``app.dat
     with the deployment. Each item: ``id, name, kind, temporal, variables, visibility,
     owned_by_me, owner_display, created_at, status`` (``"ready"`` or ``"error"``, with
     ``status_detail``), and the details: ``variable_key, key, source, version, description,
-    license_note, files, checksum, spacescans_version, created_utc, updated_utc, entry``
-    (the catalog-shaped entry a task shows: label, unit, coverage years...).
+    license_note, ontology_id, files, checksum, spacescans_version, created_utc, updated_utc,
+    entry`` (the catalog-shaped entry a task shows: label, unit, coverage years...).
+    ``ontology_id`` is the dataset's concept of the Spatial and Contextual Exposome Ontology
+    and a variable may carry its own (``variables[].ontology_id``); both are set when the
+    dataset is registered with spacescans >= 0.3.5 from Python or R, and are null or absent
+    otherwise (the upload form does not set them).
 ``GET /api/datasets/capabilities``
     What this deployment can register: ``{registry, kinds: {kind: [temporal...]},
     boundaries, limits}``.

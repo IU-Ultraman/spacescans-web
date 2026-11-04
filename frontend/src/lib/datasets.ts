@@ -25,6 +25,9 @@ export interface DatasetVariable {
   description?: string | null;
   /** Raster datasets: the 1-based band this variable is read from. */
   band?: number | null;
+  /** The variable's own ontology concept, when it differs from the dataset's
+   *  (set by spacescans >= 0.3.5 from Python or R; the upload form does not). */
+  ontology_id?: string | null;
 }
 
 /** How a record is located: the area code column and its geography (area
@@ -54,6 +57,9 @@ export interface RegisteredDataset {
   version?: string | null;
   description?: string | null;
   license_note?: string | null;
+  /** The dataset's ontology concept (a node id of the exposome ontology), as a
+   *  catalog variable's `ontology_id`; null when none was given. */
+  ontology_id?: string | null;
   files?: string[] | null;
   checksum?: string | null;
   spacescans_version?: string | null;

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
+import { useOntologyNode } from "@/lib/use-column-meta";
 import {
   KIND_INFO,
   TEMPORAL_LABEL,
@@ -18,6 +20,20 @@ function formatDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString();
+}
+
+/** An ontology concept: its label (spaces for underscores), linked to its node
+ *  in the Data Catalog; the bare id until the ontology metadata has loaded. */
+function ConceptLink({ id, label }: { id: string; label: string | null }) {
+  return (
+    <Link
+      href={`/catalog?node=${encodeURIComponent(id)}`}
+      className="text-primary hover:underline"
+      title={`Ontology node ${id}`}
+    >
+      {label ? label.replace(/_/g, " ") : id}
+    </Link>
+  );
 }
 
 /**
@@ -36,6 +52,7 @@ export function DatasetDetail({
   const [full, setFull] = useState<RegisteredDataset | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const ontologyNode = useOntologyNode();
 
   useEffect(() => {
     let cancelled = false;
@@ -57,14 +74,17 @@ export function DatasetDetail({
   // The summary wins for what it carries (it may be newer, e.g. right after a
   // share toggle); the full record fills in the rest.
   const d: RegisteredDataset = { ...(full ?? {}), ...dataset } as RegisteredDataset;
-  for (const k of ["source", "version", "description", "license_note", "key", "files", "checksum", "spacescans_version"] as const) {
+  for (const k of ["source", "version", "description", "license_note", "ontology_id", "key", "files", "checksum", "spacescans_version"] as const) {
     if (d[k] == null && full?.[k] != null) (d as unknown as Record<string, unknown>)[k] = full[k];
   }
   const kind = KIND_INFO[d.kind];
   const key: DatasetKey | null = d.key && typeof d.key === "object" ? d.key : null;
 
-  const rows: [string, string | null][] = [
+  const concept = (id: string) => <ConceptLink id={id} label={ontologyNode(id)?.label ?? null} />;
+
+  const rows: [string, React.ReactNode | null][] = [
     ["Kind", kind?.label ?? d.kind],
+    ["Ontology concept", d.ontology_id ? concept(d.ontology_id) : null],
     ["Linked as", kind?.linkedAs ?? null],
     [
       "Areas",
@@ -112,7 +132,7 @@ export function DatasetDetail({
 
       <dl className="mt-4 space-y-2">
         {rows
-          .filter((r): r is [string, string] => !!r[1])
+          .filter((r): r is [string, React.ReactNode] => !!r[1])
           .map(([term, value]) => (
             <div key={term} className="grid grid-cols-[8.5rem_1fr] gap-2 text-sm">
               <dt className="text-muted-foreground">{term}</dt>
@@ -143,6 +163,9 @@ export function DatasetDetail({
               {v.unit && <span className="ml-auto shrink-0 text-xs text-muted-foreground">{v.unit}</span>}
             </div>
             {v.description && <p className="mt-0.5 text-xs text-muted-foreground">{v.description}</p>}
+            {v.ontology_id && v.ontology_id !== d.ontology_id && (
+              <p className="mt-0.5 text-xs text-muted-foreground">Concept: {concept(v.ontology_id)}</p>
+            )}
           </div>
         ))}
         {d.variables.length === 0 && (
