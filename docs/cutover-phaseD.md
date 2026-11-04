@@ -261,3 +261,61 @@ docker compose up -d backend
 ```
 
 then revert 9bd76aa so that the next build does not bring 0.3.3 back.
+
+## Release upgrade (2026-11-04): spacescans 0.3.5, ontology concepts for registered datasets
+
+On the author's go-ahead ("web 是否升级到 0.3.5 并部署": "是的") the live app moved from
+spacescans 0.3.3 (e8f99b6) to 0.3.5 (tag v0.3.5, commit 6d970f6, on PyPI) and to web 56e95e9.
+0.3.5 lets a registered dataset, and each of its variables, carry a concept of the Spatial and
+Contextual Exposome Ontology (`ontology_id`), checked at registration against the package's
+bundled index of the ontology's exposome branch (208 concepts). Web 9a071ad returns it from
+`/api/datasets` and shows it in the dataset detail, linked to the node in the Data Catalog; web
+56e95e9 moves `SPACESCANS_REF` to 6d970f6 and DOCKER.md's example. The upload form does not set
+a concept, so datasets added through it, and every earlier dataset, have none; Python and R
+set them. No dependency changed (`constraints.txt` as before). Both images were rebuilt: the
+frontend's code changed too.
+
+Checked before the switch:
+- The candidate backend `spacescans-web-backend:rel-56e95e9` (943484a2319d) reports spacescans
+  0.3.5 installed from commit 6d970f6, 208 ontology concepts, the `workers` flag and all 49
+  `constraints.txt` pins. The candidate frontend `spacescans-web-frontend:rel-56e95e9`
+  (e9a585cec995) was built with `NEXT_PUBLIC_API_URL` from `.env`.
+- The web backend suite inside the candidate image with the compose mounts: 622 passed in the
+  image's own `/app` (7 skipped); the five repository-layout tests, which fail there by design,
+  pass with the repository mounted, together with `test_datasets_registry_live.py` (64 passed,
+  1 skipped).
+- Earlier records: the 5 registered datasets of the live volume, mounted read-only into a
+  throwaway container of the candidate image, all load and are `ready`; their API form carries
+  `ontology_id` (null for all 5).
+- An isolated stack (the candidate backend on port 8200 with an empty volume, a frontend built
+  for that port on 3001, a throwaway account): a county table uploaded through the form shows no
+  concept; after `custom.update_dataset(..., metadata={"ontology_id": "000291"},
+  variables=[{"name": "tree_cover", "ontology_id": "000094_2"}])` in the container the API
+  returns both concepts, the definition carries `ontology_id` and `value_ontology_ids`, and the
+  detail shows "Ontology concept: Meteorological Factor" and, under the variable, "Concept:
+  Natural Environment Exposome" (headless Chrome screenshots); the concept link opens the Data
+  Catalog with the node selected; an unknown id is refused with the package's message.
+- The paper's `runtime.py` in the same candidate container: noise on synth_1k cold 12.9 s and
+  cached 5.8 s, walkability cold 34.2 s and cached 1.7 s, four workers, every exit code 0, the
+  cached runs served from the cache. These are slower than the 0.3.3 checks, with the engine
+  unchanged; the machine was also building images and running other checks (not a benchmark).
+
+Switched at 15:31 EST with no pipeline process in the live container (task folders: 28
+finished, 2 partial, 1 cancelled; the 132 experiment entries of older benchmark folders that
+still say `running` all report progress 1.0): backend 943484a2319d, frontend e9a585cec995.
+After the switch: `/api/health` answers ok; PID 1 is `docker-init`; spacescans 0.3.5 with
+`SPACESCANS_PIPELINE_WORKERS=4` and the `workers` flag; the 5 registered datasets are readable
+and ready; the frontend answers on `/`, `/login` and `/signup`, and its bundle points at
+`localhost:8000`.
+
+Rollback to 0.3.3:
+
+```bash
+docker tag spacescans-web-backend:rel-9bd76aa spacescans-web-backend:latest
+docker tag spacescans-web-frontend:rel-9bd76aa spacescans-web-frontend:latest
+docker compose up -d backend frontend
+```
+
+then revert 56e95e9 and 9a071ad so that the next build does not bring 0.3.5 back. A dataset
+given a concept under 0.3.5 stays readable: the 0.3.3 image loads such a record (checked on the
+isolated stack's dataset) and ignores the concept.
